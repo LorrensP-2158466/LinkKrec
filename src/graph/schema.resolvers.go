@@ -65,8 +65,8 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*graph_model.Us
 		Where("Id", "userId").
 		Where("hasName", "userName").
 		Where("hasSkill", "skill").
-		Filter("userId", "1", EQ).
-		GroupBy([]string{"userId", "userName"}).
+		Filter("userId", "\"1\"", query_builder.EQ).
+		GroupBy([]string{"userId", "userName", "skill"}).
 		Build()
 	fmt.Println(q)
 	res, err := r.Repo.Query(
@@ -80,7 +80,7 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*graph_model.Us
 
 	// Extract values
 	userId := row["userId"].Value
-	userName := row["name"].Value
+	userName := row["userName"].Value
 	skills := row["skills"].Value
 
 	// Split the skills string into a slice
@@ -131,7 +131,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 
 		// Extract values
 		userId := row["userId"].Value
-		userName := row["name"].Value
+		userName := row["userName"].Value
 		userSkills := row["skills"].Value
 
 		// Split the skills string into a slice

@@ -231,7 +231,7 @@ func main() {
 		Where("Id", "userId").
 		Where("hasName", "userName").
 		Where("hasSkill", "skillList").
-		Filter("userId", "1", EQ).
+		Filter("userId", "\"1\"", EQ).
 		OrFilter("userId", "6", GT).
 		GroupBy([]string{"userName", "userId"}).
 		Build()
