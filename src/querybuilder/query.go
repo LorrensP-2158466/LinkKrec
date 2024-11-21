@@ -27,6 +27,7 @@ type GroupConcat struct {
 
 type Where struct {
 	clauses []SubWhere
+	filters []Filter
 }
 
 type SubWhere struct {
@@ -47,6 +48,30 @@ type WhereSubject struct {
 type GroupBy struct {
 	fields []string
 }
+
+type Filter struct {
+	field            string
+	value            string
+	op               FilterOp
+	opWithPrevFilter FilterType
+}
+
+type FilterType string
+
+const (
+	AND FilterType = "&&"
+	OR             = "||"
+)
+
+type FilterOp string
+
+const (
+	LE FilterOp = "<="
+	LT          = "<"
+	GE          = ">="
+	GT          = ">"
+	EQ          = "="
+)
 
 func QueryBuilder() *Query {
 	return &Query{
@@ -95,6 +120,44 @@ func (q *Query) GroupBy(fields []string) *Query {
 	return q
 }
 
+func (q *Query) Filter(field string, value string, op FilterOp) *Query {
+	q.where.filters = append(
+		q.where.filters,
+		Filter{
+			field: field,
+			value: value,
+			op:    op,
+		},
+	)
+	return q
+}
+
+func (q *Query) AndFilter(field string, value string, op FilterOp) *Query {
+	q.where.filters = append(
+		q.where.filters,
+		Filter{
+			field:            field,
+			value:            value,
+			op:               op,
+			opWithPrevFilter: AND,
+		},
+	)
+	return q
+}
+
+func (q *Query) OrFilter(field string, value string, op FilterOp) *Query {
+	q.where.filters = append(
+		q.where.filters,
+		Filter{
+			field:            field,
+			value:            value,
+			op:               op,
+			opWithPrevFilter: OR,
+		},
+	)
+	return q
+}
+
 func (q *Query) Build() string {
 	var output = PREFIXES + "\n\n"
 	output += buildSelect(*q.sel) + "\n"
@@ -130,9 +193,12 @@ func buildWhere(wh Where) string {
 		}
 		output += subwhere
 	}
+	output += buildFilter(wh.filters) + "\n"
 	output += "}"
 	return output
 }
+
+// FILTER(?userId = "1")
 
 func buildGroupBy(gb GroupBy) string {
 	var output = "GROUP BY"
@@ -140,4 +206,34 @@ func buildGroupBy(gb GroupBy) string {
 		output += " ?" + el
 	}
 	return output
+}
+
+func buildFilter(filters []Filter) string {
+	if len(filters) == 0 {
+		return ""
+	}
+	var output = "FILTER("
+	for _, fil := range filters {
+		if fil.opWithPrevFilter == "" {
+			output += fmt.Sprintf("?%s %s %s", fil.field, fil.op, fil.value)
+		} else {
+			output += fmt.Sprintf(" %s ?%s %s %s", fil.opWithPrevFilter, fil.field, fil.op, fil.value)
+		}
+	}
+	return output + ")"
+}
+
+func main() {
+	var s = QueryBuilder().
+		Select([]string{"userId", "userName"}).
+		GroupConcat("skill", ", ", "skills").
+		WhereSubject("user", "User").
+		Where("Id", "userId").
+		Where("hasName", "userName").
+		Where("hasSkill", "skillList").
+		Filter("userId", "1", EQ).
+		OrFilter("userId", "6", GT).
+		GroupBy([]string{"userName", "userId"}).
+		Build()
+	fmt.Println(s)
 }
