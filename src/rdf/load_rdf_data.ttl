@@ -1,4 +1,4 @@
-@prefix lr: <http://linkrec.example.org/schema#> .
+PREFIX lr: <http://linkrec.example.org/schema#> .
 
 # Add new users
 

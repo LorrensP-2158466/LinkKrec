@@ -1,8 +1,8 @@
 # Prefixes
-@prefix lr: <http://linkrec.example.org/schema#> .
-@prefix foaf: <http://xmlns.com/foaf/0.1/> .
-@prefix schema: <http://schema.org/> .
-@prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
+PREFIX lr: <http://linkrec.example.org/schema#> 
+PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+PREFIX schema: <http://schema.org/> 
+PREFIX vcard: <http://www.w3.org/2006/vcard/ns#> 
 
 # User (represents a person or employer on LinkRec)
 lr:User a rdfs:Class .
@@ -148,3 +148,6 @@ lr:requestedTo a rdf:Property ;
 lr:connectionStatus a rdf:Property ;
     rdfs:domain lr:AskedConnection ;
     rdfs:range schema:Boolean .
+
+
+

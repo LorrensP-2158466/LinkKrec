@@ -6,8 +6,9 @@ require (
 	github.com/99designs/gqlgen v0.17.56
 	github.com/knakk/rdf v0.0.0-20190304171630-8521bf4c5042
 	github.com/vektah/gqlparser/v2 v2.5.19
-	gonum.org/v1/gonum v0.15.1
 )
+
+require github.com/knakk/digest v0.0.0-20160404164910-fd45becddc49 // indirect
 
 require (
 	github.com/agnivade/levenshtein v1.1.1 // indirect
@@ -16,6 +17,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	github.com/knakk/sparql v0.0.0-20240119140508-255b851aa040
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sosodev/duration v1.3.1 // indirect
 	github.com/urfave/cli/v2 v2.27.5 // indirect
