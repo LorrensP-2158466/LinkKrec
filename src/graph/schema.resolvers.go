@@ -6,6 +6,7 @@ package graph
 
 import (
 	graph_model "LinkKrec/graph/model"
+	query_builder "LinkKrec/querybuilder"
 	"context"
 	"fmt"
 	"strings"
@@ -58,17 +59,18 @@ func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context
 
 // GetUser is the resolver for the getUser field.
 func (r *queryResolver) GetUser(ctx context.Context, id string) (*graph_model.User, error) {
+	var q = query_builder.QueryBuilder().Select([]string{"userName", "userId", "skill"}).
+		GroupConcat("skill", ", ", "skills").
+		WhereSubject("user", "User").
+		Where("Id", "userId").
+		Where("hasName", "userName").
+		Where("hasSkill", "skill").
+		Filter("userId", "1", EQ).
+		GroupBy([]string{"userId", "userName"}).
+		Build()
+	fmt.Println(q)
 	res, err := r.Repo.Query(
-		`PREFIX lr: <http://linkrec.example.org/schema#>
-		SELECT ?name ?userId (GROUP_CONCAT(?skill; separator=", ") AS ?skills)
-		WHERE {
-		  ?user a lr:User ;
-		        lr:hasName ?name;
-		  		lr:Id ?userId;
-		    	lr:hasSkill ?skill .
-		  FILTER(?userId = "1")
-		}
-		GROUP BY ?userId ?name`)
+		q)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +105,55 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*graph_model.Us
 
 // GetUsers is the resolver for the getUsers field.
 func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*graph_model.User, error) {
-	panic(fmt.Errorf("not implemented: GetUsers - getUsers"))
+	fmt.Println("GetUsers")
+	var q = query_builder.
+		QueryBuilder().Select([]string{"userName", "userId", "skill"}).
+		GroupConcat("skill", ", ", "skills").
+		WhereSubject("user", "User").
+		Where("Id", "userId").
+		Where("hasName", "userName").
+		Where("hasSkill", "skill").
+		GroupBy([]string{"userId", "userName", "skill"}).
+		Build()
+	fmt.Println(q)
+
+	res, err := r.Repo.Query(
+		q)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []*graph_model.User
+
+	for i := 0; i < len(res.Results.Bindings); i++ {
+		// Map the first result row to the User model
+		row := res.Results.Bindings[i]
+
+		// Extract values
+		userId := row["userId"].Value
+		userName := row["name"].Value
+		userSkills := row["skills"].Value
+
+		// Split the skills string into a slice
+		skillsList := strings.Split(userSkills, ", ")
+
+		// Convert skillsList to []*string
+		var skillsPtrList []*string
+		for _, skill := range skillsList {
+			skillCopy := skill
+			skillsPtrList = append(skillsPtrList, &skillCopy)
+		}
+
+		// Create a graph_model.User instance
+		user := &graph_model.User{
+			ID:     userId,
+			Name:   userName,
+			Skills: skillsPtrList,
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
 }
 
 // GetUserConnections is the resolver for the getUserConnections field.
