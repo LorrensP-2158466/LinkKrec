@@ -1,0 +1,150 @@
+# Prefixes
+@prefix lr: <http://linkrec.example.org/schema#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix schema: <http://schema.org/> .
+@prefix vcard: <http://www.w3.org/2006/vcard/ns#> .
+
+# User (represents a person or employer on LinkRec)
+lr:User a rdfs:Class .
+lr:Id a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range schema:Text .
+lr:hasName a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range schema:Text .
+lr:hasEmail a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range schema:Text .
+lr:isEmployer a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range schema:Boolean .
+lr:hasLocation a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range schema:Text .
+lr:hasConnection a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range lr:User .
+lr:hasEducation a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range lr:EducationEntry .
+lr:hasExperience a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range lr:ExperienceEntry .
+lr:hasSkill a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range schema:Text .
+lr:isLookingForOpportunities a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range schema:Boolean .
+
+# Employer (represents a company or employer)
+lr:Employer a rdfs:Class ;
+    rdfs:subClassOf lr:User .
+lr:hasVacancy a rdf:Property ;
+    rdfs:domain lr:Employer ;
+    rdfs:range lr:Vacancy .
+lr:hasEmployee a rdf:Property ;
+    rdfs:domain lr:Employer ;
+    rdfs:range lr:User .
+
+# Vacancy (job posting created by an employer)
+lr:Vacancy a rdfs:Class .
+lr:vacancyTitle a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range schema:Text .
+lr:vacancyDescription a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range schema:Text .
+lr:vacancyLocation a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range schema:Text .
+lr:vacancyStartDate a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range schema:Date .
+lr:vacancyEndDate a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range schema:Date .
+lr:vacancyStatus a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range schema:Text .
+lr:requiredEducation a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range lr:DegreeType .
+lr:requiredExperienceType a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range lr:ExperienceType .
+lr:requiredExperienceDuration a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range schema:Number .
+
+# Education Entry
+lr:EducationEntry a rdfs:Class .
+lr:institutionName a rdf:Property ;
+    rdfs:domain lr:EducationEntry ;
+    rdfs:range schema:Text .
+lr:degreeType a rdf:Property ;
+    rdfs:domain lr:EducationEntry ;
+    rdfs:range lr:DegreeType .
+
+# Experience Entry
+lr:ExperienceEntry a rdfs:Class .
+lr:experienceTitle a rdf:Property ;
+    rdfs:domain lr:ExperienceEntry ;
+    rdfs:range schema:Text .
+lr:experienceType a rdf:Property ;
+    rdfs:domain lr:ExperienceEntry ;
+    rdfs:range lr:ExperienceType .
+lr:experienceDescription a rdf:Property ;
+    rdfs:domain lr:ExperienceEntry ;
+    rdfs:range schema:Text .
+lr:experienceStartDate a rdf:Property ;
+    rdfs:domain lr:ExperienceEntry ;
+    rdfs:range schema:Date .
+lr:experienceEndDate a rdf:Property ;
+    rdfs:domain lr:ExperienceEntry ;
+    rdfs:range schema:Date .
+
+# DegreeType (degree qualifications for users and vacancies)
+lr:DegreeType a rdfs:Class .
+lr:None a lr:DegreeType .
+lr:ProfBachelor a lr:DegreeType .
+lr:AcBachelor a lr:DegreeType .
+lr:Master a lr:DegreeType .
+lr:PhD a lr:DegreeType .
+
+# ExperienceType (job fields for experiences and vacancies)
+lr:ExperienceType a rdfs:Class .
+lr:IT a lr:ExperienceType .
+lr:Engineering a lr:ExperienceType .
+lr:Sales a lr:ExperienceType .
+lr:HR a lr:ExperienceType .
+lr:Consultancy a lr:ExperienceType .
+lr:Research a lr:ExperienceType .
+lr:Marketing a lr:ExperienceType .
+lr:Finance a lr:ExperienceType .
+lr:CustomerSupport a lr:ExperienceType .
+lr:Operation a lr:ExperienceType .
+
+# Notifications
+lr:Notification a rdfs:Class .
+lr:forUser a rdf:Property ;
+    rdfs:domain lr:Notification ;
+    rdfs:range lr:User .
+lr:notificationMessage a rdf:Property ;
+    rdfs:domain lr:Notification ;
+    rdfs:range schema:Text .
+lr:notificationCreatedAt a rdf:Property ;
+    rdfs:domain lr:Notification ;
+    rdfs:range schema:Date .
+
+# Connection Requests
+lr:AskedConnection a rdfs:Class .
+lr:requestedBy a rdf:Property ;
+    rdfs:domain lr:AskedConnection ;
+    rdfs:range lr:User .
+lr:requestedTo a rdf:Property ;
+    rdfs:domain lr:AskedConnection ;
+    rdfs:range lr:User .
+lr:connectionStatus a rdf:Property ;
+    rdfs:domain lr:AskedConnection ;
+    rdfs:range schema:Boolean .

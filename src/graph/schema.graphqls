@@ -1,0 +1,23 @@
+# User is a person who wants to use LinkRec to find jobs or connect with others
+type User {
+id: ID!
+name: String!
+email: String!
+location: String
+isEmployer: Boolean
+#connections: [User]
+#education: [EducationEntry]
+#experience: [ExperienceEntry]
+skills: [String]
+lookingForOpportunities: Boolean
+}
+
+type Query {
+    user(id: ID!): User
+}
+
+type Mutation {
+    createUser(name: String!, email: String!): User
+    updateUser(id: ID!, name: String, email: String): User
+    deleteUser(id: ID!): User
+ }

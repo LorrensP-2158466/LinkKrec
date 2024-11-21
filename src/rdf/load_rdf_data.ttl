@@ -1,0 +1,18 @@
+@prefix lr: <http://linkrec.example.org/schema#> .
+
+# Add new users
+
+# Alice
+lr:user1 a lr:User ;
+    lr:Id "1" ;
+    lr:hasName "Alice" ;
+    lr:hasEmail "alice.gmail.com" ;
+    lr:isEmployer false ;
+    lr:hasLocation "San Francisco" ;
+    lr:hasConnection lr:Bob ;
+    lr:hasConnection lr:Charlie ;
+    lr:hasEducation lr:EducationEntry1 ;
+    lr:hasExperience lr:ExperienceEntry1 ;
+    lr:hasSkill "Python" ;
+    lr:hasSkill "Java" ;
+    lr:isLookingForOpportunities true .
