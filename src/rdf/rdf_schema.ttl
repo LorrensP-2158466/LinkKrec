@@ -49,6 +49,9 @@ lr:hasEmployee a rdf:Property ;
 
 # Vacancy (job posting created by an employer)
 lr:Vacancy a rdfs:Class .
+lr:Id a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range schema:Text .
 lr:vacancyTitle a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range schema:Text .
@@ -79,6 +82,9 @@ lr:requiredExperienceDuration a rdf:Property ;
 
 # Education Entry
 lr:EducationEntry a rdfs:Class .
+lr:Id a rdf:Property ;
+    rdfs:domain lr:EducationEntry ;
+    rdfs:range schema:Text .
 lr:institutionName a rdf:Property ;
     rdfs:domain lr:EducationEntry ;
     rdfs:range schema:Text .
@@ -111,6 +117,25 @@ lr:ProfBachelor a lr:DegreeType .
 lr:AcBachelor a lr:DegreeType .
 lr:Master a lr:DegreeType .
 lr:PhD a lr:DegreeType .
+
+# DegreeField (degree fields for users and vacancies)
+lr:DegreeField a rdfs:Class .
+lr:None a lr:DegreeField .
+lr:ComputerScience a lr:DegreeField .
+lr:Engineering a lr:DegreeField .   
+lr:Business a lr:DegreeField .
+lr:Mathematics a lr:DegreeField .
+lr:Physics a lr:DegreeField .
+lr:Chemistry a lr:DegreeField .
+lr:Medicine a lr:DegreeField .
+lr:Law a lr:DegreeField .
+lr:SocialScience a lr:DegreeField .
+lr:Humanities a lr:DegreeField .
+lr:Art a lr:DegreeField .
+lr:Music a lr:DegreeField .
+lr:Sport a lr:DegreeField .
+lr:Education a lr:DegreeField .
+lr:Psychology a lr:DegreeField .
 
 # ExperienceType (job fields for experiences and vacancies)
 lr:ExperienceType a rdfs:Class .

@@ -1,23 +1,259 @@
-# User is a person who wants to use LinkRec to find jobs or connect with others
-type User {
-id: ID!
-name: String!
-email: String!
-location: String
-isEmployer: Boolean
-#connections: [User]
-#education: [EducationEntry]
-#experience: [ExperienceEntry]
-skills: [String]
-lookingForOpportunities: Boolean
+type Query {
+ # Fetch a specific user by ID
+ getUser(id: ID!): User
+
+ # Fetch users by filtering on various fields
+ getUsers(
+   name: String,
+   location: String,
+   isEmployer: Boolean,
+   skills: [String],
+   lookingForOpportunities: Boolean,
+ ): [User]
+
+ # Fetch connections for a user with optional filtering
+ getUserConnections(
+   userId: ID!,
+   skill: String,
+   location: String,
+   depth: Int = 1,
+ ): [User]
+
+ # Fetch all job vacancies with optional filtering
+ getVacancies(
+   search: String, # search string to match against title and descr
+   location: String,
+   requiredSkills: [String],
+   minEducation: DegreeType,
+   isActive: Boolean,
+ ): [Vacancy]
+
+ # Fetch a specific job vacancy by ID
+ getVacancy(id: ID!): Vacancy
+
+# Fetch employers with optional filtering
+ getEmployers(
+   name: String,
+   location: String,
+ ): [Employer]
+
+ # Fetch specific employer by ID, with details about their vacancies and employees
+ getEmployer(id: ID!): Employer
+
+ # Fetch all notifications for a user, with optional filtering by read status or timeframe
+ getNotifications(
+   userId: ID!,
+   since: String,
+ ): [Notification]
+
+ # Fetch connection requests sent to a user, with optional filtering by status
+ getConnectionRequests(
+   userId: ID!,
+   status: Boolean,
+ ): [AskedConnection]
 }
 
-type Query {
-    user(id: ID!): User
-}
 
 type Mutation {
-    createUser(name: String!, email: String!): User
-    updateUser(id: ID!, name: String, email: String): User
-    deleteUser(id: ID!): User
- }
+ # User registration
+ registerUser(input: RegisterUserInput!): User
+
+ # Update user profile
+ updateUser(id: ID!, input: UpdateUserInput!): User
+
+ # Update user profile details (nested, such as education or experience)
+ updateUserProfile(id: ID!, input: UpdateProfileInput!): User
+
+ # Add or remove a connection between users
+ manageConnection(userId: ID!, connectedUserId: ID!, action: String!): AskedConnection
+
+ # Notify a user when someone visits their profile
+ notifyProfileVisit(visitorId: ID!, visitedUserId: ID!): Notification
+
+ # Create a job vacancy (employer only)
+ createVacancy(employerId: ID!, input: CreateVacancyInput!): Vacancy
+
+ # Update job vacancy details (employer only)
+ updateVacancy(id: ID!, input: CreateVacancyInput!): Vacancy
+
+ # Delete a job vacancy (employer only)
+ deleteVacancy(id: ID!): Boolean
+
+ # Set user looking for job opportunities
+ updateUserLookingForOpportunities(userId: ID!, looking: Boolean!): User
+}
+
+
+# We just thought about these, so we don't know if these will be used or are correct
+type Subscription {
+ # Notify users of a new connection request
+ newConnectionRequest(forUserId: ID!): AskedConnection
+  # Notify users of changes in connection request status (accepted or declined)
+ connectionRequestStatusUpdate(forUserId: ID!): AskedConnection
+  # Notify users when a new job vacancy that matches their profile is posted
+ newMatchingVacancy(userId: ID!): Vacancy
+  # Notify users of general notifications (e.g., profile views, vacancy matches)
+ newNotification(forUserId: ID!): Notification
+}
+
+
+# User is a person who wants to use LinkRec to find jobs or connect with others
+type User {
+ id: ID!
+ name: String!
+ email: String!
+ location: String
+ isEmployer: Boolean
+ connections: [User]
+ education: [EducationEntry]
+ experience: [ExperienceEntry]
+ skills: [String]
+ lookingForOpportunities: Boolean
+}
+
+
+# A company/person who wants to recruit Users
+type Employer{
+ id: ID!,
+ name: String!,
+ email: String!,
+ location: String,
+ vacancies: [Vacancy!]!,
+ employees: [User!]!,
+}
+
+
+# A Degree obtained from an institution, used for matching candidates
+enum DegreeType{
+ None,
+ ProfBachelor,
+ AcBachelor,
+ Master,
+ PhD
+}
+
+enum DegreeField{
+    ComputerScience,
+    Engineering,
+    Business,
+    Economics,
+    Marketing,
+    Finance,
+    Medicine,
+    Law,
+    Psychology,
+ # We can always add more ofcourse
+}
+
+# An education that a user can put on their profile
+type EducationEntry {
+ institution: String!,
+ info: String!,
+ degree: DegreeType!,
+ field: DegreeField!
+}
+
+
+# A field a user can have experience
+enum ExperienceType{
+IT,
+Engineering,
+Sales,
+HR,
+Consultancy,
+Research,
+Marketing,
+Finance,
+Customer Support,
+Operation,
+# We can always add more ofcourse
+}
+
+ # Same as EducationEntry, but for job experiences, also used for matching
+type ExperienceEntry {
+ title: String!
+ experienceType: ExperienceType!,
+ description: String
+ startDate: String
+ endDate: String
+}
+
+
+# A Job vacancy a Company can place on LinkRec
+type Vacancy {
+ id: ID!,
+ title: String!,
+ description: String! ,
+ requiredEducation: DegreeType!,
+ requiredExperiences: [ExperienceType!]!,
+ requiredExperienceDurations: [Int!]! # in years, per experience in order
+ location: String!,
+ postedBy: Employer!,
+ startDate: String,
+ endDate: String,
+ status: String
+}
+
+
+# A connection request from a user to a user
+type AskedConnection {
+ user: User!
+ connectedTo: User!
+ status: Boolean! # keep this in data so we have audit trails
+}
+
+
+# a notification
+type Notification {
+ id: ID!
+ forUser: User!,
+ message: String!
+ createdAt: String,
+}
+
+
+input RegisterUserInput {
+ name: String!
+ email: String!
+ password: String!
+ isEmployer: Boolean
+ profileUpdate: UpdateProfileInput!
+}
+
+
+input UpdateUserInput {
+ name: String
+ email: String
+ location: String
+}
+
+
+input UpdateProfileInput {
+ education: [EducationEntryInput]
+ experience: [ExperienceEntryInput]
+ skills: [String]
+ lookingForOpportunities: Boolean
+}
+
+
+input EducationEntryInput {
+ institution: String!
+ degree: String!
+}
+
+
+input ExperienceEntryInput {
+ title: String!
+ description: String
+ startDate: String
+ endDate: String
+}
+
+
+input CreateVacancyInput {
+ title: String!
+ description: String!
+ location: String
+ startDate: String
+ endDate: String
+}
