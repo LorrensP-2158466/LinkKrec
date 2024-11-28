@@ -9,7 +9,6 @@ import (
 	query_builder "LinkKrec/querybuilder"
 	"context"
 	"fmt"
-	"strings"
 )
 
 // RegisterUser is the resolver for the registerUser field.
@@ -104,7 +103,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 	WHERE {
 	?user a lr:User ;
 		lr:hasConnection ?connection .
-	    ?connection lr:Id ?connectionIds
+	    ?connection lr:Id ?connectionId
 	}
 	GROUP BY ?user 
 	}
@@ -125,7 +124,18 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		Build()
 	fmt.Println(q)
 
-	res, err := r.Repo.Query(
+	res, err := r.Repo.Query(q)
+
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	//users := make([]*graph_model.User, 0)
+	fmt.Println(res.Bindings())
+
+	return nil, nil
+
+	/*res, err := r.Repo.Query(
 		q)
 	if err != nil {
 		return nil, err
@@ -161,7 +171,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		users = append(users, user)
 	}
 
-	return users, nil
+	return users, nil*/
 }
 
 // GetUserConnections is the resolver for the getUserConnections field.
@@ -228,12 +238,12 @@ func (r *userResolver) Connections(ctx context.Context, obj *graph_model.User) (
 	Where("hasConnection", "connection").
 
 	GroupBy([]string{"user"}).
-	BuildSubQuery() */
-	var q = `	
+	BuildSubQuery()
+	var q = `
 	PREFIX lr: <http://linkrec.example.org/schema#>
 	PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 	PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
-		
+
 	SELECT ?user (GROUP_CONCAT(?connectionId; separator=", ") AS ?connections)
 	WHERE {
 		?user a lr:User ;
@@ -241,10 +251,10 @@ func (r *userResolver) Connections(ctx context.Context, obj *graph_model.User) (
 			?connection lr:Id ?connectionId
 		}
 		FILTER (?user = "1")
-		GROUP BY ?user 
+		GROUP BY ?user
 	`
-	res, err := r.Repo.Query(q)
-
+	res, err := r.Repo.Query(q) */
+	return nil, nil
 }
 
 // Mutation returns MutationResolver implementation.

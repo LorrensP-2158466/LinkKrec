@@ -95,7 +95,6 @@ type UpdateUserInput struct {
 	Location *string `json:"location,omitempty"`
 }
 
-
 type Vacancy struct {
 	ID                          string           `json:"id"`
 	Title                       string           `json:"title"`
