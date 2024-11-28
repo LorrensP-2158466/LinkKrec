@@ -213,9 +213,9 @@ func buildFilter(filters []Filter) string {
 	var output = "FILTER("
 	for _, fil := range filters {
 		if fil.opWithPrevFilter == "" {
-			output += fmt.Sprintf("?%s %s \"%s\"", fil.field, fil.op, fil.value)
+			output += fmt.Sprintf("?%s %s %s", fil.field, fil.op, fil.value)
 		} else {
-			output += fmt.Sprintf(" %s ?%s %s \"%s\"", fil.opWithPrevFilter, fil.field, fil.op, fil.value)
+			output += fmt.Sprintf(" %s ?%s %s %s", fil.opWithPrevFilter, fil.field, fil.op, fil.value)
 		}
 	}
 	return output + ")"
@@ -229,7 +229,7 @@ func main() {
 		Where("Id", "userId").
 		Where("hasName", "userName").
 		Where("hasSkill", "skillList").
-		Filter("userId", "1", EQ).
+		Filter("userId", "\"1\"", EQ).
 		OrFilter("userId", "6", GT).
 		GroupBy([]string{"userName", "userId"}).
 		Build()

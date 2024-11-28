@@ -28,8 +28,6 @@ func main() {
 		log.Fatalf("Failed to connect to the SPARQL endpoint: %v", err)
 	}
 
-	// Load RDF data
-
 	fmt.Println("Starting server on port " + port)
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Repo: repo}}))

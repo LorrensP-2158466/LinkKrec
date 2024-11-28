@@ -59,7 +59,8 @@ func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context
 
 // GetUser is the resolver for the getUser field.
 func (r *queryResolver) GetUser(ctx context.Context, id string) (*graph_model.User, error) {
-	var q = query_builder.QueryBuilder().Select([]string{"userName", "userId", "skill"}).
+	var q = query_builder.QueryBuilder().
+		Select([]string{"userName", "userId", "skill"}).
 		GroupConcat("skill", ", ", "skills").
 		WhereSubject("user", "User").
 		Where("Id", "userId").
@@ -69,38 +70,41 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*graph_model.Us
 		GroupBy([]string{"userId", "userName", "skill"}).
 		Build()
 	fmt.Println(q)
-	res, err := r.Repo.Query(
-		q)
+
+	res, err := r.Repo.Query(q)
+
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
+	fmt.Println(res.Bindings())
 
-	// Map the first result row to the User model
-	row := res.Results.Bindings[0]
+	// // Map the first result row to the User model
+	// row := res.Results.Bindings[0]
 
-	// Extract values
-	userId := row["userId"].Value
-	userName := row["userName"].Value
-	skills := row["skills"].Value
+	// // Extract values
+	// userId := row["userId"].Value
+	// userName := row["userName"].Value
+	// skills := row["skills"].Value
 
-	// Split the skills string into a slice
-	skillsList := strings.Split(skills, ", ")
+	// // Split the skills string into a slice
+	// skillsList := strings.Split(skills, ", ")
 
-	// Convert skillsList to []*string
-	var skillsPtrList []*string
-	for _, skill := range skillsList {
-		skillCopy := skill
-		skillsPtrList = append(skillsPtrList, &skillCopy)
-	}
+	// // Convert skillsList to []*string
+	// var skillsPtrList []*string
+	// for _, skill := range skillsList {
+	// 	skillCopy := skill
+	// 	skillsPtrList = append(skillsPtrList, &skillCopy)
+	// }
 
-	// Create a graph_model.User instance
-	user := &graph_model.User{
-		ID:     userId,
-		Name:   userName,
-		Skills: skillsPtrList,
-	}
+	// // Create a graph_model.User instance
+	// user := &graph_model.User{
+	// 	ID:     userId,
+	// 	Name:   userName,
+	// 	Skills: skillsPtrList,
+	// }
 
-	return user, nil
+	return nil, nil
 }
 
 // GetUsers is the resolver for the getUsers field.
