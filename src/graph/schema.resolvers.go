@@ -98,8 +98,20 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		GroupBy([]string{"user"}).
 		BuildSubQuery()
 
+	var connectionSubQuery = `			
+	{
+	SELECT ?user (GROUP_CONCAT(?connectionId; separator=", ") AS ?connectionIds)
+	WHERE {
+	?user a lr:User ;
+		lr:hasConnection ?connection .
+	    ?connection lr:Id ?connectionIds
+	}
+	GROUP BY ?user 
+	}
+	`
+
 	var q = query_builder.
-		QueryBuilder().Select([]string{"userId", "userName", "email", "isEmployer", "location", "lookingForOppurtunities", "skills", "connections"}).
+		QueryBuilder().Select([]string{"userId", "userName", "email", "isEmployer", "location", "lookingForOppurtunities", "skills", "connectionIds"}).
 		WhereSubject("user", "User").
 		Where("Id", "userId").
 		Where("hasName", "userName").
@@ -108,6 +120,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		Where("hasLocation", "location").
 		Where("isLookingForOpportunities", "lookingForOpportunities").
 		WhereSubQuery(skillSubQuery).
+		WhereSubQuery(connectionSubQuery).
 		//GroupBy([]string{"userId", "userName"}).
 		Build()
 	fmt.Println(q)
@@ -208,7 +221,30 @@ func (r *subscriptionResolver) NewNotification(ctx context.Context, forUserID st
 
 // Connections is the resolver for the connections field.
 func (r *userResolver) Connections(ctx context.Context, obj *graph_model.User) ([]*graph_model.User, error) {
-	panic(fmt.Errorf("not implemented: Connections - connections"))
+	/*var q = query_builder.QueryBuilder().
+	WhereSubject("user", "User").
+	Select([]string{"user"}).
+	GroupConcat("conenctionId", ", ", "connections").
+	Where("hasConnection", "connection").
+
+	GroupBy([]string{"user"}).
+	BuildSubQuery() */
+	var q = `	
+	PREFIX lr: <http://linkrec.example.org/schema#>
+	PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+		
+	SELECT ?user (GROUP_CONCAT(?connectionId; separator=", ") AS ?connections)
+	WHERE {
+		?user a lr:User ;
+			lr:hasConnection ?connection .
+			?connection lr:Id ?connectionId
+		}
+		FILTER (?user = "1")
+		GROUP BY ?user 
+	`
+	res, err := r.Repo.Query(q)
+
 }
 
 // Mutation returns MutationResolver implementation.
