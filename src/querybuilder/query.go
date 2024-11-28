@@ -215,7 +215,7 @@ func buildFilter(filters []Filter) string {
 		if fil.opWithPrevFilter == "" {
 			output += fmt.Sprintf("?%s %s \"%s\"", fil.field, fil.op, fil.value)
 		} else {
-			output += fmt.Sprintf(" %s ?%s %s %s", fil.opWithPrevFilter, fil.field, fil.op, fil.value)
+			output += fmt.Sprintf(" %s ?%s %s \"%s\"", fil.opWithPrevFilter, fil.field, fil.op, fil.value)
 		}
 	}
 	return output + ")"
