@@ -198,8 +198,6 @@ func buildWhere(wh Where) string {
 	return output
 }
 
-// FILTER(?userId = "1")
-
 func buildGroupBy(gb GroupBy) string {
 	var output = "GROUP BY"
 	for _, el := range gb.fields {
@@ -215,7 +213,7 @@ func buildFilter(filters []Filter) string {
 	var output = "FILTER("
 	for _, fil := range filters {
 		if fil.opWithPrevFilter == "" {
-			output += fmt.Sprintf("?%s %s %s", fil.field, fil.op, fil.value)
+			output += fmt.Sprintf("?%s %s \"%s\"", fil.field, fil.op, fil.value)
 		} else {
 			output += fmt.Sprintf(" %s ?%s %s %s", fil.opWithPrevFilter, fil.field, fil.op, fil.value)
 		}
@@ -231,7 +229,7 @@ func main() {
 		Where("Id", "userId").
 		Where("hasName", "userName").
 		Where("hasSkill", "skillList").
-		Filter("userId", "\"1\"", EQ).
+		Filter("userId", "1", EQ).
 		OrFilter("userId", "6", GT).
 		GroupBy([]string{"userName", "userId"}).
 		Build()
