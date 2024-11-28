@@ -26,8 +26,9 @@ type GroupConcat struct {
 }
 
 type Where struct {
-	clauses []SubWhere
-	filters []Filter
+	clauses    []SubWhere
+	filters    []Filter
+	subQueries []string
 }
 
 type SubWhere struct {
@@ -115,6 +116,12 @@ func (q *Query) Where(field string, binding string) *Query {
 	return q
 }
 
+func (q *Query) WhereSubQuery(sub string) *Query {
+	q.where.subQueries = append(q.where.subQueries, sub)
+	fmt.Println("test subquery: ", q.where.subQueries)
+	return q
+}
+
 func (q *Query) GroupBy(fields []string) *Query {
 	q.groupBy.fields = fields
 	return q
@@ -162,8 +169,18 @@ func (q *Query) Build() string {
 	var output = PREFIXES + "\n\n"
 	output += buildSelect(*q.sel) + "\n"
 	output += buildWhere(*q.where) + "\n"
-	output += buildGroupBy(*q.groupBy) + "\n"
+	if len(q.groupBy.fields) > 0 {
+		output += buildGroupBy(*q.groupBy) + "\n"
+	}
 	return output
+}
+
+func (q *Query) BuildSubQuery() string {
+	var output = "{\n"
+	output += buildSelect(*q.sel) + "\n"
+	output += buildWhere(*q.where) + "\n"
+	output += buildGroupBy(*q.groupBy) + "\n"
+	return output + "}"
 }
 
 func buildSelect(sel Select) string {
@@ -172,7 +189,7 @@ func buildSelect(sel Select) string {
 		output += " ?" + el
 	}
 	var concat = sel.groupConcat
-	if concat != nil {
+	if len(sel.groupConcat.field) > 0 {
 		output += fmt.Sprintf(" (GROUP_CONCAT(?%s; separator=\"%s\") AS ?%s)", concat.field, concat.sep, concat.as)
 	}
 	return output
@@ -193,7 +210,12 @@ func buildWhere(wh Where) string {
 		}
 		output += subwhere
 	}
-	output += buildFilter(wh.filters) + "\n"
+	for _, sub := range wh.subQueries {
+		output += sub + "\n"
+	}
+	if len(wh.filters) > 0 {
+		output += buildFilter(wh.filters) + "\n"
+	}
 	output += "}"
 	return output
 }
@@ -207,9 +229,6 @@ func buildGroupBy(gb GroupBy) string {
 }
 
 func buildFilter(filters []Filter) string {
-	if len(filters) == 0 {
-		return ""
-	}
 	var output = "FILTER("
 	for _, fil := range filters {
 		if fil.opWithPrevFilter == "" {

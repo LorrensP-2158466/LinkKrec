@@ -110,14 +110,28 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*graph_model.Us
 // GetUsers is the resolver for the getUsers field.
 func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*graph_model.User, error) {
 	fmt.Println("GetUsers")
-	var q = query_builder.
-		QueryBuilder().Select([]string{"userName", "userId", "skill"}).
+
+	var skillSubQuery = query_builder.QueryBuilder().
+		WhereSubject("user", "User").
+		Select([]string{"user"}).
 		GroupConcat("skill", ", ", "skills").
+		Where("hasSkill", "skill").
+		GroupBy([]string{"user"}).
+		BuildSubQuery()
+
+	//fmt.Println(skillSubQuery)
+
+	var q = query_builder.
+		QueryBuilder().Select([]string{"userId", "userName", "email", "isEmployer", "location", "lookingForOppurtunities", "skills"}).
 		WhereSubject("user", "User").
 		Where("Id", "userId").
 		Where("hasName", "userName").
-		Where("hasSkill", "skill").
-		GroupBy([]string{"userId", "userName", "skill"}).
+		Where("hasEmail", "email").
+		Where("isEmployer", "isEmployer").
+		Where("hasLocation", "location").
+		Where("isLookingForOpportunities", "lookingForOpportunities").
+		WhereSubQuery(skillSubQuery).
+		//GroupBy([]string{"userId", "userName"}).
 		Build()
 	fmt.Println(q)
 
