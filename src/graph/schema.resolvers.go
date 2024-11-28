@@ -98,10 +98,8 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		GroupBy([]string{"user"}).
 		BuildSubQuery()
 
-	//fmt.Println(skillSubQuery)
-
 	var q = query_builder.
-		QueryBuilder().Select([]string{"userId", "userName", "email", "isEmployer", "location", "lookingForOppurtunities", "skills"}).
+		QueryBuilder().Select([]string{"userId", "userName", "email", "isEmployer", "location", "lookingForOppurtunities", "skills", "connections"}).
 		WhereSubject("user", "User").
 		Where("Id", "userId").
 		Where("hasName", "userName").
@@ -208,6 +206,11 @@ func (r *subscriptionResolver) NewNotification(ctx context.Context, forUserID st
 	panic(fmt.Errorf("not implemented: NewNotification - newNotification"))
 }
 
+// Connections is the resolver for the connections field.
+func (r *userResolver) Connections(ctx context.Context, obj *graph_model.User) ([]*graph_model.User, error) {
+	panic(fmt.Errorf("not implemented: Connections - connections"))
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
@@ -217,6 +220,10 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // Subscription returns SubscriptionResolver implementation.
 func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
 
+// User returns UserResolver implementation.
+func (r *Resolver) User() UserResolver { return &userResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
+type userResolver struct{ *Resolver }

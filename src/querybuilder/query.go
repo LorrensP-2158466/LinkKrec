@@ -118,7 +118,6 @@ func (q *Query) Where(field string, binding string) *Query {
 
 func (q *Query) WhereSubQuery(sub string) *Query {
 	q.where.subQueries = append(q.where.subQueries, sub)
-	fmt.Println("test subquery: ", q.where.subQueries)
 	return q
 }
 
