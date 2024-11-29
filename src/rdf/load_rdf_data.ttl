@@ -1,8 +1,5 @@
-PREFIX lr: <http://linkrec.example.org/schema#> .
+PREFIX lr: <http://linkrec.example.org/schema#>
 
-# Add new users
-
-# Alice
 lr:user1 a lr:User ;
     lr:Id "1" ;
     lr:hasName "Alice" ;
@@ -16,3 +13,51 @@ lr:user1 a lr:User ;
     lr:hasSkill "Python" ;
     lr:hasSkill "Java" ;
     lr:isLookingForOpportunities true .
+
+
+lr:Bob a lr:User ;
+    lr:Id "2" ;
+    lr:hasName "Bob" ;
+    lr:hasEmail "bob@gmail.com" ;
+    lr:isEmployer true ;
+    lr:hasLocation "New York" ;
+    lr:hasSkill "C++" ;
+    lr:hasSkill "Project Management" ;
+    lr:isLookingForOpportunities false ;
+    lr:hasConnection lr:Charlie ;
+    lr:hasEducation lr:EducationEntry2 ;
+    lr:hasExperience lr:ExperienceEntry2 .
+
+lr:Charlie a lr:User ;
+    lr:Id "3" ;
+    lr:hasName "Charlie" ;
+    lr:hasEmail "charlie@yahoo.com" ;
+    lr:isEmployer false ;
+    lr:hasLocation "Los Angeles" ;
+    lr:hasSkill "JavaScript" ;
+    lr:hasSkill "React" ;
+    lr:hasSkill "Node.js" ;
+    lr:isLookingForOpportunities true ;
+    lr:hasConnection lr:Bob ;
+    lr:hasEducation lr:EducationEntry3 ;
+    lr:hasExperience lr:ExperienceEntry3 .
+
+
+lr:EducationEntry1 a lr:EducationEntry ;
+    rdfs:label "Bachelor's in Computer Science, Stanford University" .
+
+lr:ExperienceEntry1 a lr:ExperienceEntry ;
+    rdfs:label "Software Engineer at InnovateTech" .
+
+lr:EducationEntry2 a lr:EducationEntry ;
+    rdfs:label "MBA, Harvard Business School" .
+
+lr:ExperienceEntry2 a lr:ExperienceEntry ;
+    rdfs:label "Senior Project Manager at TechCorp" .
+
+lr:EducationEntry3 a lr:EducationEntry ;
+    rdfs:label "BSc in Software Engineering, UCLA" .
+
+lr:ExperienceEntry3 a lr:ExperienceEntry ;
+    rdfs:label "Full-Stack Developer at Webify Inc." .
+

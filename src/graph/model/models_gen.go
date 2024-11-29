@@ -83,16 +83,29 @@ type Subscription struct {
 }
 
 type UpdateProfileInput struct {
-	Education               []*EducationEntryInput  `json:"education,omitempty"`
-	Experience              []*ExperienceEntryInput `json:"experience,omitempty"`
-	Skills                  []*string               `json:"skills,omitempty"`
-	LookingForOpportunities *bool                   `json:"lookingForOpportunities,omitempty"`
+	Education                 []*EducationEntryInput  `json:"education,omitempty"`
+	Experience                []*ExperienceEntryInput `json:"experience,omitempty"`
+	Skills                    []*string               `json:"skills,omitempty"`
+	IsLookingForOpportunities *bool                   `json:"isLookingForOpportunities,omitempty"`
 }
 
 type UpdateUserInput struct {
 	Name     *string `json:"name,omitempty"`
 	Email    *string `json:"email,omitempty"`
 	Location *string `json:"location,omitempty"`
+}
+
+type User struct {
+	ID                        string             `json:"id"`
+	Name                      string             `json:"name"`
+	Email                     string             `json:"email"`
+	Location                  *string            `json:"location,omitempty"`
+	IsEmployer                *bool              `json:"isEmployer,omitempty"`
+	Connections               []*User            `json:"connections,omitempty"`
+	Education                 []*EducationEntry  `json:"education,omitempty"`
+	Experience                []*ExperienceEntry `json:"experience,omitempty"`
+	Skills                    []*string          `json:"skills,omitempty"`
+	IsLookingForOpportunities *bool              `json:"isLookingForOpportunities,omitempty"`
 }
 
 type Vacancy struct {

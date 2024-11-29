@@ -108,7 +108,7 @@ type User {
  education: [EducationEntry]
  experience: [ExperienceEntry]
  skills: [String]
- lookingForOpportunities: Boolean
+ isLookingForOpportunities: Boolean
 }
 
 
@@ -232,7 +232,7 @@ input UpdateProfileInput {
  education: [EducationEntryInput]
  experience: [ExperienceEntryInput]
  skills: [String]
- lookingForOpportunities: Boolean
+ isLookingForOpportunities: Boolean
 }
 
 

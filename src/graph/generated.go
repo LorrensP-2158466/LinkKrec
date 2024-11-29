@@ -119,16 +119,16 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Connections             func(childComplexity int) int
-		Education               func(childComplexity int) int
-		Email                   func(childComplexity int) int
-		Experience              func(childComplexity int) int
-		ID                      func(childComplexity int) int
-		IsEmployer              func(childComplexity int) int
-		Location                func(childComplexity int) int
-		LookingForOpportunities func(childComplexity int) int
-		Name                    func(childComplexity int) int
-		Skills                  func(childComplexity int) int
+		Connections               func(childComplexity int) int
+		Education                 func(childComplexity int) int
+		Email                     func(childComplexity int) int
+		Experience                func(childComplexity int) int
+		ID                        func(childComplexity int) int
+		IsEmployer                func(childComplexity int) int
+		IsLookingForOpportunities func(childComplexity int) int
+		Location                  func(childComplexity int) int
+		Name                      func(childComplexity int) int
+		Skills                    func(childComplexity int) int
 	}
 
 	Vacancy struct {
@@ -657,19 +657,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.IsEmployer(childComplexity), true
 
+	case "User.isLookingForOpportunities":
+		if e.complexity.User.IsLookingForOpportunities == nil {
+			break
+		}
+
+		return e.complexity.User.IsLookingForOpportunities(childComplexity), true
+
 	case "User.location":
 		if e.complexity.User.Location == nil {
 			break
 		}
 
 		return e.complexity.User.Location(childComplexity), true
-
-	case "User.lookingForOpportunities":
-		if e.complexity.User.LookingForOpportunities == nil {
-			break
-		}
-
-		return e.complexity.User.LookingForOpportunities(childComplexity), true
 
 	case "User.name":
 		if e.complexity.User.Name == nil {
@@ -1945,8 +1945,8 @@ func (ec *executionContext) fieldContext_AskedConnection_user(_ context.Context,
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2011,8 +2011,8 @@ func (ec *executionContext) fieldContext_AskedConnection_connectedTo(_ context.C
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2538,8 +2538,8 @@ func (ec *executionContext) fieldContext_Employer_employees(_ context.Context, f
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2812,8 +2812,8 @@ func (ec *executionContext) fieldContext_Mutation_registerUser(ctx context.Conte
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2886,8 +2886,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2960,8 +2960,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUserProfile(ctx context.
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3360,8 +3360,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUserLookingForOpportunit
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3481,8 +3481,8 @@ func (ec *executionContext) fieldContext_Notification_forUser(_ context.Context,
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3629,8 +3629,8 @@ func (ec *executionContext) fieldContext_Query_getUser(ctx context.Context, fiel
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3703,8 +3703,8 @@ func (ec *executionContext) fieldContext_Query_getUsers(ctx context.Context, fie
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3777,8 +3777,8 @@ func (ec *executionContext) fieldContext_Query_getUserConnections(ctx context.Co
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4914,8 +4914,8 @@ func (ec *executionContext) fieldContext_User_connections(_ context.Context, fie
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "isLookingForOpportunities":
+				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -5068,8 +5068,8 @@ func (ec *executionContext) fieldContext_User_skills(_ context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _User_lookingForOpportunities(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_lookingForOpportunities(ctx, field)
+func (ec *executionContext) _User_isLookingForOpportunities(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_isLookingForOpportunities(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -5082,7 +5082,7 @@ func (ec *executionContext) _User_lookingForOpportunities(ctx context.Context, f
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.LookingForOpportunities, nil
+		return obj.IsLookingForOpportunities, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5096,7 +5096,7 @@ func (ec *executionContext) _User_lookingForOpportunities(ctx context.Context, f
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_lookingForOpportunities(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_isLookingForOpportunities(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -7570,7 +7570,7 @@ func (ec *executionContext) unmarshalInputUpdateProfileInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"education", "experience", "skills", "lookingForOpportunities"}
+	fieldsInOrder := [...]string{"education", "experience", "skills", "isLookingForOpportunities"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7598,13 +7598,13 @@ func (ec *executionContext) unmarshalInputUpdateProfileInput(ctx context.Context
 				return it, err
 			}
 			it.Skills = data
-		case "lookingForOpportunities":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lookingForOpportunities"))
+		case "isLookingForOpportunities":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isLookingForOpportunities"))
 			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.LookingForOpportunities = data
+			it.IsLookingForOpportunities = data
 		}
 	}
 
@@ -8319,8 +8319,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._User_experience(ctx, field, obj)
 		case "skills":
 			out.Values[i] = ec._User_skills(ctx, field, obj)
-		case "lookingForOpportunities":
-			out.Values[i] = ec._User_lookingForOpportunities(ctx, field, obj)
+		case "isLookingForOpportunities":
+			out.Values[i] = ec._User_isLookingForOpportunities(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
