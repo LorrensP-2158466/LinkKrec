@@ -96,16 +96,16 @@ type UpdateUserInput struct {
 }
 
 type User struct {
-	ID                        string             `json:"id"`
-	Name                      string             `json:"name"`
-	Email                     string             `json:"email"`
-	Location                  *string            `json:"location,omitempty"`
-	IsEmployer                *bool              `json:"isEmployer,omitempty"`
-	Connections               []*User            `json:"connections,omitempty"`
-	Education                 []*EducationEntry  `json:"education,omitempty"`
-	Experience                []*ExperienceEntry `json:"experience,omitempty"`
-	Skills                    []*string          `json:"skills,omitempty"`
-	IsLookingForOpportunities *bool              `json:"isLookingForOpportunities,omitempty"`
+	ID                      string             `json:"id"`
+	Name                    string             `json:"name"`
+	Email                   string             `json:"email"`
+	Location                *string            `json:"location,omitempty"`
+	IsEmployer              *bool              `json:"isEmployer,omitempty"`
+	Connections             []*User            `json:"connections,omitempty"`
+	Education               []*EducationEntry  `json:"education,omitempty"`
+	Experience              []*ExperienceEntry `json:"experience,omitempty"`
+	Skills                  []*string          `json:"skills,omitempty"`
+	LookingForOpportunities *bool              `json:"lookingForOpportunities,omitempty"`
 }
 
 type Vacancy struct {

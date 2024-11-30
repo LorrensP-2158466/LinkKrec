@@ -17,7 +17,7 @@ func (u *userReader) getUsers(ctx context.Context, userIDs []string) ([]*model.U
 		ids = append(ids, s)
 	}
 	filter := strings.Join(ids, " || ")
-
+	// zijn de optionals echt nodig hier?
 	q := fmt.Sprintf(`
 		PREFIX lr: <http://linkrec.example.org/schema#>
 		PREFIX schema: <http://schema.org/>
@@ -65,16 +65,11 @@ func (u *userReader) getUsers(ctx context.Context, userIDs []string) ([]*model.U
 
 	var foundUsers = make(map[string]*model.User)
 	for _, m := range res.Solutions() {
-		user, err := util.MapPrimitiveBindingsToStruct[model.User](m)
+		user, err := util.MapRdfUserToGQL(m)
 		if err != nil {
 			return nil, []error{err}
 		}
-		var connections = make([]*model.User, 0)
-		for _, con := range strings.Split(m["connections"].String(), ", ") {
-			connections = append(connections, &model.User{ID: con})
-		}
-		user.Connections = connections
-		foundUsers[user.ID] = &user
+		foundUsers[user.ID] = user
 	}
 	// fill return array with empty objects so the lengths match
 	for i, id := range userIDs {

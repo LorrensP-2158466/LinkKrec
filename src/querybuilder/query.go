@@ -2,6 +2,7 @@ package querybuilder
 
 import (
 	"fmt"
+	"strings"
 )
 
 const PREFIXES = `PREFIX lr: <http://linkrec.example.org/schema#>
@@ -15,25 +16,34 @@ type Query struct {
 }
 
 type Select struct {
-	fields      []string
-	groupConcat *GroupConcat
+	fields       []string
+	groupConcats []GroupConcat
 }
 
 type GroupConcat struct {
-	sep   string
-	field string
-	as    string
+	sep      string
+	field    string
+	as       string
+	distinct bool
 }
 
 type Where struct {
-	clauses    []SubWhere
-	filters    []Filter
-	subQueries []string
+	clauses     []SubWhere
+	extractions []WhereExtraction
+	filters     []Filter
+	binds       []Bind
+	subQueries  []string
 }
 
 type SubWhere struct {
 	subj    *WhereSubject
 	clauses []WhereClause
+}
+
+type WhereExtraction struct {
+	field     string
+	attribute string
+	binding   string
 }
 
 type WhereClause struct {
@@ -52,9 +62,14 @@ type GroupBy struct {
 
 type Filter struct {
 	field            string
-	value            string
+	value            []string
 	op               FilterOp
 	opWithPrevFilter FilterType
+}
+
+type Bind struct {
+	field string
+	alias string
 }
 
 type FilterType string
@@ -72,13 +87,12 @@ const (
 	GE          = ">="
 	GT          = ">"
 	EQ          = "="
+	IN          = "IN"
 )
 
 func QueryBuilder() *Query {
 	return &Query{
-		sel: &Select{
-			groupConcat: &GroupConcat{},
-		},
+		sel:     &Select{},
 		where:   &Where{},
 		groupBy: &GroupBy{},
 	}
@@ -91,10 +105,13 @@ func (q *Query) Select(fields []string) *Query {
 	return q
 }
 
-func (q *Query) GroupConcat(field string, sep string, as string) *Query {
-	q.sel.groupConcat.field = field
-	q.sel.groupConcat.sep = sep
-	q.sel.groupConcat.as = as
+func (q *Query) GroupConcat(field string, sep string, as string, distinct bool) *Query {
+	groupConcat := GroupConcat{}
+	groupConcat.field = field
+	groupConcat.sep = sep
+	groupConcat.as = as
+	groupConcat.distinct = distinct
+	q.sel.groupConcats = append(q.sel.groupConcats, groupConcat)
 	return q
 }
 
@@ -116,6 +133,16 @@ func (q *Query) Where(field string, binding string) *Query {
 	return q
 }
 
+func (q *Query) WhereExtraction(field string, attr string, binding string) *Query {
+	var ex = WhereExtraction{
+		field:     field,
+		binding:   binding,
+		attribute: attr,
+	}
+	q.where.extractions = append(q.where.extractions, ex)
+	return q
+}
+
 func (q *Query) WhereSubQuery(sub string) *Query {
 	q.where.subQueries = append(q.where.subQueries, sub)
 	return q
@@ -126,7 +153,12 @@ func (q *Query) GroupBy(fields []string) *Query {
 	return q
 }
 
-func (q *Query) Filter(field string, value string, op FilterOp) *Query {
+func (q *Query) Bind(field string, alias string) *Query {
+	q.where.binds = append(q.where.binds, Bind{field, alias})
+	return q
+}
+
+func (q *Query) Filter(field string, value []string, op FilterOp) *Query {
 	q.where.filters = append(
 		q.where.filters,
 		Filter{
@@ -138,7 +170,7 @@ func (q *Query) Filter(field string, value string, op FilterOp) *Query {
 	return q
 }
 
-func (q *Query) AndFilter(field string, value string, op FilterOp) *Query {
+func (q *Query) AndFilter(field string, value []string, op FilterOp) *Query {
 	q.where.filters = append(
 		q.where.filters,
 		Filter{
@@ -151,7 +183,7 @@ func (q *Query) AndFilter(field string, value string, op FilterOp) *Query {
 	return q
 }
 
-func (q *Query) OrFilter(field string, value string, op FilterOp) *Query {
+func (q *Query) OrFilter(field string, value []string, op FilterOp) *Query {
 	q.where.filters = append(
 		q.where.filters,
 		Filter{
@@ -187,9 +219,12 @@ func buildSelect(sel Select) string {
 	for _, el := range sel.fields {
 		output += " ?" + el
 	}
-	var concat = sel.groupConcat
-	if len(sel.groupConcat.field) > 0 {
-		output += fmt.Sprintf(" (GROUP_CONCAT(?%s; separator=\"%s\") AS ?%s)", concat.field, concat.sep, concat.as)
+	for _, groupConcat := range sel.groupConcats {
+		if groupConcat.distinct {
+			output += fmt.Sprintf(" (GROUP_CONCAT(DISTINCT ?%s; separator=\"%s\") AS ?%s)", groupConcat.field, groupConcat.sep, groupConcat.as)
+		} else {
+			output += fmt.Sprintf(" (GROUP_CONCAT(?%s; separator=\"%s\") AS ?%s)", groupConcat.field, groupConcat.sep, groupConcat.as)
+		}
 	}
 	return output
 }
@@ -209,8 +244,14 @@ func buildWhere(wh Where) string {
 		}
 		output += subwhere
 	}
+	for _, ex := range wh.extractions {
+		output += fmt.Sprintf("?%s lr:%s ?%s .\n", ex.field, ex.attribute, ex.binding)
+	}
 	for _, sub := range wh.subQueries {
 		output += sub + "\n"
+	}
+	if len(wh.binds) > 0 {
+		output += buildBinds(wh.binds) + "\n"
 	}
 	if len(wh.filters) > 0 {
 		output += buildFilter(wh.filters) + "\n"
@@ -230,25 +271,37 @@ func buildGroupBy(gb GroupBy) string {
 func buildFilter(filters []Filter) string {
 	var output = "FILTER("
 	for _, fil := range filters {
-		if fil.opWithPrevFilter == "" {
-			output += fmt.Sprintf("?%s %s %s", fil.field, fil.op, fil.value)
+		if fil.op == IN {
+			output += fmt.Sprintf("?%s IN (%s)", fil.field, strings.Join(fil.value, ", "))
 		} else {
-			output += fmt.Sprintf(" %s ?%s %s %s", fil.opWithPrevFilter, fil.field, fil.op, fil.value)
+			if len(fil.opWithPrevFilter) == 0 {
+				output += fmt.Sprintf("?%s %s %s", fil.field, fil.op, fil.value[0])
+			} else {
+				output += fmt.Sprintf(" %s ?%s %s %s", fil.opWithPrevFilter, fil.field, fil.op, fil.value[0])
+			}
 		}
 	}
 	return output + ")"
 }
 
+func buildBinds(binds []Bind) string {
+	var output = ""
+	for _, bin := range binds {
+		output += fmt.Sprintf("BIND(?%s AS ?%s)", bin.field, bin.alias)
+	}
+	return output
+}
+
 func main() {
 	var s = QueryBuilder().
 		Select([]string{"userId", "userName"}).
-		GroupConcat("skill", ", ", "skills").
+		GroupConcat("skill", ", ", "skills", true).
 		WhereSubject("user", "User").
 		Where("Id", "userId").
 		Where("hasName", "userName").
 		Where("hasSkill", "skillList").
-		Filter("userId", "\"1\"", EQ).
-		OrFilter("userId", "6", GT).
+		Filter("userId", []string{"\"1\""}, EQ).
+		OrFilter("userId", []string{"6"}, GT).
 		GroupBy([]string{"userName", "userId"}).
 		Build()
 	fmt.Println(s)

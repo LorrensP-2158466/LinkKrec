@@ -105,7 +105,6 @@ type ComplexityRoot struct {
 		GetEmployers          func(childComplexity int, name *string, location *string) int
 		GetNotifications      func(childComplexity int, userID string, since *string) int
 		GetUser               func(childComplexity int, id string) int
-		GetUserConnections    func(childComplexity int, userID string, skill *string, location *string, depth *int) int
 		GetUsers              func(childComplexity int, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) int
 		GetVacancies          func(childComplexity int, search *string, location *string, requiredSkills []*string, minEducation *model.DegreeType, isActive *bool) int
 		GetVacancy            func(childComplexity int, id string) int
@@ -119,16 +118,16 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Connections               func(childComplexity int) int
-		Education                 func(childComplexity int) int
-		Email                     func(childComplexity int) int
-		Experience                func(childComplexity int) int
-		ID                        func(childComplexity int) int
-		IsEmployer                func(childComplexity int) int
-		IsLookingForOpportunities func(childComplexity int) int
-		Location                  func(childComplexity int) int
-		Name                      func(childComplexity int) int
-		Skills                    func(childComplexity int) int
+		Connections             func(childComplexity int) int
+		Education               func(childComplexity int) int
+		Email                   func(childComplexity int) int
+		Experience              func(childComplexity int) int
+		ID                      func(childComplexity int) int
+		IsEmployer              func(childComplexity int) int
+		Location                func(childComplexity int) int
+		LookingForOpportunities func(childComplexity int) int
+		Name                    func(childComplexity int) int
+		Skills                  func(childComplexity int) int
 	}
 
 	Vacancy struct {
@@ -160,7 +159,6 @@ type MutationResolver interface {
 type QueryResolver interface {
 	GetUser(ctx context.Context, id string) (*model.User, error)
 	GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*model.User, error)
-	GetUserConnections(ctx context.Context, userID string, skill *string, location *string, depth *int) ([]*model.User, error)
 	GetVacancies(ctx context.Context, search *string, location *string, requiredSkills []*string, minEducation *model.DegreeType, isActive *bool) ([]*model.Vacancy, error)
 	GetVacancy(ctx context.Context, id string) (*model.Vacancy, error)
 	GetEmployers(ctx context.Context, name *string, location *string) ([]*model.Employer, error)
@@ -519,18 +517,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.GetUser(childComplexity, args["id"].(string)), true
 
-	case "Query.getUserConnections":
-		if e.complexity.Query.GetUserConnections == nil {
-			break
-		}
-
-		args, err := ec.field_Query_getUserConnections_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.GetUserConnections(childComplexity, args["userId"].(string), args["skill"].(*string), args["location"].(*string), args["depth"].(*int)), true
-
 	case "Query.getUsers":
 		if e.complexity.Query.GetUsers == nil {
 			break
@@ -657,19 +643,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.IsEmployer(childComplexity), true
 
-	case "User.isLookingForOpportunities":
-		if e.complexity.User.IsLookingForOpportunities == nil {
-			break
-		}
-
-		return e.complexity.User.IsLookingForOpportunities(childComplexity), true
-
 	case "User.location":
 		if e.complexity.User.Location == nil {
 			break
 		}
 
 		return e.complexity.User.Location(childComplexity), true
+
+	case "User.lookingForOpportunities":
+		if e.complexity.User.LookingForOpportunities == nil {
+			break
+		}
+
+		return e.complexity.User.LookingForOpportunities(childComplexity), true
 
 	case "User.name":
 		if e.complexity.User.Name == nil {
@@ -1429,83 +1415,6 @@ func (ec *executionContext) field_Query_getNotifications_argsSince(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Query_getUserConnections_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	arg0, err := ec.field_Query_getUserConnections_argsUserID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["userId"] = arg0
-	arg1, err := ec.field_Query_getUserConnections_argsSkill(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["skill"] = arg1
-	arg2, err := ec.field_Query_getUserConnections_argsLocation(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["location"] = arg2
-	arg3, err := ec.field_Query_getUserConnections_argsDepth(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["depth"] = arg3
-	return args, nil
-}
-func (ec *executionContext) field_Query_getUserConnections_argsUserID(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-	if tmp, ok := rawArgs["userId"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_getUserConnections_argsSkill(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (*string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("skill"))
-	if tmp, ok := rawArgs["skill"]; ok {
-		return ec.unmarshalOString2ᚖstring(ctx, tmp)
-	}
-
-	var zeroVal *string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_getUserConnections_argsLocation(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (*string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
-	if tmp, ok := rawArgs["location"]; ok {
-		return ec.unmarshalOString2ᚖstring(ctx, tmp)
-	}
-
-	var zeroVal *string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_getUserConnections_argsDepth(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (*int, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("depth"))
-	if tmp, ok := rawArgs["depth"]; ok {
-		return ec.unmarshalOInt2ᚖint(ctx, tmp)
-	}
-
-	var zeroVal *int
-	return zeroVal, nil
-}
-
 func (ec *executionContext) field_Query_getUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1945,8 +1854,8 @@ func (ec *executionContext) fieldContext_AskedConnection_user(_ context.Context,
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2011,8 +1920,8 @@ func (ec *executionContext) fieldContext_AskedConnection_connectedTo(_ context.C
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2538,8 +2447,8 @@ func (ec *executionContext) fieldContext_Employer_employees(_ context.Context, f
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2812,8 +2721,8 @@ func (ec *executionContext) fieldContext_Mutation_registerUser(ctx context.Conte
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2886,8 +2795,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2960,8 +2869,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUserProfile(ctx context.
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3360,8 +3269,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUserLookingForOpportunit
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3481,8 +3390,8 @@ func (ec *executionContext) fieldContext_Notification_forUser(_ context.Context,
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3629,8 +3538,8 @@ func (ec *executionContext) fieldContext_Query_getUser(ctx context.Context, fiel
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3703,8 +3612,8 @@ func (ec *executionContext) fieldContext_Query_getUsers(ctx context.Context, fie
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3717,80 +3626,6 @@ func (ec *executionContext) fieldContext_Query_getUsers(ctx context.Context, fie
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_getUsers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Query_getUserConnections(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_getUserConnections(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetUserConnections(rctx, fc.Args["userId"].(string), fc.Args["skill"].(*string), fc.Args["location"].(*string), fc.Args["depth"].(*int))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*model.User)
-	fc.Result = res
-	return ec.marshalOUser2ᚕᚖLinkKrecᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Query_getUserConnections(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "location":
-				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
-			case "connections":
-				return ec.fieldContext_User_connections(ctx, field)
-			case "education":
-				return ec.fieldContext_User_education(ctx, field)
-			case "experience":
-				return ec.fieldContext_User_experience(ctx, field)
-			case "skills":
-				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_getUserConnections_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4914,8 +4749,8 @@ func (ec *executionContext) fieldContext_User_connections(_ context.Context, fie
 				return ec.fieldContext_User_experience(ctx, field)
 			case "skills":
 				return ec.fieldContext_User_skills(ctx, field)
-			case "isLookingForOpportunities":
-				return ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -5068,8 +4903,8 @@ func (ec *executionContext) fieldContext_User_skills(_ context.Context, field gr
 	return fc, nil
 }
 
-func (ec *executionContext) _User_isLookingForOpportunities(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_isLookingForOpportunities(ctx, field)
+func (ec *executionContext) _User_lookingForOpportunities(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_lookingForOpportunities(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -5082,7 +4917,7 @@ func (ec *executionContext) _User_isLookingForOpportunities(ctx context.Context,
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.IsLookingForOpportunities, nil
+		return obj.LookingForOpportunities, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5096,7 +4931,7 @@ func (ec *executionContext) _User_isLookingForOpportunities(ctx context.Context,
 	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_isLookingForOpportunities(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_lookingForOpportunities(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
@@ -8060,25 +7895,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "getUserConnections":
-			field := field
-
-			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_getUserConnections(ctx, field)
-				return res
-			}
-
-			rrm := func(ctx context.Context) graphql.Marshaler {
-				return ec.OperationContext.RootResolverMiddleware(ctx,
-					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "getVacancies":
 			field := field
 
@@ -8319,8 +8135,8 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._User_experience(ctx, field, obj)
 		case "skills":
 			out.Values[i] = ec._User_skills(ctx, field, obj)
-		case "isLookingForOpportunities":
-			out.Values[i] = ec._User_isLookingForOpportunities(ctx, field, obj)
+		case "lookingForOpportunities":
+			out.Values[i] = ec._User_lookingForOpportunities(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9617,22 +9433,6 @@ func (ec *executionContext) unmarshalOExperienceEntryInput2ᚖLinkKrecᚋgraph�
 	}
 	res, err := ec.unmarshalInputExperienceEntryInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalInt(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalInt(*v)
-	return res
 }
 
 func (ec *executionContext) marshalONotification2ᚕᚖLinkKrecᚋgraphᚋmodelᚐNotification(ctx context.Context, sel ast.SelectionSet, v []*model.Notification) graphql.Marshaler {

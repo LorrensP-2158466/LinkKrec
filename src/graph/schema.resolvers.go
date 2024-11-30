@@ -6,45 +6,46 @@ package graph
 
 import (
 	"LinkKrec/graph/loaders"
-	graph_model "LinkKrec/graph/model"
+	"LinkKrec/graph/model"
 	"LinkKrec/graph/util"
 	query_builder "LinkKrec/querybuilder"
 	"context"
 	"fmt"
+	"strconv"
 )
 
 // RegisterUser is the resolver for the registerUser field.
-func (r *mutationResolver) RegisterUser(ctx context.Context, input graph_model.RegisterUserInput) (*graph_model.User, error) {
+func (r *mutationResolver) RegisterUser(ctx context.Context, input model.RegisterUserInput) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: RegisterUser - registerUser"))
 }
 
 // UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input graph_model.UpdateUserInput) (*graph_model.User, error) {
+func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input model.UpdateUserInput) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
 }
 
 // UpdateUserProfile is the resolver for the updateUserProfile field.
-func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, input graph_model.UpdateProfileInput) (*graph_model.User, error) {
+func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, input model.UpdateProfileInput) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: UpdateUserProfile - updateUserProfile"))
 }
 
 // ManageConnection is the resolver for the manageConnection field.
-func (r *mutationResolver) ManageConnection(ctx context.Context, userID string, connectedUserID string, action string) (*graph_model.AskedConnection, error) {
+func (r *mutationResolver) ManageConnection(ctx context.Context, userID string, connectedUserID string, action string) (*model.AskedConnection, error) {
 	panic(fmt.Errorf("not implemented: ManageConnection - manageConnection"))
 }
 
 // NotifyProfileVisit is the resolver for the notifyProfileVisit field.
-func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID string, visitedUserID string) (*graph_model.Notification, error) {
+func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID string, visitedUserID string) (*model.Notification, error) {
 	panic(fmt.Errorf("not implemented: NotifyProfileVisit - notifyProfileVisit"))
 }
 
 // CreateVacancy is the resolver for the createVacancy field.
-func (r *mutationResolver) CreateVacancy(ctx context.Context, employerID string, input graph_model.CreateVacancyInput) (*graph_model.Vacancy, error) {
+func (r *mutationResolver) CreateVacancy(ctx context.Context, employerID string, input model.CreateVacancyInput) (*model.Vacancy, error) {
 	panic(fmt.Errorf("not implemented: CreateVacancy - createVacancy"))
 }
 
 // UpdateVacancy is the resolver for the updateVacancy field.
-func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input graph_model.CreateVacancyInput) (*graph_model.Vacancy, error) {
+func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input model.CreateVacancyInput) (*model.Vacancy, error) {
 	panic(fmt.Errorf("not implemented: UpdateVacancy - updateVacancy"))
 }
 
@@ -54,161 +55,122 @@ func (r *mutationResolver) DeleteVacancy(ctx context.Context, id string) (*bool,
 }
 
 // UpdateUserLookingForOpportunities is the resolver for the updateUserLookingForOpportunities field.
-func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context, userID string, looking bool) (*graph_model.User, error) {
+func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context, userID string, looking bool) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: UpdateUserLookingForOpportunities - updateUserLookingForOpportunities"))
 }
 
 // GetUser is the resolver for the getUser field.
-func (r *queryResolver) GetUser(ctx context.Context, id string) (*graph_model.User, error) {
+func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, error) {
 	return loaders.GetUser(ctx, id)
 }
 
 // GetUsers is the resolver for the getUsers field.
-func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*graph_model.User, error) {
-	fmt.Println("GetUsers")
-
-	var skillSubQuery = query_builder.QueryBuilder().
+func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
+	q := query_builder.
+		QueryBuilder().Select([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).
+		GroupConcat("skill", ", ", "skills", true).
+		GroupConcat("connectionName", ", ", "connections", true).
 		WhereSubject("user", "User").
-		Select([]string{"user"}).
-		GroupConcat("skill", ", ", "skills").
-		Where("hasSkill", "skill").
-		GroupBy([]string{"user"}).
-		BuildSubQuery()
-
-	var connectionSubQuery = `			
-	{
-	SELECT ?user (GROUP_CONCAT(?connectionId; separator=", ") AS ?connectionIds)
-	WHERE {
-	?user a lr:User ;
-		lr:hasConnection ?connection .
-	    ?connection lr:Id ?connectionId
-	}
-	GROUP BY ?user 
-	}
-	`
-
-	var q = query_builder.
-		QueryBuilder().Select([]string{"userId", "userName", "email", "isEmployer", "location", "lookingForOppurtunities", "skills", "connectionIds"}).
-		WhereSubject("user", "User").
-		Where("Id", "userId").
-		Where("hasName", "userName").
+		Where("Id", "id").
+		Where("hasName", "name").
 		Where("hasEmail", "email").
 		Where("isEmployer", "isEmployer").
 		Where("hasLocation", "location").
-		Where("isLookingForOpportunities", "lookingForOpportunities").
-		WhereSubQuery(skillSubQuery).
-		WhereSubQuery(connectionSubQuery).
-		Build()
-	fmt.Println(q)
+		Where("isLookingForOpportunities", "isLookingForOpportunities").
+		Where("hasSkill", "skill").
+		Where("hasConnection", "connection").
+		WhereExtraction("connection", "Id", "connectionName").
+		Bind("isLookingForOpportunities", "lookingForOpportunities")
+	if name != nil {
+		q.Filter("name", []string{*name}, query_builder.EQ)
+	}
+	if location != nil {
+		q.Filter("location", []string{*location}, query_builder.EQ)
+	}
+	if isEmployer != nil {
+		q.Filter("isEmployer", []string{strconv.FormatBool(*isEmployer)}, query_builder.EQ)
+	}
+	if len(skills) > 0 {
+		convSkills := util.Map(skills, func(s *string) string {
+			return fmt.Sprintf("\"%s\"", *s)
+		})
+		q.Filter("skill", convSkills, query_builder.IN)
+	}
+	if lookingForOpportunities != nil {
+		q.Filter("isLookingForOpportunities", []string{strconv.FormatBool(*lookingForOpportunities)}, query_builder.EQ)
+	}
+	qs := q.GroupBy([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).Build()
 
-	res, err := r.Repo.Query(q)
-
+	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	//users := make([]*graph_model.User, 0)
-	fmt.Println(res.Bindings())
 
-	return nil, nil
-
-	/*res, err := r.Repo.Query(
-		q)
-	if err != nil {
-		return nil, err
-	}
-
-	var users []*graph_model.User
-
-	for i := 0; i < len(res.Results.Bindings); i++ {
-		// Map the first result row to the User model
-		row := res.Results.Bindings[i]
-
-		// Extract values
-		userId := row["userId"].Value
-		userName := row["userName"].Value
-		userSkills := row["skills"].Value
-
-		// Split the skills string into a slice
-		skillsList := strings.Split(userSkills, ", ")
-
-		// Convert skillsList to []*string
-		var skillsPtrList []*string
-		for _, skill := range skillsList {
-			skillCopy := skill
-			skillsPtrList = append(skillsPtrList, &skillCopy)
+	users := make([]*model.User, 0)
+	for _, user := range res.Solutions() {
+		obj, err := util.MapRdfUserToGQL(user)
+		if err != nil {
+			return nil, err
 		}
-
-		// Create a graph_model.User instance
-		user := &graph_model.User{
-			ID:     userId,
-			Name:   userName,
-			Skills: skillsPtrList,
-		}
-		users = append(users, user)
+		users = append(users, obj)
 	}
-
-	return users, nil*/
-}
-
-// GetUserConnections is the resolver for the getUserConnections field.
-func (r *queryResolver) GetUserConnections(ctx context.Context, userID string, skill *string, location *string, depth *int) ([]*graph_model.User, error) {
-	panic(fmt.Errorf("not implemented: GetUserConnections - getUserConnections"))
+	return users, nil
 }
 
 // GetVacancies is the resolver for the getVacancies field.
-func (r *queryResolver) GetVacancies(ctx context.Context, search *string, location *string, requiredSkills []*string, minEducation *graph_model.DegreeType, isActive *bool) ([]*graph_model.Vacancy, error) {
+func (r *queryResolver) GetVacancies(ctx context.Context, search *string, location *string, requiredSkills []*string, minEducation *model.DegreeType, isActive *bool) ([]*model.Vacancy, error) {
 	panic(fmt.Errorf("not implemented: GetVacancies - getVacancies"))
 }
 
 // GetVacancy is the resolver for the getVacancy field.
-func (r *queryResolver) GetVacancy(ctx context.Context, id string) (*graph_model.Vacancy, error) {
+func (r *queryResolver) GetVacancy(ctx context.Context, id string) (*model.Vacancy, error) {
 	panic(fmt.Errorf("not implemented: GetVacancy - getVacancy"))
 }
 
 // GetEmployers is the resolver for the getEmployers field.
-func (r *queryResolver) GetEmployers(ctx context.Context, name *string, location *string) ([]*graph_model.Employer, error) {
+func (r *queryResolver) GetEmployers(ctx context.Context, name *string, location *string) ([]*model.Employer, error) {
 	panic(fmt.Errorf("not implemented: GetEmployers - getEmployers"))
 }
 
 // GetEmployer is the resolver for the getEmployer field.
-func (r *queryResolver) GetEmployer(ctx context.Context, id string) (*graph_model.Employer, error) {
+func (r *queryResolver) GetEmployer(ctx context.Context, id string) (*model.Employer, error) {
 	panic(fmt.Errorf("not implemented: GetEmployer - getEmployer"))
 }
 
 // GetNotifications is the resolver for the getNotifications field.
-func (r *queryResolver) GetNotifications(ctx context.Context, userID string, since *string) ([]*graph_model.Notification, error) {
+func (r *queryResolver) GetNotifications(ctx context.Context, userID string, since *string) ([]*model.Notification, error) {
 	panic(fmt.Errorf("not implemented: GetNotifications - getNotifications"))
 }
 
 // GetConnectionRequests is the resolver for the getConnectionRequests field.
-func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*graph_model.AskedConnection, error) {
+func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*model.AskedConnection, error) {
 	panic(fmt.Errorf("not implemented: GetConnectionRequests - getConnectionRequests"))
 }
 
 // NewConnectionRequest is the resolver for the newConnectionRequest field.
-func (r *subscriptionResolver) NewConnectionRequest(ctx context.Context, forUserID string) (<-chan *graph_model.AskedConnection, error) {
+func (r *subscriptionResolver) NewConnectionRequest(ctx context.Context, forUserID string) (<-chan *model.AskedConnection, error) {
 	panic(fmt.Errorf("not implemented: NewConnectionRequest - newConnectionRequest"))
 }
 
 // ConnectionRequestStatusUpdate is the resolver for the connectionRequestStatusUpdate field.
-func (r *subscriptionResolver) ConnectionRequestStatusUpdate(ctx context.Context, forUserID string) (<-chan *graph_model.AskedConnection, error) {
+func (r *subscriptionResolver) ConnectionRequestStatusUpdate(ctx context.Context, forUserID string) (<-chan *model.AskedConnection, error) {
 	panic(fmt.Errorf("not implemented: ConnectionRequestStatusUpdate - connectionRequestStatusUpdate"))
 }
 
 // NewMatchingVacancy is the resolver for the newMatchingVacancy field.
-func (r *subscriptionResolver) NewMatchingVacancy(ctx context.Context, userID string) (<-chan *graph_model.Vacancy, error) {
+func (r *subscriptionResolver) NewMatchingVacancy(ctx context.Context, userID string) (<-chan *model.Vacancy, error) {
 	panic(fmt.Errorf("not implemented: NewMatchingVacancy - newMatchingVacancy"))
 }
 
 // NewNotification is the resolver for the newNotification field.
-func (r *subscriptionResolver) NewNotification(ctx context.Context, forUserID string) (<-chan *graph_model.Notification, error) {
+func (r *subscriptionResolver) NewNotification(ctx context.Context, forUserID string) (<-chan *model.Notification, error) {
 	panic(fmt.Errorf("not implemented: NewNotification - newNotification"))
 }
 
 // Connections is the resolver for the connections field.
-func (r *userResolver) Connections(ctx context.Context, obj *graph_model.User) ([]*graph_model.User, error) {
-	ids := util.Map(obj.Connections, func(u *graph_model.User) string {
+func (r *userResolver) Connections(ctx context.Context, obj *model.User) ([]*model.User, error) {
+	ids := util.Map(obj.Connections, func(u *model.User) string {
 		return u.ID
 	})
 	return loaders.GetUsers(ctx, ids)

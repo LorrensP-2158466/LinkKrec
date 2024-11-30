@@ -11,14 +11,6 @@ type Query {
    lookingForOpportunities: Boolean,
  ): [User]
 
- # Fetch connections for a user with optional filtering
- getUserConnections(
-   userId: ID!,
-   skill: String,
-   location: String,
-   depth: Int = 1,
- ): [User]
-
  # Fetch all job vacancies with optional filtering
  getVacancies(
    search: String, # search string to match against title and descr
@@ -108,7 +100,7 @@ type User {
  education: [EducationEntry]
  experience: [ExperienceEntry]
  skills: [String]
- isLookingForOpportunities: Boolean
+ lookingForOpportunities: Boolean
 }
 
 
