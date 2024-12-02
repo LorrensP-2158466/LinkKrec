@@ -119,13 +119,58 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 }
 
 // GetVacancies is the resolver for the getVacancies field.
-func (r *queryResolver) GetVacancies(ctx context.Context, search *string, location *string, requiredSkills []*string, minEducation *model.DegreeType, isActive *bool) ([]*model.Vacancy, error) {
-	panic(fmt.Errorf("not implemented: GetVacancies - getVacancies"))
+func (r *queryResolver) GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error) {
+	q := query_builder.
+		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedBy", "startDate", "endDate", "status", "education"}).
+		GroupConcat("experienceType", ", ", "experienceTypes", true).
+		GroupConcat("experienceDuration", ", ", "experienceDurations", true).
+		WhereSubject("vacancy", "Vacancy").
+		Where("Id", "id").
+		Where("vacancyTitle", "title").
+		Where("vacancyDescription", "description").
+		Where("vacancyLocation", "location").
+		//Where("postedBy", "postedBy").
+		Where("vacancyStartDate", "startDate").
+		Where("vacancyEndDate", "endDate").
+		Where("vacancyStatus", "status").
+		Where("requiredEducation", "education").
+		Where("requiredExperienceType", "experienceType").
+		Where("requiredExperienceDuration", "experienceDuration")
+	if title != nil {
+		q.Filter("name", []string{*title}, query_builder.EQ)
+	}
+	if location != nil {
+		q.Filter("location", []string{*location}, query_builder.EQ)
+	}
+	if requiredEducation != nil {
+		q.Filter("requiredEducation", []string{string(*requiredEducation)}, query_builder.EQ)
+	}
+	if status != nil {
+		q.Filter("status", []string{strconv.FormatBool(*status)}, query_builder.EQ)
+	}
+	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedBy", "startDate", "endDate", "status", "education"}).Build()
+
+	fmt.Println(qs)
+	res, err := r.Repo.Query(qs)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	vacancies := make([]*model.Vacancy, 0)
+	for _, user := range res.Solutions() {
+		obj, err := util.MapRdfVacancyToGQL(user)
+		if err != nil {
+			return nil, err
+		}
+		vacancies = append(vacancies, obj)
+		fmt.Println("obj:", obj)
+	}
+	return vacancies, nil
 }
 
 // GetVacancy is the resolver for the getVacancy field.
 func (r *queryResolver) GetVacancy(ctx context.Context, id string) (*model.Vacancy, error) {
-	panic(fmt.Errorf("not implemented: GetVacancy - getVacancy"))
+	return loaders.GetVacancy(ctx, id)
 }
 
 // GetEmployers is the resolver for the getEmployers field.

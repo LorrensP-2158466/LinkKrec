@@ -5,6 +5,7 @@ PREFIX schema: <http://schema.org/>
 PREFIX vcard: <http://www.w3.org/2006/vcard/ns#> 
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
 
 # User (represents a person or employer on LinkRec)
 lr:User a rdfs:Class .
@@ -63,6 +64,9 @@ lr:vacancyDescription a rdf:Property ;
 lr:vacancyLocation a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range schema:Text .
+lr:postedBy a rdf:Property ;
+    rdfs:domain lr:Vacancy ;
+    rdfs:range lr:Employer .
 lr:vacancyStartDate a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range schema:Date .

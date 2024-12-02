@@ -22,7 +22,8 @@ type userReader struct {
 
 // Loaders wrap your data loaders to inject via middleware
 type Loaders struct {
-	UserLoader *dataloadgen.Loader[string, *model.User]
+	UserLoader    *dataloadgen.Loader[string, *model.User]
+	VacancyLoader *dataloadgen.Loader[string, *model.Vacancy]
 }
 
 // NewLoaders instantiates data loaders for the middleware
@@ -30,7 +31,8 @@ func NewLoaders(conn *sparql.Repo) *Loaders {
 	// define the data loader
 	ur := &userReader{Repo: conn}
 	return &Loaders{
-		UserLoader: dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
+		UserLoader:    dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
+		VacancyLoader: dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
 	}
 }
 
@@ -58,4 +60,16 @@ func GetUser(ctx context.Context, userID string) (*model.User, error) {
 func GetUsers(ctx context.Context, userIDs []string) ([]*model.User, error) {
 	loaders := For(ctx)
 	return loaders.UserLoader.LoadAll(ctx, userIDs)
+}
+
+// GetVacancy returns single vacancy by id efficiently
+func GetVacancy(ctx context.Context, vacancyID string) (*model.Vacancy, error) {
+	loaders := For(ctx)
+	return loaders.VacancyLoader.Load(ctx, vacancyID)
+}
+
+// GetVacancies returns many vacancies by ids efficiently
+func GetVacancies(ctx context.Context, vacancyIDs []string) ([]*model.Vacancy, error) {
+	loaders := For(ctx)
+	return loaders.VacancyLoader.LoadAll(ctx, vacancyIDs)
 }

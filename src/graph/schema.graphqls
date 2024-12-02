@@ -13,11 +13,10 @@ type Query {
 
  # Fetch all job vacancies with optional filtering
  getVacancies(
-   search: String, # search string to match against title and descr
+   title: String, 
    location: String,
-   requiredSkills: [String],
-   minEducation: DegreeType,
-   isActive: Boolean,
+   requiredEducation: DegreeType,
+   status: Boolean,
  ): [Vacancy]
 
  # Fetch a specific job vacancy by ID
@@ -183,7 +182,7 @@ type Vacancy {
  postedBy: Employer!,
  startDate: String,
  endDate: String,
- status: String
+ status: Boolean
 }
 
 

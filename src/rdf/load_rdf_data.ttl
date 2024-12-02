@@ -61,3 +61,29 @@ lr:EducationEntry3 a lr:EducationEntry ;
 lr:ExperienceEntry3 a lr:ExperienceEntry ;
     rdfs:label "Full-Stack Developer at Webify Inc." .
 
+lr:Vacancy1 a lr:Vacancy ;
+    lr:Id "1" ;
+    lr:vacancyTitle "Software Engineer" ;
+    lr:vacancyDescription "Develop software applications" ;
+    lr:vacancyLocation "San Francisco" ;
+    lr:requiredEducation "ProfBachelor" ;
+    lr:requiredExperienceType "IT" ;
+    lr:requiredExperienceDuration 2 ;
+    lr:vacancyStartDate "2022-01-01" ;
+    lr:vacancyEndDate "2022-06-30" ;
+    lr:vacancyStatus true .
+
+lr:Vacancy2 a lr:Vacancy ;
+    lr:Id "2" ;
+    lr:vacancyTitle "Project Manager" ;
+    lr:vacancyDescription "Manage software development projects" ;
+    lr:vacancyLocation "New York" ;
+    lr:requiredEducation "Master" ;
+    lr:requiredExperienceType "IT" ;
+    lr:requiredExperienceType "Engineering" ;
+    lr:requiredExperienceDuration 3 ;
+    lr:requiredExperienceDuration 4 ;
+    lr:vacancyStartDate "2022-02-01"^^xsd:date ;
+    lr:vacancyEndDate "2022-07-31"^^xsd:date ;
+    lr:vacancyStatus true .
+

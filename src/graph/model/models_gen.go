@@ -119,7 +119,7 @@ type Vacancy struct {
 	PostedBy                    *Employer        `json:"postedBy"`
 	StartDate                   *string          `json:"startDate,omitempty"`
 	EndDate                     *string          `json:"endDate,omitempty"`
-	Status                      *string          `json:"status,omitempty"`
+	Status                      *bool            `json:"status,omitempty"`
 }
 
 type DegreeField string

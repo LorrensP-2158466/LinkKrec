@@ -106,7 +106,7 @@ type ComplexityRoot struct {
 		GetNotifications      func(childComplexity int, userID string, since *string) int
 		GetUser               func(childComplexity int, id string) int
 		GetUsers              func(childComplexity int, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) int
-		GetVacancies          func(childComplexity int, search *string, location *string, requiredSkills []*string, minEducation *model.DegreeType, isActive *bool) int
+		GetVacancies          func(childComplexity int, title *string, location *string, requiredEducation *model.DegreeType, status *bool) int
 		GetVacancy            func(childComplexity int, id string) int
 	}
 
@@ -159,7 +159,7 @@ type MutationResolver interface {
 type QueryResolver interface {
 	GetUser(ctx context.Context, id string) (*model.User, error)
 	GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*model.User, error)
-	GetVacancies(ctx context.Context, search *string, location *string, requiredSkills []*string, minEducation *model.DegreeType, isActive *bool) ([]*model.Vacancy, error)
+	GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error)
 	GetVacancy(ctx context.Context, id string) (*model.Vacancy, error)
 	GetEmployers(ctx context.Context, name *string, location *string) ([]*model.Employer, error)
 	GetEmployer(ctx context.Context, id string) (*model.Employer, error)
@@ -539,7 +539,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetVacancies(childComplexity, args["search"].(*string), args["location"].(*string), args["requiredSkills"].([]*string), args["minEducation"].(*model.DegreeType), args["isActive"].(*bool)), true
+		return e.complexity.Query.GetVacancies(childComplexity, args["title"].(*string), args["location"].(*string), args["requiredEducation"].(*model.DegreeType), args["status"].(*bool)), true
 
 	case "Query.getVacancy":
 		if e.complexity.Query.GetVacancy == nil {
@@ -1536,39 +1536,34 @@ func (ec *executionContext) field_Query_getUsers_argsLookingForOpportunities(
 func (ec *executionContext) field_Query_getVacancies_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	arg0, err := ec.field_Query_getVacancies_argsSearch(ctx, rawArgs)
+	arg0, err := ec.field_Query_getVacancies_argsTitle(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["search"] = arg0
+	args["title"] = arg0
 	arg1, err := ec.field_Query_getVacancies_argsLocation(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
 	args["location"] = arg1
-	arg2, err := ec.field_Query_getVacancies_argsRequiredSkills(ctx, rawArgs)
+	arg2, err := ec.field_Query_getVacancies_argsRequiredEducation(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["requiredSkills"] = arg2
-	arg3, err := ec.field_Query_getVacancies_argsMinEducation(ctx, rawArgs)
+	args["requiredEducation"] = arg2
+	arg3, err := ec.field_Query_getVacancies_argsStatus(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["minEducation"] = arg3
-	arg4, err := ec.field_Query_getVacancies_argsIsActive(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["isActive"] = arg4
+	args["status"] = arg3
 	return args, nil
 }
-func (ec *executionContext) field_Query_getVacancies_argsSearch(
+func (ec *executionContext) field_Query_getVacancies_argsTitle(
 	ctx context.Context,
 	rawArgs map[string]interface{},
 ) (*string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
-	if tmp, ok := rawArgs["search"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+	if tmp, ok := rawArgs["title"]; ok {
 		return ec.unmarshalOString2ᚖstring(ctx, tmp)
 	}
 
@@ -1589,25 +1584,12 @@ func (ec *executionContext) field_Query_getVacancies_argsLocation(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Query_getVacancies_argsRequiredSkills(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) ([]*string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredSkills"))
-	if tmp, ok := rawArgs["requiredSkills"]; ok {
-		return ec.unmarshalOString2ᚕᚖstring(ctx, tmp)
-	}
-
-	var zeroVal []*string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_getVacancies_argsMinEducation(
+func (ec *executionContext) field_Query_getVacancies_argsRequiredEducation(
 	ctx context.Context,
 	rawArgs map[string]interface{},
 ) (*model.DegreeType, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("minEducation"))
-	if tmp, ok := rawArgs["minEducation"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredEducation"))
+	if tmp, ok := rawArgs["requiredEducation"]; ok {
 		return ec.unmarshalODegreeType2ᚖLinkKrecᚋgraphᚋmodelᚐDegreeType(ctx, tmp)
 	}
 
@@ -1615,12 +1597,12 @@ func (ec *executionContext) field_Query_getVacancies_argsMinEducation(
 	return zeroVal, nil
 }
 
-func (ec *executionContext) field_Query_getVacancies_argsIsActive(
+func (ec *executionContext) field_Query_getVacancies_argsStatus(
 	ctx context.Context,
 	rawArgs map[string]interface{},
 ) (*bool, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("isActive"))
-	if tmp, ok := rawArgs["isActive"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+	if tmp, ok := rawArgs["status"]; ok {
 		return ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
 	}
 
@@ -3646,7 +3628,7 @@ func (ec *executionContext) _Query_getVacancies(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetVacancies(rctx, fc.Args["search"].(*string), fc.Args["location"].(*string), fc.Args["requiredSkills"].([]*string), fc.Args["minEducation"].(*model.DegreeType), fc.Args["isActive"].(*bool))
+		return ec.resolvers.Query().GetVacancies(rctx, fc.Args["title"].(*string), fc.Args["location"].(*string), fc.Args["requiredEducation"].(*model.DegreeType), fc.Args["status"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5415,9 +5397,9 @@ func (ec *executionContext) _Vacancy_status(ctx context.Context, field graphql.C
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*bool)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Vacancy_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5427,7 +5409,7 @@ func (ec *executionContext) fieldContext_Vacancy_status(_ context.Context, field
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
