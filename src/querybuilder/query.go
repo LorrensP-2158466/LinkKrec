@@ -130,12 +130,21 @@ func (q *Query) WhereSubject(binding string, obj string) *Query {
 }
 
 func (q *Query) Where(field string, binding string) *Query {
+	// If no subject has been defined, initialize it first
+	if len(q.where.clauses) == 0 {
+		q.where.clauses = append(q.where.clauses, SubWhere{
+			subj: &WhereSubject{binding: "user", obj: "User"},
+		})
+	}
+
+	// Now append the new clause to the last where clause
 	var c = WhereClause{
 		field:   field,
 		binding: binding,
 	}
 	var curr = &q.where.clauses[len(q.where.clauses)-1]
 	curr.clauses = append(curr.clauses, c)
+
 	return q
 }
 
@@ -210,13 +219,25 @@ func (q *Query) OptionalSubject(binding string, obj string) *Query {
 	return q
 }
 
-func (q *Query) Optional(field string, binding string) *Query {
-	var clause = WhereClause{
-		field:   field,
-		binding: binding,
+func (q *Query) Optional(predicate, object string) *Query {
+	// Check if the clauses list is empty and initialize it if necessary
+	if len(q.where.clauses) == 0 {
+		// Initialize the first subject if it's missing
+		q.where.clauses = append(q.where.clauses, SubWhere{
+			subj: &WhereSubject{binding: "user", obj: "User"},
+		})
 	}
-	var last = &q.where.optionalClauses[len(q.where.optionalClauses)-1]
-	last.clauses = append(last.clauses, clause)
+
+	// Add the OPTIONAL clause
+	q.where.clauses = append(q.where.clauses, SubWhere{
+		subj: &WhereSubject{binding: "user", obj: "User"},
+		clauses: []WhereClause{
+			{
+				field:   predicate,
+				binding: object,
+			},
+		},
+	})
 	return q
 }
 

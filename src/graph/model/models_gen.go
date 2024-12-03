@@ -23,6 +23,7 @@ type CreateVacancyInput struct {
 }
 
 type EducationEntry struct {
+	ID          string      `json:"id"`
 	Institution string      `json:"institution"`
 	Info        string      `json:"info"`
 	Degree      DegreeType  `json:"degree"`
@@ -44,6 +45,7 @@ type Employer struct {
 }
 
 type ExperienceEntry struct {
+	ID             string         `json:"id"`
 	Title          string         `json:"title"`
 	ExperienceType ExperienceType `json:"experienceType"`
 	Description    *string        `json:"description,omitempty"`
@@ -63,8 +65,9 @@ type Mutation struct {
 
 type Notification struct {
 	ID        string  `json:"id"`
-	ForUser   *User   `json:"forUser"`
+	Title     string  `json:"title"`
 	Message   string  `json:"message"`
+	ForUser   *User   `json:"forUser"`
 	CreatedAt *string `json:"createdAt,omitempty"`
 }
 

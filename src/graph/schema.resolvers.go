@@ -8,6 +8,7 @@ import (
 	"LinkKrec/graph/loaders"
 	"LinkKrec/graph/model"
 	"LinkKrec/graph/util"
+	"LinkKrec/querybuilder"
 	query_builder "LinkKrec/querybuilder"
 	"context"
 	"fmt"
@@ -75,6 +76,11 @@ func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context
 	panic(fmt.Errorf("not implemented: UpdateUserLookingForOpportunities - updateUserLookingForOpportunities"))
 }
 
+// ForUser is the resolver for the forUser field.
+func (r *notificationResolver) ForUser(ctx context.Context, obj *model.Notification) (*model.User, error) {
+	return loaders.GetUser(ctx, obj.ForUser.ID)
+}
+
 // GetUser is the resolver for the getUser field.
 func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, error) {
 	return loaders.GetUser(ctx, id)
@@ -82,20 +88,28 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, er
 
 // GetUsers is the resolver for the getUsers field.
 func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
-	q := query_builder.
-		QueryBuilder().Select([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).
+	fmt.Println("GetUsers")
+	q := querybuilder.
+		QueryBuilder().
+		Select([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).
 		GroupConcat("skill", ", ", "skills", true).
 		GroupConcat("connectionName", ", ", "connections", true).
+		GroupConcat("educationEntryId", ", ", "educationEntries", true).
+		GroupConcat("experienceEntryId", ", ", "experienceEntries", true).
 		WhereSubject("user", "User").
-		Where("hasId", "id").
+		Where("Id", "id").
 		Where("hasName", "name").
 		Where("hasEmail", "email").
 		Where("isEmployer", "isEmployer").
 		Where("hasLocation", "location").
 		Where("isLookingForOpportunities", "isLookingForOpportunities").
-		Where("hasSkill", "skill").
-		Where("hasConnection", "connection").
+		Optional("hasSkill", "skill").
+		Optional("hasConnection", "connection").
 		WhereExtraction("connection", "Id", "connectionName").
+		Optional("hasEducation", "educationEntry").
+		WhereExtraction("educationEntry", "Id", "educationEntryId").
+		Optional("hasExperience", "experienceEntry").
+		WhereExtraction("experienceEntry", "Id", "experienceEntryId").
 		Bind("isLookingForOpportunities", "lookingForOpportunities")
 	if name != nil {
 		q.Filter("name", []string{*name}, query_builder.EQ)
@@ -117,11 +131,14 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 	}
 	qs := q.GroupBy([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).Build()
 
+	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
+
+	fmt.Println("res:", res)
 
 	users := make([]*model.User, 0)
 	for _, user := range res.Solutions() {
@@ -240,8 +257,39 @@ func (r *queryResolver) GetEmployer(ctx context.Context, id string) (*model.Empl
 }
 
 // GetNotifications is the resolver for the getNotifications field.
-func (r *queryResolver) GetNotifications(ctx context.Context, userID string, since *string) ([]*model.Notification, error) {
-	panic(fmt.Errorf("not implemented: GetNotifications - getNotifications"))
+func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]*model.Notification, error) {
+	q := query_builder.
+		QueryBuilder().Select([]string{"id", "title", "message", "forUserId", "createdAt"}).
+		WhereSubject("notification", "Notification").
+		Where("Id", "id").
+		Where("notificationTitle", "title").
+		Where("notificationMessage", "message").
+		Where("forUser", "forUser").
+		Where("notificationCreatedAt", "createdAt").
+		WhereExtraction("forUser", "Id", "forUserId")
+	if userID != "" {
+		quotedUserID := fmt.Sprintf("\"%s\"", userID)
+		q.Filter("forUserId", []string{quotedUserID}, query_builder.EQ)
+	}
+	qs := q.GroupBy([]string{"id", "title", "message", "forUserId", "createdAt"}).Build()
+
+	fmt.Println(qs)
+	res, err := r.Repo.Query(qs)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	fmt.Println("res:", res)
+
+	notifications := make([]*model.Notification, 0)
+	for _, notification := range res.Solutions() {
+		obj, err := util.MapRdfNotificationToGQL(notification)
+		if err != nil {
+			return nil, err
+		}
+		notifications = append(notifications, obj)
+	}
+	return notifications, nil
 }
 
 // GetConnectionRequests is the resolver for the getConnectionRequests field.
@@ -277,6 +325,22 @@ func (r *userResolver) Connections(ctx context.Context, obj *model.User) ([]*mod
 	return loaders.GetUsers(ctx, ids)
 }
 
+// Education is the resolver for the education field.
+func (r *userResolver) Education(ctx context.Context, obj *model.User) ([]*model.EducationEntry, error) {
+	ids := util.Map(obj.Education, func(e *model.EducationEntry) string {
+		return e.ID
+	})
+	return loaders.GetEducationEntries(ctx, ids)
+}
+
+// Experience is the resolver for the experience field.
+func (r *userResolver) Experience(ctx context.Context, obj *model.User) ([]*model.ExperienceEntry, error) {
+	ids := util.Map(obj.Experience, func(e *model.ExperienceEntry) string {
+		return e.ID
+	})
+	return loaders.GetExperienceEntries(ctx, ids)
+}
+
 // PostedBy is the resolver for the postedBy field.
 func (r *vacancyResolver) PostedBy(ctx context.Context, obj *model.Vacancy) (*model.Employer, error) {
 	return loaders.GetEmployer(ctx, obj.PostedBy.ID)
@@ -287,6 +351,9 @@ func (r *Resolver) Employer() EmployerResolver { return &employerResolver{r} }
 
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+// Notification returns NotificationResolver implementation.
+func (r *Resolver) Notification() NotificationResolver { return &notificationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
@@ -302,6 +369,7 @@ func (r *Resolver) Vacancy() VacancyResolver { return &vacancyResolver{r} }
 
 type employerResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
+type notificationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

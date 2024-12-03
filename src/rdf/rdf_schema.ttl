@@ -105,21 +105,30 @@ lr:Id a rdf:Property ;
 lr:institutionName a rdf:Property ;
     rdfs:domain lr:EducationEntry ;
     rdfs:range schema:Text .
+lr:institutionInfo a rdf:Property ;
+    rdfs:domain lr:EducationEntry ;
+    rdfs:range schema:Text .
 lr:degreeType a rdf:Property ;
     rdfs:domain lr:EducationEntry ;
     rdfs:range lr:DegreeType .
+lr:degreeField a rdf:Property ;
+    rdfs:domain lr:EducationEntry ;
+    rdfs:range lr:DegreeField .
 
 # Experience Entry
 lr:ExperienceEntry a rdfs:Class .
+lr:Id a rdf:Property ;
+    rdfs:domain lr:ExperienceEntry ;
+    rdfs:range schema:Text .
 lr:experienceTitle a rdf:Property ;
+    rdfs:domain lr:ExperienceEntry ;
+    rdfs:range schema:Text .
+lr:experienceDescription a rdf:Property ;
     rdfs:domain lr:ExperienceEntry ;
     rdfs:range schema:Text .
 lr:experienceType a rdf:Property ;
     rdfs:domain lr:ExperienceEntry ;
     rdfs:range lr:ExperienceType .
-lr:experienceDescription a rdf:Property ;
-    rdfs:domain lr:ExperienceEntry ;
-    rdfs:range schema:Text .
 lr:experienceStartDate a rdf:Property ;
     rdfs:domain lr:ExperienceEntry ;
     rdfs:range schema:Date .
@@ -169,18 +178,27 @@ lr:Operation a lr:ExperienceType .
 
 # Notifications
 lr:Notification a rdfs:Class .
-lr:forUser a rdf:Property ;
+lr:Id a rdf:Property ;
     rdfs:domain lr:Notification ;
-    rdfs:range lr:User .
+    rdfs:range schema:Text .
+lr:notificationTitle a rdf:Property ;
+    rdfs:domain lr:Notification ;
+    rdfs:range schema:Text .
 lr:notificationMessage a rdf:Property ;
     rdfs:domain lr:Notification ;
     rdfs:range schema:Text .
+lr:forUser a rdf:Property ;
+    rdfs:domain lr:Notification ;
+    rdfs:range lr:User .
 lr:notificationCreatedAt a rdf:Property ;
     rdfs:domain lr:Notification ;
     rdfs:range schema:Date .
 
 # Connection Requests
 lr:AskedConnection a rdfs:Class .
+lr:Id a rdf:Property ;
+    rdfs:domain lr:AskedConnection ;
+    rdfs:range schema:Text .
 lr:requestedBy a rdf:Property ;
     rdfs:domain lr:AskedConnection ;
     rdfs:range lr:User .

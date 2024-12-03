@@ -2,6 +2,7 @@ package util
 
 import (
 	"LinkKrec/graph/model"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -13,11 +14,30 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	var connections = make([]*model.User, 0)
 	for _, con := range strings.Split(user["connections"].String(), ", ") {
 		connections = append(connections, &model.User{ID: con})
 	}
 	userObj.Connections = connections
+	fmt.Println("connections userObj: ", userObj)
+
+	var educations = make([]*model.EducationEntry, 0)
+	for _, edu := range strings.Split(user["educationEntries"].String(), ", ") {
+		educations = append(educations, &model.EducationEntry{ID: edu})
+	}
+	userObj.Education = educations
+
+	fmt.Println("educations userObj: ", userObj)
+
+	var experiences = make([]*model.ExperienceEntry, 0)
+	for _, exp := range strings.Split(user["experienceEntries"].String(), ", ") {
+		experiences = append(experiences, &model.ExperienceEntry{ID: exp})
+	}
+	userObj.Experience = experiences
+
+	fmt.Println("experiences userObj: ", userObj)
+
 	return &userObj, nil
 }
 
@@ -92,4 +112,75 @@ func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
 	vacancyObj.RequiredExperienceDurations = durations
 
 	return &vacancyObj, nil
+}
+
+func MapRdfNotificationToGQL(notification map[string]rdf.Term) (*model.Notification, error) {
+	notificationObj, err := MapPrimitiveBindingsToStruct[model.Notification](notification)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("primitive notificationObj: ", notificationObj)
+
+	notificationObj.ForUser = &model.User{ID: notification["forUserId"].String()}
+	fmt.Println("foruser notifcationObj: ", notificationObj)
+	startDate := notification["createdAt"].String()
+	notificationObj.CreatedAt = &startDate
+
+	return &notificationObj, nil
+}
+
+func MapRdfEducationEntryToGQL(educationEntry map[string]rdf.Term) (*model.EducationEntry, error) {
+	educationEntryObj, err := MapPrimitiveBindingsToStruct[model.EducationEntry](educationEntry)
+	if err != nil {
+		return nil, err
+	}
+
+	educationType := (educationEntry["degree"].String())
+	var degree model.DegreeType
+	for _, d := range model.AllDegreeType {
+		if d.String() == educationType {
+			degree = d
+			break
+		}
+	}
+	educationEntryObj.Degree = degree
+
+	educationField := (educationEntry["field"].String())
+	var field model.DegreeField
+	for _, f := range model.AllDegreeField {
+		if f.String() == educationField {
+			field = f
+			break
+		}
+	}
+	educationEntryObj.Field = field
+
+	return &educationEntryObj, nil
+}
+
+func MapRdfExperienceEntryToGQL(experienceEntry map[string]rdf.Term) (*model.ExperienceEntry, error) {
+	fmt.Println("experienceEntry: ", experienceEntry)
+	experienceEntryObj, err := MapPrimitiveBindingsToStruct[model.ExperienceEntry](experienceEntry)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("primitive experienceEntryObj: ", experienceEntryObj)
+
+	experienceType := (experienceEntry["experienceType"].String())
+	var experience model.ExperienceType
+	for _, e := range model.AllExperienceType {
+		if e.String() == experienceType {
+			experience = e
+			break
+		}
+	}
+	experienceEntryObj.ExperienceType = experience
+
+	startDate := experienceEntry["startDate"].String()
+	experienceEntryObj.StartDate = &startDate
+
+	endDate := experienceEntry["endDate"].String()
+	experienceEntryObj.EndDate = &endDate
+
+	return &experienceEntryObj, nil
 }

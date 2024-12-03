@@ -34,7 +34,6 @@ type Query {
  # Fetch all notifications for a user, with optional filtering by read status or timeframe
  getNotifications(
    userId: ID!,
-   since: String,
  ): [Notification]
 
  # Fetch connection requests sent to a user, with optional filtering by status
@@ -138,6 +137,7 @@ enum DegreeField{
 
 # An education that a user can put on their profile
 type EducationEntry {
+ id: ID!,
  institution: String!,
  info: String!,
  degree: DegreeType!,
@@ -162,10 +162,11 @@ Operation,
 
  # Same as EducationEntry, but for job experiences, also used for matching
 type ExperienceEntry {
- title: String!
+ id: ID!,
+ title: String!,
+ description: String,
  experienceType: ExperienceType!,
- description: String
- startDate: String
+ startDate: String,
  endDate: String
 }
 
@@ -196,9 +197,10 @@ type AskedConnection {
 
 # a notification
 type Notification {
- id: ID!
+ id: ID!,
+ title: String!,
+ message: String!,
  forUser: User!,
- message: String!
  createdAt: String,
 }
 

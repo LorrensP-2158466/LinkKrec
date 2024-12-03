@@ -203,3 +203,111 @@ func (u *userReader) getEmployers(ctx context.Context, employerIDs []string) ([]
 	}
 	return employers, errs
 }
+
+func (u *userReader) getEducationEntries(ctx context.Context, educationEntryIDs []string) ([]*model.EducationEntry, []error) {
+	var ids []string
+	for _, id := range educationEntryIDs {
+		s := fmt.Sprintf("?id = \"%s\"", id)
+		ids = append(ids, s)
+	}
+	filter := strings.Join(ids, " || ")
+	q := fmt.Sprintf(`
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX schema: <http://schema.org/>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+		SELECT ?id ?institution ?info ?degree ?field
+		WHERE {
+		?education a lr:EducationEntry ;
+		lr:Id ?id ;
+		lr:institutionName ?institution ;
+		lr:educationInfo ?info ;
+		lr:educationDegree ?degree ;
+		lr:educationField ?field .
+
+		FILTER(%s)
+		}
+		GROUP BY ?id ?institution ?info ?degree ?field
+	`, filter)
+	res, err := u.Repo.Query(q)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	educationEntries := make([]*model.EducationEntry, len(educationEntryIDs))
+	errs := make([]error, len(educationEntryIDs))
+
+	var foundEducationEntries = make(map[string]*model.EducationEntry)
+	for _, m := range res.Solutions() {
+		educationEntry, err := util.MapRdfEducationEntryToGQL(m)
+		if err != nil {
+			return nil, []error{err}
+		}
+		foundEducationEntries[educationEntry.ID] = educationEntry
+	}
+	// fill return array with empty objects so the lengths match
+	for i, id := range educationEntryIDs {
+		if educationEntry, found := foundEducationEntries[id]; found {
+			educationEntries[i] = educationEntry
+			errs[i] = nil
+		} else {
+			educationEntries[i] = &model.EducationEntry{ID: id}
+			errs[i] = fmt.Errorf("educationEntry not found for ID: %s", id)
+		}
+	}
+	return educationEntries, errs
+}
+
+func (u *userReader) getExperienceEntries(ctx context.Context, experienceEntryIDs []string) ([]*model.ExperienceEntry, []error) {
+	var ids []string
+	for _, id := range experienceEntryIDs {
+		s := fmt.Sprintf("?id = \"%s\"", id)
+		ids = append(ids, s)
+	}
+	filter := strings.Join(ids, " || ")
+	q := fmt.Sprintf(`
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX schema: <http://schema.org/>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+		SELECT ?id ?title ?description ?startDate ?endDate ?experienceType
+		WHERE {
+		?experience a lr:ExperienceEntry ;
+		lr:Id ?id ;
+		lr:experienceTitle ?title ;
+		lr:experienceDescription ?description ;
+		lr:experienceType ?experienceType ;
+		lr:experienceStartDate ?startDate ;
+		lr:experienceEndDate ?endDate .
+
+		FILTER(%s)
+		}
+	`, filter)
+	res, err := u.Repo.Query(q)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	experienceEntries := make([]*model.ExperienceEntry, len(experienceEntryIDs))
+	errs := make([]error, len(experienceEntryIDs))
+
+	var foundExperienceEntries = make(map[string]*model.ExperienceEntry)
+	for _, m := range res.Solutions() {
+		experienceEntry, err := util.MapRdfExperienceEntryToGQL(m)
+		if err != nil {
+			return nil, []error{err}
+		}
+		foundExperienceEntries[experienceEntry.ID] = experienceEntry
+	}
+	// fill return array with empty objects so the lengths match
+	for i, id := range experienceEntryIDs {
+		if experienceEntry, found := foundExperienceEntries[id]; found {
+			experienceEntries[i] = experienceEntry
+			errs[i] = nil
+		} else {
+			experienceEntries[i] = &model.ExperienceEntry{ID: id}
+			errs[i] = fmt.Errorf("experienceEntry not found for ID: %s", id)
+		}
+	}
+	return experienceEntries, errs
+}

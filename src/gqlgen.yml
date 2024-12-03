@@ -99,6 +99,10 @@ models:
     fields:
       connections:
         resolver: true
+      education:
+        resolver: true
+      experience:
+        resolver: true
   Employer:
     fields:
       vacancies:
@@ -109,3 +113,8 @@ models:
     fields:
       postedBy:
         resolver: true
+  Notification:
+    fields:
+      forUser:
+        resolver: true
+
