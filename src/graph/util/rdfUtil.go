@@ -21,6 +21,30 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 	return &userObj, nil
 }
 
+func MapRdfEmployerToGQL(employer map[string]rdf.Term) (*model.Employer, error) {
+	employerObj, err := MapPrimitiveBindingsToStruct[model.Employer](employer)
+	if err != nil {
+		return nil, err
+	}
+
+	var location = employer["location"].String()
+	employerObj.Location = &location
+
+	var vacancies = make([]*model.Vacancy, 0)
+	for _, vac := range strings.Split(employer["vacancies"].String(), ", ") {
+		vacancies = append(vacancies, &model.Vacancy{ID: vac})
+	}
+	employerObj.Vacancies = vacancies
+
+	var employees = make([]*model.User, 0)
+	for _, emp := range strings.Split(employer["employees"].String(), ", ") {
+		employees = append(employees, &model.User{ID: emp})
+	}
+	employerObj.Employees = employees
+
+	return &employerObj, nil
+}
+
 func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
 	vacancyObj, err := MapPrimitiveBindingsToStruct[model.Vacancy](vacancy)
 	if err != nil {
@@ -32,6 +56,8 @@ func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
 
 	endDate := vacancy["endDate"].String()
 	vacancyObj.EndDate = &endDate
+
+	vacancyObj.PostedBy = &model.Employer{ID: vacancy["postedById"].String()}
 
 	education := (vacancy["education"].String())
 	var degree model.DegreeType

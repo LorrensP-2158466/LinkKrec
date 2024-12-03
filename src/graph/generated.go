@@ -40,10 +40,12 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Employer() EmployerResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 	Subscription() SubscriptionResolver
 	User() UserResolver
+	Vacancy() VacancyResolver
 }
 
 type DirectiveRoot struct {
@@ -145,6 +147,10 @@ type ComplexityRoot struct {
 	}
 }
 
+type EmployerResolver interface {
+	Vacancies(ctx context.Context, obj *model.Employer) ([]*model.Vacancy, error)
+	Employees(ctx context.Context, obj *model.Employer) ([]*model.User, error)
+}
 type MutationResolver interface {
 	RegisterUser(ctx context.Context, input model.RegisterUserInput) (*model.User, error)
 	UpdateUser(ctx context.Context, id string, input model.UpdateUserInput) (*model.User, error)
@@ -174,6 +180,9 @@ type SubscriptionResolver interface {
 }
 type UserResolver interface {
 	Connections(ctx context.Context, obj *model.User) ([]*model.User, error)
+}
+type VacancyResolver interface {
+	PostedBy(ctx context.Context, obj *model.Vacancy) (*model.Employer, error)
 }
 
 type executableSchema struct {
@@ -2318,7 +2327,7 @@ func (ec *executionContext) _Employer_vacancies(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Vacancies, nil
+		return ec.resolvers.Employer().Vacancies(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2339,8 +2348,8 @@ func (ec *executionContext) fieldContext_Employer_vacancies(_ context.Context, f
 	fc = &graphql.FieldContext{
 		Object:     "Employer",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -2386,7 +2395,7 @@ func (ec *executionContext) _Employer_employees(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Employees, nil
+		return ec.resolvers.Employer().Employees(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2407,8 +2416,8 @@ func (ec *executionContext) fieldContext_Employer_employees(_ context.Context, f
 	fc = &graphql.FieldContext{
 		Object:     "Employer",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -5248,7 +5257,7 @@ func (ec *executionContext) _Vacancy_postedBy(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.PostedBy, nil
+		return ec.resolvers.Vacancy().PostedBy(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5269,8 +5278,8 @@ func (ec *executionContext) fieldContext_Vacancy_postedBy(_ context.Context, fie
 	fc = &graphql.FieldContext{
 		Object:     "Vacancy",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -7594,30 +7603,92 @@ func (ec *executionContext) _Employer(ctx context.Context, sel ast.SelectionSet,
 		case "id":
 			out.Values[i] = ec._Employer_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._Employer_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "email":
 			out.Values[i] = ec._Employer_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "location":
 			out.Values[i] = ec._Employer_location(ctx, field, obj)
 		case "vacancies":
-			out.Values[i] = ec._Employer_vacancies(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Employer_vacancies(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "employees":
-			out.Values[i] = ec._Employer_employees(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Employer_employees(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8156,43 +8227,74 @@ func (ec *executionContext) _Vacancy(ctx context.Context, sel ast.SelectionSet, 
 		case "id":
 			out.Values[i] = ec._Vacancy_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "title":
 			out.Values[i] = ec._Vacancy_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._Vacancy_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "requiredEducation":
 			out.Values[i] = ec._Vacancy_requiredEducation(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "requiredExperiences":
 			out.Values[i] = ec._Vacancy_requiredExperiences(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "requiredExperienceDurations":
 			out.Values[i] = ec._Vacancy_requiredExperienceDurations(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "location":
 			out.Values[i] = ec._Vacancy_location(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "postedBy":
-			out.Values[i] = ec._Vacancy_postedBy(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Vacancy_postedBy(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "startDate":
 			out.Values[i] = ec._Vacancy_startDate(ctx, field, obj)
 		case "endDate":
@@ -8586,6 +8688,10 @@ func (ec *executionContext) unmarshalNDegreeType2LinkKrecᚋgraphᚋmodelᚐDegr
 
 func (ec *executionContext) marshalNDegreeType2LinkKrecᚋgraphᚋmodelᚐDegreeType(ctx context.Context, sel ast.SelectionSet, v model.DegreeType) graphql.Marshaler {
 	return v
+}
+
+func (ec *executionContext) marshalNEmployer2LinkKrecᚋgraphᚋmodelᚐEmployer(ctx context.Context, sel ast.SelectionSet, v model.Employer) graphql.Marshaler {
+	return ec._Employer(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNEmployer2ᚖLinkKrecᚋgraphᚋmodelᚐEmployer(ctx context.Context, sel ast.SelectionSet, v *model.Employer) graphql.Marshaler {

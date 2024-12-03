@@ -22,8 +22,9 @@ type userReader struct {
 
 // Loaders wrap your data loaders to inject via middleware
 type Loaders struct {
-	UserLoader    *dataloadgen.Loader[string, *model.User]
-	VacancyLoader *dataloadgen.Loader[string, *model.Vacancy]
+	UserLoader     *dataloadgen.Loader[string, *model.User]
+	VacancyLoader  *dataloadgen.Loader[string, *model.Vacancy]
+	EmployerLoader *dataloadgen.Loader[string, *model.Employer]
 }
 
 // NewLoaders instantiates data loaders for the middleware
@@ -31,8 +32,9 @@ func NewLoaders(conn *sparql.Repo) *Loaders {
 	// define the data loader
 	ur := &userReader{Repo: conn}
 	return &Loaders{
-		UserLoader:    dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
-		VacancyLoader: dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
+		UserLoader:     dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
+		VacancyLoader:  dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
+		EmployerLoader: dataloadgen.NewLoader(ur.getEmployers, dataloadgen.WithWait(time.Millisecond)),
 	}
 }
 
@@ -72,4 +74,14 @@ func GetVacancy(ctx context.Context, vacancyID string) (*model.Vacancy, error) {
 func GetVacancies(ctx context.Context, vacancyIDs []string) ([]*model.Vacancy, error) {
 	loaders := For(ctx)
 	return loaders.VacancyLoader.LoadAll(ctx, vacancyIDs)
+}
+
+func GetEmployer(ctx context.Context, employerID string) (*model.Employer, error) {
+	loaders := For(ctx)
+	return loaders.EmployerLoader.Load(ctx, employerID)
+}
+
+func GetEmployers(ctx context.Context, employerIDs []string) ([]*model.Employer, error) {
+	loaders := For(ctx)
+	return loaders.EmployerLoader.LoadAll(ctx, employerIDs)
 }

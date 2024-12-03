@@ -41,8 +41,19 @@ lr:isLookingForOpportunities a rdf:Property ;
     rdfs:range schema:Boolean .
 
 # Employer (represents a company or employer)
-lr:Employer a rdfs:Class ;
-    rdfs:subClassOf lr:User .
+lr:Employer a rdfs:Class .
+lr:Id a rdf:Property ;
+    rdfs:domain lr:Employer ;
+    rdfs:range schema:Text .
+lr:employerName a rdf:Property ;
+    rdfs:domain lr:Employer ;
+    rdfs:range schema:Text .
+lr:employerEmail a rdf:Property ;
+    rdfs:domain lr:Employer ;
+    rdfs:range schema:Text .
+lr:employerLocation a rdf:Property ;
+    rdfs:domain lr:Employer ;
+    rdfs:range schema:Text .
 lr:hasVacancy a rdf:Property ;
     rdfs:domain lr:Employer ;
     rdfs:range lr:Vacancy .

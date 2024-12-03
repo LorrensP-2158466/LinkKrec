@@ -14,6 +14,22 @@ import (
 	"strconv"
 )
 
+// Vacancies is the resolver for the vacancies field.
+func (r *employerResolver) Vacancies(ctx context.Context, obj *model.Employer) ([]*model.Vacancy, error) {
+	ids := util.Map(obj.Vacancies, func(v *model.Vacancy) string {
+		return v.ID
+	})
+	return loaders.GetVacancies(ctx, ids)
+}
+
+// Employees is the resolver for the employees field.
+func (r *employerResolver) Employees(ctx context.Context, obj *model.Employer) ([]*model.User, error) {
+	ids := util.Map(obj.Employees, func(u *model.User) string {
+		return u.ID
+	})
+	return loaders.GetUsers(ctx, ids)
+}
+
 // RegisterUser is the resolver for the registerUser field.
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.RegisterUserInput) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: RegisterUser - registerUser"))
@@ -71,7 +87,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		GroupConcat("skill", ", ", "skills", true).
 		GroupConcat("connectionName", ", ", "connections", true).
 		WhereSubject("user", "User").
-		Where("Id", "id").
+		Where("hasId", "id").
 		Where("hasName", "name").
 		Where("hasEmail", "email").
 		Where("isEmployer", "isEmployer").
@@ -121,7 +137,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 // GetVacancies is the resolver for the getVacancies field.
 func (r *queryResolver) GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error) {
 	q := query_builder.
-		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedBy", "startDate", "endDate", "status", "education"}).
+		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "education"}).
 		GroupConcat("experienceType", ", ", "experienceTypes", true).
 		GroupConcat("experienceDuration", ", ", "experienceDurations", true).
 		WhereSubject("vacancy", "Vacancy").
@@ -129,13 +145,14 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 		Where("vacancyTitle", "title").
 		Where("vacancyDescription", "description").
 		Where("vacancyLocation", "location").
-		//Where("postedBy", "postedBy").
+		Where("postedBy", "postedBy").
 		Where("vacancyStartDate", "startDate").
 		Where("vacancyEndDate", "endDate").
 		Where("vacancyStatus", "status").
 		Where("requiredEducation", "education").
 		Where("requiredExperienceType", "experienceType").
-		Where("requiredExperienceDuration", "experienceDuration")
+		Where("requiredExperienceDuration", "experienceDuration").
+		WhereExtraction("postedBy", "Id", "postedById")
 	if title != nil {
 		q.Filter("name", []string{*title}, query_builder.EQ)
 	}
@@ -148,7 +165,7 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 	if status != nil {
 		q.Filter("status", []string{strconv.FormatBool(*status)}, query_builder.EQ)
 	}
-	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedBy", "startDate", "endDate", "status", "education"}).Build()
+	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "education"}).Build()
 
 	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
@@ -156,6 +173,7 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 		fmt.Println(err)
 		return nil, err
 	}
+
 	vacancies := make([]*model.Vacancy, 0)
 	for _, user := range res.Solutions() {
 		obj, err := util.MapRdfVacancyToGQL(user)
@@ -175,12 +193,50 @@ func (r *queryResolver) GetVacancy(ctx context.Context, id string) (*model.Vacan
 
 // GetEmployers is the resolver for the getEmployers field.
 func (r *queryResolver) GetEmployers(ctx context.Context, name *string, location *string) ([]*model.Employer, error) {
-	panic(fmt.Errorf("not implemented: GetEmployers - getEmployers"))
+	q := query_builder.
+		QueryBuilder().Select([]string{"id", "name", "email", "location"}).
+		GroupConcat("vacancyId", ", ", "vacancies", true).
+		GroupConcat("employeeId", ", ", "employees", true).
+		WhereSubject("employer", "Employer").
+		Where("Id", "id").
+		Where("employerName", "name").
+		Where("employerEmail", "email").
+		Where("employerLocation", "location").
+		Where("hasVacancy", "vacancy").
+		Where("hasEmployee", "employee").
+		OptionalSubject("vacancy", "Vacancy").
+		Optional("Id", "vacancyId").
+		OptionalSubject("employee", "User").
+		Optional("Id", "employeeId")
+	if name != nil {
+		q.Filter("name", []string{*name}, query_builder.EQ)
+	}
+	if location != nil {
+		q.Filter("location", []string{*location}, query_builder.EQ)
+	}
+	qs := q.GroupBy([]string{"id", "name", "email", "location"}).Build()
+
+	fmt.Println(qs)
+	res, err := r.Repo.Query(qs)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	employers := make([]*model.Employer, 0)
+	for _, employer := range res.Solutions() {
+		obj, err := util.MapRdfEmployerToGQL(employer)
+		if err != nil {
+			return nil, err
+		}
+		employers = append(employers, obj)
+	}
+	return employers, nil
 }
 
 // GetEmployer is the resolver for the getEmployer field.
 func (r *queryResolver) GetEmployer(ctx context.Context, id string) (*model.Employer, error) {
-	panic(fmt.Errorf("not implemented: GetEmployer - getEmployer"))
+	return loaders.GetEmployer(ctx, id)
 }
 
 // GetNotifications is the resolver for the getNotifications field.
@@ -221,6 +277,14 @@ func (r *userResolver) Connections(ctx context.Context, obj *model.User) ([]*mod
 	return loaders.GetUsers(ctx, ids)
 }
 
+// PostedBy is the resolver for the postedBy field.
+func (r *vacancyResolver) PostedBy(ctx context.Context, obj *model.Vacancy) (*model.Employer, error) {
+	return loaders.GetEmployer(ctx, obj.PostedBy.ID)
+}
+
+// Employer returns EmployerResolver implementation.
+func (r *Resolver) Employer() EmployerResolver { return &employerResolver{r} }
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
@@ -233,7 +297,12 @@ func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionRes
 // User returns UserResolver implementation.
 func (r *Resolver) User() UserResolver { return &userResolver{r} }
 
+// Vacancy returns VacancyResolver implementation.
+func (r *Resolver) Vacancy() VacancyResolver { return &vacancyResolver{r} }
+
+type employerResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+type vacancyResolver struct{ *Resolver }

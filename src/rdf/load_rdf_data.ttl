@@ -1,13 +1,13 @@
 PREFIX lr: <http://linkrec.example.org/schema#>
 
-lr:user1 a lr:User ;
+lr:User1 a lr:User ;
     lr:Id "1" ;
     lr:hasName "Alice" ;
     lr:hasEmail "alice.gmail.com" ;
     lr:isEmployer false ;
     lr:hasLocation "San Francisco" ;
-    lr:hasConnection lr:Bob ;
-    lr:hasConnection lr:Charlie ;
+    lr:hasConnection lr:User2 ;
+    lr:hasConnection lr:User3 ;
     lr:hasEducation lr:EducationEntry1 ;
     lr:hasExperience lr:ExperienceEntry1 ;
     lr:hasSkill "Python" ;
@@ -15,7 +15,7 @@ lr:user1 a lr:User ;
     lr:isLookingForOpportunities true .
 
 
-lr:Bob a lr:User ;
+lr:User2 a lr:User ;
     lr:Id "2" ;
     lr:hasName "Bob" ;
     lr:hasEmail "bob@gmail.com" ;
@@ -24,11 +24,11 @@ lr:Bob a lr:User ;
     lr:hasSkill "C++" ;
     lr:hasSkill "Project Management" ;
     lr:isLookingForOpportunities false ;
-    lr:hasConnection lr:Charlie ;
+    lr:hasConnection lr:User3 ;
     lr:hasEducation lr:EducationEntry2 ;
     lr:hasExperience lr:ExperienceEntry2 .
 
-lr:Charlie a lr:User ;
+lr:User3 a lr:User ;
     lr:Id "3" ;
     lr:hasName "Charlie" ;
     lr:hasEmail "charlie@yahoo.com" ;
@@ -38,7 +38,7 @@ lr:Charlie a lr:User ;
     lr:hasSkill "React" ;
     lr:hasSkill "Node.js" ;
     lr:isLookingForOpportunities true ;
-    lr:hasConnection lr:Bob ;
+    lr:hasConnection lr:User2 ;
     lr:hasEducation lr:EducationEntry3 ;
     lr:hasExperience lr:ExperienceEntry3 .
 
@@ -65,6 +65,7 @@ lr:Vacancy1 a lr:Vacancy ;
     lr:Id "1" ;
     lr:vacancyTitle "Software Engineer" ;
     lr:vacancyDescription "Develop software applications" ;
+    lr:postedBy lr:Employer1 ;
     lr:vacancyLocation "San Francisco" ;
     lr:requiredEducation "ProfBachelor" ;
     lr:requiredExperienceType "IT" ;
@@ -77,6 +78,7 @@ lr:Vacancy2 a lr:Vacancy ;
     lr:Id "2" ;
     lr:vacancyTitle "Project Manager" ;
     lr:vacancyDescription "Manage software development projects" ;
+    lr:postedBy lr:Employer1 ;
     lr:vacancyLocation "New York" ;
     lr:requiredEducation "Master" ;
     lr:requiredExperienceType "IT" ;
@@ -86,4 +88,35 @@ lr:Vacancy2 a lr:Vacancy ;
     lr:vacancyStartDate "2022-02-01"^^xsd:date ;
     lr:vacancyEndDate "2022-07-31"^^xsd:date ;
     lr:vacancyStatus true .
+
+lr:Vacancy3 a lr:Vacancy ;
+    lr:Id "3" ;
+    lr:vacancyTitle "Full-Stack Developer" ;
+    lr:vacancyDescription "Develop web applications" ;
+    lr:postedBy lr:Employer2 ;
+    lr:vacancyLocation "Los Angeles" ;
+    lr:requiredEducation "AcBachelor" ;
+    lr:requiredExperienceType "IT" ;
+    lr:requiredExperienceDuration 2 ;
+    lr:vacancyStartDate "2022-03-01"^^xsd:date ;
+    lr:vacancyEndDate "2022-08-31"^^xsd:date ;
+    lr:vacancyStatus false .
+
+lr:Employer1 a lr:Employer ;
+    lr:Id "1" ;
+    lr:employerName "InnovateTech" ;
+    lr:employerEmail "InnovateTech@gmail.com" ;
+    lr:employerLocation "San Francisco" ;
+    lr:hasVacancy lr:Vacancy1 ;
+    lr:hasVacancy lr:Vacancy2 ;
+    lr:hasEmployee lr:User1 .
+
+lr:Employer2 a lr:Employer ;
+    lr:Id "2" ;
+    lr:employerName "TechCorp" ;
+    lr:employerEmail "TechCorp@gmail.com" ;
+    lr:employerLocation "New York" ;
+    lr:hasVacancy lr:Vacancy3 ;
+    lr:hasEmployee lr:User2 ;
+    lr:hasEmployee lr:User3 .
 

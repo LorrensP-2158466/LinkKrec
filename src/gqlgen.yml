@@ -99,3 +99,13 @@ models:
     fields:
       connections:
         resolver: true
+  Employer:
+    fields:
+      vacancies:
+        resolver: true
+      employees:
+        resolver: true
+  Vacancy:
+    fields:
+      postedBy:
+        resolver: true

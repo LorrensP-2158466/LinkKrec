@@ -28,11 +28,12 @@ type GroupConcat struct {
 }
 
 type Where struct {
-	clauses     []SubWhere
-	extractions []WhereExtraction
-	filters     []Filter
-	binds       []Bind
-	subQueries  []string
+	clauses         []SubWhere
+	optionalClauses []OptionalClause
+	extractions     []WhereExtraction
+	filters         []Filter
+	binds           []Bind
+	subQueries      []string
 }
 
 type SubWhere struct {
@@ -89,6 +90,11 @@ const (
 	EQ          = "="
 	IN          = "IN"
 )
+
+type OptionalClause struct {
+	subject *WhereSubject
+	clauses []WhereClause
+}
 
 func QueryBuilder() *Query {
 	return &Query{
@@ -196,6 +202,24 @@ func (q *Query) OrFilter(field string, value []string, op FilterOp) *Query {
 	return q
 }
 
+func (q *Query) OptionalSubject(binding string, obj string) *Query {
+	var opt = OptionalClause{
+		subject: &WhereSubject{binding: binding, obj: obj},
+	}
+	q.where.optionalClauses = append(q.where.optionalClauses, opt)
+	return q
+}
+
+func (q *Query) Optional(field string, binding string) *Query {
+	var clause = WhereClause{
+		field:   field,
+		binding: binding,
+	}
+	var last = &q.where.optionalClauses[len(q.where.optionalClauses)-1]
+	last.clauses = append(last.clauses, clause)
+	return q
+}
+
 func (q *Query) Build() string {
 	var output = PREFIXES + "\n\n"
 	output += buildSelect(*q.sel) + "\n"
@@ -250,6 +274,22 @@ func buildWhere(wh Where) string {
 	for _, sub := range wh.subQueries {
 		output += sub + "\n"
 	}
+
+	for _, opt := range wh.optionalClauses {
+		output += "OPTIONAL {\n"
+		output += fmt.Sprintf("?%s a lr:%s ;\n", opt.subject.binding, opt.subject.obj)
+		for idx, cl := range opt.clauses {
+			output += fmt.Sprintf("lr:%s ?%s", cl.field, cl.binding)
+			if (idx) == len(opt.clauses)-1 {
+				output += " ."
+			} else {
+				output += " ;"
+			}
+			output += "\n"
+		}
+		output += "}\n"
+	}
+
 	if len(wh.binds) > 0 {
 		output += buildBinds(wh.binds) + "\n"
 	}
