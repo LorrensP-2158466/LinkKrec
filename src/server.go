@@ -269,7 +269,7 @@ func main() {
 	// Connect to the SPARQL endpoints
 	repo, err := sparql.NewRepo(queryEndpoint)
 	if err != nil {
-		log.Fatalf("Failed to connect to the SPARQL endpoint: %v", err)
+		log.Fatalf("Failed to connect to SPARQL endpoint: %v", err)
 	}
 	updateRepo, err := sparql.NewRepo(mutateEndpoint)
 	if err != nil {
