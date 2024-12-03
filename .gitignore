@@ -1,0 +1,29 @@
+
+# Environment variables
+.env
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Fuseki data
+run/databases/
+run/logs/
+run/backups/
+run/system_files/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
