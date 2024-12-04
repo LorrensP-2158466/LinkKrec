@@ -143,31 +143,3 @@ lr:Notification2 a lr:Notification ;
     lr:notificationMessage "TechCorp is hiring a Project Manager" ;
     lr:forUser lr:User2 ;
     lr:notificationCreatedAt "2022-02-01"^^xsd:date .
-
-lr:EducationEntry1 a lr:EducationEntry ;
-    lr:Id "1" ;
-    lr:educationInstitution "Stanford University" ;
-    lr:degreeType "ProfBachelor" ;
-    lr:degreeField "Computer Science" .
-
-lr:EducationEntry2 a lr:EducationEntry ;
-    lr:Id "2" ;
-    lr:educationInstitution "Harvard Business School" ;
-    lr:degreeType "Master" ;
-    lr:degreeField "Engineering" .
-
-lr:ExperienceEntry1 a lr:ExperienceEntry ;
-    lr:Id "1" ;
-    lr:experienceTitle "Software Engineer" ;
-    lr:experienceDescription "Developed software applications" ;
-    lr:experienceType "IT" ;
-    lr:experienceStartDate "2020-01-01"^^xsd:date ;
-    lr:experienceEndDate "2021-12-31"^^xsd:date .
-
-lr:ExperienceEntry2 a lr:ExperienceEntry ;
-    lr:Id "2" ;
-    lr:experienceTitle "Senior Project Manager" ;
-    lr:experienceDescription "Managed software development projects" ;
-    lr:experienceType "IT" ;
-    lr:experienceStartDate "2018-01-01"^^xsd:date ;
-    lr:experienceEndDate "2021-12-31"^^xsd:date .

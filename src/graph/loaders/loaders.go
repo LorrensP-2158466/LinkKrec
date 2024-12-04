@@ -10,7 +10,7 @@ import (
 
 // getUsers implements a batch function that can retrieve many users by ID,
 // for use in a dataloader
-func (u *userReader) getUsers(ctx context.Context, userIDs []string) ([]*model.User, []error) {
+func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.User, []error) {
 	var ids []string
 	for _, id := range userIDs {
 		s := fmt.Sprintf("?id = \"%s\"", id)
@@ -44,11 +44,11 @@ func (u *userReader) getUsers(ctx context.Context, userIDs []string) ([]*model.U
 		}
 		OPTIONAL {
 			?user lr:hasEducation ?education .
-			?education rdfs:label ?educationEntry .
+			?education lr:Id ?educationEntry .
 		}
 		OPTIONAL {
 			?user lr:hasExperience ?experience .
-			?experience rdfs:label ?experienceEntry .
+			?experience lr:Id ?experienceEntry .
 		}
 
 		FILTER(%s)
@@ -86,7 +86,7 @@ func (u *userReader) getUsers(ctx context.Context, userIDs []string) ([]*model.U
 
 // getVacancies implements a batch function that can retrieve many vacancies by ID,
 // for use in a dataloader
-func (u *userReader) getVacancies(ctx context.Context, vacancyIDs []string) ([]*model.Vacancy, []error) {
+func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*model.Vacancy, []error) {
 	var ids []string
 	for _, id := range vacancyIDs {
 		s := fmt.Sprintf("?id = \"%s\"", id)
@@ -99,24 +99,24 @@ func (u *userReader) getVacancies(ctx context.Context, vacancyIDs []string) ([]*
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 		SELECT ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?education (GROUP_CONCAT(DISTINCT ?experienceType; separator=", ") AS ?experienceTypes) (GROUP_CONCAT(DISTINCT ?experienceDuration; separator=", ") AS ?experienceDurations)
-WHERE {
-?vacancy a lr:Vacancy ;
-lr:Id ?id ;
-lr:vacancyTitle ?title ;
-lr:vacancyDescription ?description ;
-lr:vacancyLocation ?location ;
-lr:postedBy ?postedBy ;
-lr:vacancyStartDate ?startDate ;
-lr:vacancyEndDate ?endDate ;
-lr:vacancyStatus ?status ;
-lr:requiredEducation ?education ;
-lr:requiredExperienceType ?experienceType ;
-lr:requiredExperienceDuration ?experienceDuration .
-?postedBy lr:Id ?postedById .
+		WHERE {
+			?vacancy a lr:Vacancy ;
+			lr:Id ?id ;
+			lr:vacancyTitle ?title ;
+			lr:vacancyDescription ?description ;
+			lr:vacancyLocation ?location ;
+			lr:postedBy ?postedBy ;
+			lr:vacancyStartDate ?startDate ;
+			lr:vacancyEndDate ?endDate ;
+			lr:vacancyStatus ?status ;
+			lr:requiredEducation ?education ;
+			lr:requiredExperienceType ?experienceType ;
+			lr:requiredExperienceDuration ?experienceDuration .
+			?postedBy lr:Id ?postedById .
 
-FILTER(%s)
-}
-GROUP BY ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?education
+		FILTER(%s)
+		}
+		GROUP BY ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?education
 	`, filter)
 	res, err := u.Repo.Query(q)
 	if err != nil {
@@ -147,7 +147,7 @@ GROUP BY ?id ?title ?description ?location ?postedById ?startDate ?endDate ?stat
 	return vacancies, errs
 }
 
-func (u *userReader) getEmployers(ctx context.Context, employerIDs []string) ([]*model.Employer, []error) {
+func (u *DataBase) getEmployers(ctx context.Context, employerIDs []string) ([]*model.Employer, []error) {
 	var ids []string
 	for _, id := range employerIDs {
 		s := fmt.Sprintf("?id = \"%s\"", id)
@@ -162,14 +162,14 @@ func (u *userReader) getEmployers(ctx context.Context, employerIDs []string) ([]
 		SELECT ?id ?name ?email ?location (GROUP_CONCAT(DISTINCT ?vacancyId; separator=", ") AS ?vacancies) (GROUP_CONCAT(DISTINCT ?employeeId; separator=", ") AS ?employees)   
 		WHERE {
 		?employer a lr:Employer ;
-		lr:Id ?id ;
-		lr:employerName ?name ;
-		lr:employerEmail ?email ;
-		lr:employerLocation ?location ;
-		lr:hasVacancy ?vacancy ;
-		lr:hasEmployee ?employee .
-		?vacancy lr:Id ?vacancyId .
-		?employee lr:Id ?employeeId .
+			lr:Id ?id ;
+			lr:employerName ?name ;
+			lr:employerEmail ?email ;
+			lr:employerLocation ?location ;
+			lr:hasVacancy ?vacancy ;
+			lr:hasEmployee ?employee .
+			?vacancy lr:Id ?vacancyId .
+			?employee lr:Id ?employeeId .
 
 		FILTER(%s)
 		}
@@ -204,7 +204,7 @@ func (u *userReader) getEmployers(ctx context.Context, employerIDs []string) ([]
 	return employers, errs
 }
 
-func (u *userReader) getEducationEntries(ctx context.Context, educationEntryIDs []string) ([]*model.EducationEntry, []error) {
+func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []string) ([]*model.EducationEntry, []error) {
 	var ids []string
 	for _, id := range educationEntryIDs {
 		s := fmt.Sprintf("?id = \"%s\"", id)
@@ -218,12 +218,12 @@ func (u *userReader) getEducationEntries(ctx context.Context, educationEntryIDs 
 
 		SELECT ?id ?institution ?info ?degree ?field
 		WHERE {
-		?education a lr:EducationEntry ;
-		lr:Id ?id ;
-		lr:institutionName ?institution ;
-		lr:educationInfo ?info ;
-		lr:educationDegree ?degree ;
-		lr:educationField ?field .
+			?education a lr:EducationEntry ;
+			lr:Id ?id ;
+			lr:institutionName ?institution ;
+			lr:educationInfo ?info ;
+			lr:educationDegree ?degree ;
+			lr:educationField ?field .
 
 		FILTER(%s)
 		}
@@ -258,7 +258,7 @@ func (u *userReader) getEducationEntries(ctx context.Context, educationEntryIDs 
 	return educationEntries, errs
 }
 
-func (u *userReader) getExperienceEntries(ctx context.Context, experienceEntryIDs []string) ([]*model.ExperienceEntry, []error) {
+func (u *DataBase) getExperienceEntries(ctx context.Context, experienceEntryIDs []string) ([]*model.ExperienceEntry, []error) {
 	var ids []string
 	for _, id := range experienceEntryIDs {
 		s := fmt.Sprintf("?id = \"%s\"", id)
@@ -272,13 +272,13 @@ func (u *userReader) getExperienceEntries(ctx context.Context, experienceEntryID
 
 		SELECT ?id ?title ?description ?startDate ?endDate ?experienceType
 		WHERE {
-		?experience a lr:ExperienceEntry ;
-		lr:Id ?id ;
-		lr:experienceTitle ?title ;
-		lr:experienceDescription ?description ;
-		lr:experienceType ?experienceType ;
-		lr:experienceStartDate ?startDate ;
-		lr:experienceEndDate ?endDate .
+			?experience a lr:ExperienceEntry ;
+			lr:Id ?id ;
+			lr:experienceTitle ?title ;
+			lr:experienceDescription ?description ;
+			lr:experienceType ?experienceType ;
+			lr:experienceStartDate ?startDate ;
+			lr:experienceEndDate ?endDate .
 
 		FILTER(%s)
 		}

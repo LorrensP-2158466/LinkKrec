@@ -16,7 +16,7 @@ const (
 	loadersKey = ctxKey("dataloaders")
 )
 
-type userReader struct {
+type DataBase struct {
 	Repo *sparql.Repo
 }
 
@@ -32,7 +32,7 @@ type Loaders struct {
 // NewLoaders instantiates data loaders for the middleware
 func NewLoaders(conn *sparql.Repo) *Loaders {
 	// define the data loader
-	ur := &userReader{Repo: conn}
+	ur := &DataBase{Repo: conn}
 	return &Loaders{
 		UserLoader:            dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
 		VacancyLoader:         dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
