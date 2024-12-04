@@ -40,7 +40,7 @@ type Query {
  getConnectionRequests(
    userId: ID!,
    status: Boolean,
- ): [AskedConnection]
+ ): [ConnectionRequest]
 }
 
 
@@ -55,7 +55,7 @@ type Mutation {
  updateUserProfile(id: ID!, input: UpdateProfileInput!): User
 
  # Add or remove a connection between users
- manageConnection(userId: ID!, connectedUserId: ID!, action: String!): AskedConnection
+ manageConnection(userId: ID!, connectedUserId: ID!, action: String!): ConnectionRequest
 
  # Notify a user when someone visits their profile
  notifyProfileVisit(visitorId: ID!, visitedUserId: ID!): Notification
@@ -77,9 +77,9 @@ type Mutation {
 # We just thought about these, so we don't know if these will be used or are correct
 type Subscription {
  # Notify users of a new connection request
- newConnectionRequest(forUserId: ID!): AskedConnection
+ newConnectionRequest(forUserId: ID!): ConnectionRequest
   # Notify users of changes in connection request status (accepted or declined)
- connectionRequestStatusUpdate(forUserId: ID!): AskedConnection
+ connectionRequestStatusUpdate(forUserId: ID!): ConnectionRequest
   # Notify users when a new job vacancy that matches their profile is posted
  newMatchingVacancy(userId: ID!): Vacancy
   # Notify users of general notifications (e.g., profile views, vacancy matches)
@@ -188,9 +188,10 @@ type Vacancy {
 
 
 # A connection request from a user to a user
-type AskedConnection {
- user: User!
- connectedTo: User!
+type ConnectionRequest {
+ id: ID!,
+ fromUser: User!,
+ connectedToUser: User!,
  status: Boolean! # keep this in data so we have audit trails
 }
 

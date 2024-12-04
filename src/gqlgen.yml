@@ -117,4 +117,10 @@ models:
     fields:
       forUser:
         resolver: true
+  ConnectionRequest:
+    fields:
+      fromUser:
+        resolver: true
+      connectedToUser:
+        resolver: true
 

@@ -8,12 +8,21 @@ import (
 	"LinkKrec/graph/loaders"
 	"LinkKrec/graph/model"
 	"LinkKrec/graph/util"
-	"LinkKrec/querybuilder"
 	query_builder "LinkKrec/querybuilder"
 	"context"
 	"fmt"
 	"strconv"
 )
+
+// FromUser is the resolver for the fromUser field.
+func (r *connectionRequestResolver) FromUser(ctx context.Context, obj *model.ConnectionRequest) (*model.User, error) {
+	return loaders.GetUser(ctx, obj.FromUser.ID)
+}
+
+// ConnectedToUser is the resolver for the connectedToUser field.
+func (r *connectionRequestResolver) ConnectedToUser(ctx context.Context, obj *model.ConnectionRequest) (*model.User, error) {
+	return loaders.GetUser(ctx, obj.ConnectedToUser.ID)
+}
 
 // Vacancies is the resolver for the vacancies field.
 func (r *employerResolver) Vacancies(ctx context.Context, obj *model.Employer) ([]*model.Vacancy, error) {
@@ -47,7 +56,7 @@ func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, inp
 }
 
 // ManageConnection is the resolver for the manageConnection field.
-func (r *mutationResolver) ManageConnection(ctx context.Context, userID string, connectedUserID string, action string) (*model.AskedConnection, error) {
+func (r *mutationResolver) ManageConnection(ctx context.Context, userID string, connectedUserID string, action string) (*model.ConnectionRequest, error) {
 	panic(fmt.Errorf("not implemented: ManageConnection - manageConnection"))
 }
 
@@ -89,7 +98,7 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, er
 // GetUsers is the resolver for the getUsers field.
 func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
 	fmt.Println("GetUsers")
-	q := querybuilder.
+	q := query_builder.
 		QueryBuilder().
 		Select([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).
 		GroupConcat("skill", ", ", "skills", true).
@@ -293,17 +302,54 @@ func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]
 }
 
 // GetConnectionRequests is the resolver for the getConnectionRequests field.
-func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*model.AskedConnection, error) {
-	panic(fmt.Errorf("not implemented: GetConnectionRequests - getConnectionRequests"))
+func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*model.ConnectionRequest, error) {
+	q := query_builder.
+		QueryBuilder().Select([]string{"id", "fromUserId", "connectedToUserId", "status"}).
+		WhereSubject("connectionRequest", "ConnectionRequest").
+		Where("Id", "id").
+		Where("fromUser", "user").
+		Where("connectedToUser", "connectedTo").
+		Where("requestStatus", "status").
+		WhereExtraction("user", "Id", "fromUserId").
+		WhereExtraction("connectedTo", "Id", "connectedToUserId")
+	if userID != "" {
+		quotedUserID := fmt.Sprintf("\"%s\"", userID)
+		//q.Filter("fromUserId", []string{quotedUserID}, query_builder.EQ)
+		q.Filter("connectedToUserId", []string{quotedUserID}, query_builder.EQ)
+	}
+	if status != nil && userID != "" {
+		q.AndFilter("status", []string{strconv.FormatBool(*status)}, query_builder.EQ)
+	} else if status != nil {
+		q.Filter("status", []string{strconv.FormatBool(*status)}, query_builder.EQ)
+	}
+	qs := q.GroupBy([]string{"id", "fromUserId", "connectedToUserId", "status"}).Build()
+
+	fmt.Println(qs)
+	res, err := r.Repo.Query(qs)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	fmt.Println("res:", res)
+
+	connectionRequests := make([]*model.ConnectionRequest, 0)
+	for _, connectionRequest := range res.Solutions() {
+		obj, err := util.MapRdfConnectionRequestToGQL(connectionRequest)
+		if err != nil {
+			return nil, err
+		}
+		connectionRequests = append(connectionRequests, obj)
+	}
+	return connectionRequests, nil
 }
 
 // NewConnectionRequest is the resolver for the newConnectionRequest field.
-func (r *subscriptionResolver) NewConnectionRequest(ctx context.Context, forUserID string) (<-chan *model.AskedConnection, error) {
+func (r *subscriptionResolver) NewConnectionRequest(ctx context.Context, forUserID string) (<-chan *model.ConnectionRequest, error) {
 	panic(fmt.Errorf("not implemented: NewConnectionRequest - newConnectionRequest"))
 }
 
 // ConnectionRequestStatusUpdate is the resolver for the connectionRequestStatusUpdate field.
-func (r *subscriptionResolver) ConnectionRequestStatusUpdate(ctx context.Context, forUserID string) (<-chan *model.AskedConnection, error) {
+func (r *subscriptionResolver) ConnectionRequestStatusUpdate(ctx context.Context, forUserID string) (<-chan *model.ConnectionRequest, error) {
 	panic(fmt.Errorf("not implemented: ConnectionRequestStatusUpdate - connectionRequestStatusUpdate"))
 }
 
@@ -346,6 +392,11 @@ func (r *vacancyResolver) PostedBy(ctx context.Context, obj *model.Vacancy) (*mo
 	return loaders.GetEmployer(ctx, obj.PostedBy.ID)
 }
 
+// ConnectionRequest returns ConnectionRequestResolver implementation.
+func (r *Resolver) ConnectionRequest() ConnectionRequestResolver {
+	return &connectionRequestResolver{r}
+}
+
 // Employer returns EmployerResolver implementation.
 func (r *Resolver) Employer() EmployerResolver { return &employerResolver{r} }
 
@@ -367,6 +418,7 @@ func (r *Resolver) User() UserResolver { return &userResolver{r} }
 // Vacancy returns VacancyResolver implementation.
 func (r *Resolver) Vacancy() VacancyResolver { return &vacancyResolver{r} }
 
+type connectionRequestResolver struct{ *Resolver }
 type employerResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type notificationResolver struct{ *Resolver }

@@ -129,6 +129,18 @@ func MapRdfNotificationToGQL(notification map[string]rdf.Term) (*model.Notificat
 	return &notificationObj, nil
 }
 
+func MapRdfConnectionRequestToGQL(connectionRequest map[string]rdf.Term) (*model.ConnectionRequest, error) {
+	connectionRequestObj, err := MapPrimitiveBindingsToStruct[model.ConnectionRequest](connectionRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	connectionRequestObj.FromUser = &model.User{ID: connectionRequest["fromUserId"].String()}
+	connectionRequestObj.ConnectedToUser = &model.User{ID: connectionRequest["connectedToUserId"].String()}
+
+	return &connectionRequestObj, nil
+}
+
 func MapRdfEducationEntryToGQL(educationEntry map[string]rdf.Term) (*model.EducationEntry, error) {
 	educationEntryObj, err := MapPrimitiveBindingsToStruct[model.EducationEntry](educationEntry)
 	if err != nil {

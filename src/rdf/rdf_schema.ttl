@@ -199,13 +199,13 @@ lr:AskedConnection a rdfs:Class .
 lr:Id a rdf:Property ;
     rdfs:domain lr:AskedConnection ;
     rdfs:range schema:Text .
-lr:requestedBy a rdf:Property ;
+lr:fromUser a rdf:Property ;
     rdfs:domain lr:AskedConnection ;
     rdfs:range lr:User .
-lr:requestedTo a rdf:Property ;
+lr:connectedToUser a rdf:Property ;
     rdfs:domain lr:AskedConnection ;
     rdfs:range lr:User .
-lr:connectionStatus a rdf:Property ;
+lr:requestStatus a rdf:Property ;
     rdfs:domain lr:AskedConnection ;
     rdfs:range schema:Boolean .
 

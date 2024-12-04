@@ -145,3 +145,22 @@ lr:Notification2 a lr:Notification ;
     lr:notificationMessage "TechCorp is hiring a Project Manager" ;
     lr:forUser lr:User2 ;
     lr:notificationCreatedAt "2022-02-01"^^xsd:date .
+
+
+lr:ConnectionRequest1 a lr:ConnectionRequest ;
+    lr:Id "1" ;
+    lr:fromUser lr:User1 ;
+    lr:connectedToUser lr:User2 ;
+    lr:requestStatus true .
+
+lr:ConnectionRequest2 a lr:ConnectionRequest ;
+    lr:Id "2" ;
+    lr:fromUser lr:User3 ;
+    lr:connectedToUser lr:User1 ;
+    lr:requestStatus false .
+
+lr:ConnectionRequest3 a lr:ConnectionRequest ;
+    lr:Id "3" ;
+    lr:fromUser lr:User1 ;
+    lr:connectedToUser lr:User3 ;
+    lr:requestStatus true .

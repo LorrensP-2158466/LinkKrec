@@ -40,6 +40,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	ConnectionRequest() ConnectionRequestResolver
 	Employer() EmployerResolver
 	Mutation() MutationResolver
 	Notification() NotificationResolver
@@ -53,10 +54,11 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
-	AskedConnection struct {
-		ConnectedTo func(childComplexity int) int
-		Status      func(childComplexity int) int
-		User        func(childComplexity int) int
+	ConnectionRequest struct {
+		ConnectedToUser func(childComplexity int) int
+		FromUser        func(childComplexity int) int
+		ID              func(childComplexity int) int
+		Status          func(childComplexity int) int
 	}
 
 	EducationEntry struct {
@@ -151,6 +153,10 @@ type ComplexityRoot struct {
 	}
 }
 
+type ConnectionRequestResolver interface {
+	FromUser(ctx context.Context, obj *model.ConnectionRequest) (*model.User, error)
+	ConnectedToUser(ctx context.Context, obj *model.ConnectionRequest) (*model.User, error)
+}
 type EmployerResolver interface {
 	Vacancies(ctx context.Context, obj *model.Employer) ([]*model.Vacancy, error)
 	Employees(ctx context.Context, obj *model.Employer) ([]*model.User, error)
@@ -159,7 +165,7 @@ type MutationResolver interface {
 	RegisterUser(ctx context.Context, input model.RegisterUserInput) (*model.User, error)
 	UpdateUser(ctx context.Context, id string, input model.UpdateUserInput) (*model.User, error)
 	UpdateUserProfile(ctx context.Context, id string, input model.UpdateProfileInput) (*model.User, error)
-	ManageConnection(ctx context.Context, userID string, connectedUserID string, action string) (*model.AskedConnection, error)
+	ManageConnection(ctx context.Context, userID string, connectedUserID string, action string) (*model.ConnectionRequest, error)
 	NotifyProfileVisit(ctx context.Context, visitorID string, visitedUserID string) (*model.Notification, error)
 	CreateVacancy(ctx context.Context, employerID string, input model.CreateVacancyInput) (*model.Vacancy, error)
 	UpdateVacancy(ctx context.Context, id string, input model.CreateVacancyInput) (*model.Vacancy, error)
@@ -177,11 +183,11 @@ type QueryResolver interface {
 	GetEmployers(ctx context.Context, name *string, location *string) ([]*model.Employer, error)
 	GetEmployer(ctx context.Context, id string) (*model.Employer, error)
 	GetNotifications(ctx context.Context, userID string) ([]*model.Notification, error)
-	GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*model.AskedConnection, error)
+	GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*model.ConnectionRequest, error)
 }
 type SubscriptionResolver interface {
-	NewConnectionRequest(ctx context.Context, forUserID string) (<-chan *model.AskedConnection, error)
-	ConnectionRequestStatusUpdate(ctx context.Context, forUserID string) (<-chan *model.AskedConnection, error)
+	NewConnectionRequest(ctx context.Context, forUserID string) (<-chan *model.ConnectionRequest, error)
+	ConnectionRequestStatusUpdate(ctx context.Context, forUserID string) (<-chan *model.ConnectionRequest, error)
 	NewMatchingVacancy(ctx context.Context, userID string) (<-chan *model.Vacancy, error)
 	NewNotification(ctx context.Context, forUserID string) (<-chan *model.Notification, error)
 }
@@ -213,26 +219,33 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "AskedConnection.connectedTo":
-		if e.complexity.AskedConnection.ConnectedTo == nil {
+	case "ConnectionRequest.connectedToUser":
+		if e.complexity.ConnectionRequest.ConnectedToUser == nil {
 			break
 		}
 
-		return e.complexity.AskedConnection.ConnectedTo(childComplexity), true
+		return e.complexity.ConnectionRequest.ConnectedToUser(childComplexity), true
 
-	case "AskedConnection.status":
-		if e.complexity.AskedConnection.Status == nil {
+	case "ConnectionRequest.fromUser":
+		if e.complexity.ConnectionRequest.FromUser == nil {
 			break
 		}
 
-		return e.complexity.AskedConnection.Status(childComplexity), true
+		return e.complexity.ConnectionRequest.FromUser(childComplexity), true
 
-	case "AskedConnection.user":
-		if e.complexity.AskedConnection.User == nil {
+	case "ConnectionRequest.id":
+		if e.complexity.ConnectionRequest.ID == nil {
 			break
 		}
 
-		return e.complexity.AskedConnection.User(childComplexity), true
+		return e.complexity.ConnectionRequest.ID(childComplexity), true
+
+	case "ConnectionRequest.status":
+		if e.complexity.ConnectionRequest.Status == nil {
+			break
+		}
+
+		return e.complexity.ConnectionRequest.Status(childComplexity), true
 
 	case "EducationEntry.degree":
 		if e.complexity.EducationEntry.Degree == nil {
@@ -1800,8 +1813,8 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _AskedConnection_user(ctx context.Context, field graphql.CollectedField, obj *model.AskedConnection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AskedConnection_user(ctx, field)
+func (ec *executionContext) _ConnectionRequest_id(ctx context.Context, field graphql.CollectedField, obj *model.ConnectionRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConnectionRequest_id(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1814,7 +1827,51 @@ func (ec *executionContext) _AskedConnection_user(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ConnectionRequest_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ConnectionRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ConnectionRequest_fromUser(ctx context.Context, field graphql.CollectedField, obj *model.ConnectionRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConnectionRequest_fromUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.ConnectionRequest().FromUser(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1831,12 +1888,12 @@ func (ec *executionContext) _AskedConnection_user(ctx context.Context, field gra
 	return ec.marshalNUser2ᚖLinkKrecᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AskedConnection_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ConnectionRequest_fromUser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AskedConnection",
+		Object:     "ConnectionRequest",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -1866,8 +1923,8 @@ func (ec *executionContext) fieldContext_AskedConnection_user(_ context.Context,
 	return fc, nil
 }
 
-func (ec *executionContext) _AskedConnection_connectedTo(ctx context.Context, field graphql.CollectedField, obj *model.AskedConnection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AskedConnection_connectedTo(ctx, field)
+func (ec *executionContext) _ConnectionRequest_connectedToUser(ctx context.Context, field graphql.CollectedField, obj *model.ConnectionRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConnectionRequest_connectedToUser(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1880,7 +1937,7 @@ func (ec *executionContext) _AskedConnection_connectedTo(ctx context.Context, fi
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ConnectedTo, nil
+		return ec.resolvers.ConnectionRequest().ConnectedToUser(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1897,12 +1954,12 @@ func (ec *executionContext) _AskedConnection_connectedTo(ctx context.Context, fi
 	return ec.marshalNUser2ᚖLinkKrecᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AskedConnection_connectedTo(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ConnectionRequest_connectedToUser(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AskedConnection",
+		Object:     "ConnectionRequest",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
@@ -1932,8 +1989,8 @@ func (ec *executionContext) fieldContext_AskedConnection_connectedTo(_ context.C
 	return fc, nil
 }
 
-func (ec *executionContext) _AskedConnection_status(ctx context.Context, field graphql.CollectedField, obj *model.AskedConnection) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_AskedConnection_status(ctx, field)
+func (ec *executionContext) _ConnectionRequest_status(ctx context.Context, field graphql.CollectedField, obj *model.ConnectionRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ConnectionRequest_status(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1963,9 +2020,9 @@ func (ec *executionContext) _AskedConnection_status(ctx context.Context, field g
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_AskedConnection_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_ConnectionRequest_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
-		Object:     "AskedConnection",
+		Object:     "ConnectionRequest",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2591,6 +2648,47 @@ func (ec *executionContext) fieldContext_ExperienceEntry_title(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _ExperienceEntry_description(ctx context.Context, field graphql.CollectedField, obj *model.ExperienceEntry) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_ExperienceEntry_description(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_ExperienceEntry_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ExperienceEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ExperienceEntry_experienceType(ctx context.Context, field graphql.CollectedField, obj *model.ExperienceEntry) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ExperienceEntry_experienceType(ctx, field)
 	if err != nil {
@@ -2630,47 +2728,6 @@ func (ec *executionContext) fieldContext_ExperienceEntry_experienceType(_ contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type ExperienceType does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExperienceEntry_description(ctx context.Context, field graphql.CollectedField, obj *model.ExperienceEntry) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ExperienceEntry_description(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Description, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ExperienceEntry_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExperienceEntry",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3003,9 +3060,9 @@ func (ec *executionContext) _Mutation_manageConnection(ctx context.Context, fiel
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.AskedConnection)
+	res := resTmp.(*model.ConnectionRequest)
 	fc.Result = res
-	return ec.marshalOAskedConnection2ᚖLinkKrecᚋgraphᚋmodelᚐAskedConnection(ctx, field.Selections, res)
+	return ec.marshalOConnectionRequest2ᚖLinkKrecᚋgraphᚋmodelᚐConnectionRequest(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_manageConnection(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3016,14 +3073,16 @@ func (ec *executionContext) fieldContext_Mutation_manageConnection(ctx context.C
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "user":
-				return ec.fieldContext_AskedConnection_user(ctx, field)
-			case "connectedTo":
-				return ec.fieldContext_AskedConnection_connectedTo(ctx, field)
+			case "id":
+				return ec.fieldContext_ConnectionRequest_id(ctx, field)
+			case "fromUser":
+				return ec.fieldContext_ConnectionRequest_fromUser(ctx, field)
+			case "connectedToUser":
+				return ec.fieldContext_ConnectionRequest_connectedToUser(ctx, field)
 			case "status":
-				return ec.fieldContext_AskedConnection_status(ctx, field)
+				return ec.fieldContext_ConnectionRequest_status(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AskedConnection", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ConnectionRequest", field.Name)
 		},
 	}
 	defer func() {
@@ -4140,9 +4199,9 @@ func (ec *executionContext) _Query_getConnectionRequests(ctx context.Context, fi
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.AskedConnection)
+	res := resTmp.([]*model.ConnectionRequest)
 	fc.Result = res
-	return ec.marshalOAskedConnection2ᚕᚖLinkKrecᚋgraphᚋmodelᚐAskedConnection(ctx, field.Selections, res)
+	return ec.marshalOConnectionRequest2ᚕᚖLinkKrecᚋgraphᚋmodelᚐConnectionRequest(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_getConnectionRequests(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4153,14 +4212,16 @@ func (ec *executionContext) fieldContext_Query_getConnectionRequests(ctx context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "user":
-				return ec.fieldContext_AskedConnection_user(ctx, field)
-			case "connectedTo":
-				return ec.fieldContext_AskedConnection_connectedTo(ctx, field)
+			case "id":
+				return ec.fieldContext_ConnectionRequest_id(ctx, field)
+			case "fromUser":
+				return ec.fieldContext_ConnectionRequest_fromUser(ctx, field)
+			case "connectedToUser":
+				return ec.fieldContext_ConnectionRequest_connectedToUser(ctx, field)
 			case "status":
-				return ec.fieldContext_AskedConnection_status(ctx, field)
+				return ec.fieldContext_ConnectionRequest_status(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AskedConnection", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ConnectionRequest", field.Name)
 		},
 	}
 	defer func() {
@@ -4331,7 +4392,7 @@ func (ec *executionContext) _Subscription_newConnectionRequest(ctx context.Conte
 	}
 	return func(ctx context.Context) graphql.Marshaler {
 		select {
-		case res, ok := <-resTmp.(<-chan *model.AskedConnection):
+		case res, ok := <-resTmp.(<-chan *model.ConnectionRequest):
 			if !ok {
 				return nil
 			}
@@ -4339,7 +4400,7 @@ func (ec *executionContext) _Subscription_newConnectionRequest(ctx context.Conte
 				w.Write([]byte{'{'})
 				graphql.MarshalString(field.Alias).MarshalGQL(w)
 				w.Write([]byte{':'})
-				ec.marshalOAskedConnection2ᚖLinkKrecᚋgraphᚋmodelᚐAskedConnection(ctx, field.Selections, res).MarshalGQL(w)
+				ec.marshalOConnectionRequest2ᚖLinkKrecᚋgraphᚋmodelᚐConnectionRequest(ctx, field.Selections, res).MarshalGQL(w)
 				w.Write([]byte{'}'})
 			})
 		case <-ctx.Done():
@@ -4356,14 +4417,16 @@ func (ec *executionContext) fieldContext_Subscription_newConnectionRequest(ctx c
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "user":
-				return ec.fieldContext_AskedConnection_user(ctx, field)
-			case "connectedTo":
-				return ec.fieldContext_AskedConnection_connectedTo(ctx, field)
+			case "id":
+				return ec.fieldContext_ConnectionRequest_id(ctx, field)
+			case "fromUser":
+				return ec.fieldContext_ConnectionRequest_fromUser(ctx, field)
+			case "connectedToUser":
+				return ec.fieldContext_ConnectionRequest_connectedToUser(ctx, field)
 			case "status":
-				return ec.fieldContext_AskedConnection_status(ctx, field)
+				return ec.fieldContext_ConnectionRequest_status(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AskedConnection", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ConnectionRequest", field.Name)
 		},
 	}
 	defer func() {
@@ -4405,7 +4468,7 @@ func (ec *executionContext) _Subscription_connectionRequestStatusUpdate(ctx cont
 	}
 	return func(ctx context.Context) graphql.Marshaler {
 		select {
-		case res, ok := <-resTmp.(<-chan *model.AskedConnection):
+		case res, ok := <-resTmp.(<-chan *model.ConnectionRequest):
 			if !ok {
 				return nil
 			}
@@ -4413,7 +4476,7 @@ func (ec *executionContext) _Subscription_connectionRequestStatusUpdate(ctx cont
 				w.Write([]byte{'{'})
 				graphql.MarshalString(field.Alias).MarshalGQL(w)
 				w.Write([]byte{':'})
-				ec.marshalOAskedConnection2ᚖLinkKrecᚋgraphᚋmodelᚐAskedConnection(ctx, field.Selections, res).MarshalGQL(w)
+				ec.marshalOConnectionRequest2ᚖLinkKrecᚋgraphᚋmodelᚐConnectionRequest(ctx, field.Selections, res).MarshalGQL(w)
 				w.Write([]byte{'}'})
 			})
 		case <-ctx.Done():
@@ -4430,14 +4493,16 @@ func (ec *executionContext) fieldContext_Subscription_connectionRequestStatusUpd
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "user":
-				return ec.fieldContext_AskedConnection_user(ctx, field)
-			case "connectedTo":
-				return ec.fieldContext_AskedConnection_connectedTo(ctx, field)
+			case "id":
+				return ec.fieldContext_ConnectionRequest_id(ctx, field)
+			case "fromUser":
+				return ec.fieldContext_ConnectionRequest_fromUser(ctx, field)
+			case "connectedToUser":
+				return ec.fieldContext_ConnectionRequest_connectedToUser(ctx, field)
 			case "status":
-				return ec.fieldContext_AskedConnection_status(ctx, field)
+				return ec.fieldContext_ConnectionRequest_status(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type AskedConnection", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type ConnectionRequest", field.Name)
 		},
 	}
 	defer func() {
@@ -4992,10 +5057,10 @@ func (ec *executionContext) fieldContext_User_experience(_ context.Context, fiel
 				return ec.fieldContext_ExperienceEntry_id(ctx, field)
 			case "title":
 				return ec.fieldContext_ExperienceEntry_title(ctx, field)
-			case "experienceType":
-				return ec.fieldContext_ExperienceEntry_experienceType(ctx, field)
 			case "description":
 				return ec.fieldContext_ExperienceEntry_description(ctx, field)
+			case "experienceType":
+				return ec.fieldContext_ExperienceEntry_experienceType(ctx, field)
 			case "startDate":
 				return ec.fieldContext_ExperienceEntry_startDate(ctx, field)
 			case "endDate":
@@ -7640,31 +7705,98 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 
 // region    **************************** object.gotpl ****************************
 
-var askedConnectionImplementors = []string{"AskedConnection"}
+var connectionRequestImplementors = []string{"ConnectionRequest"}
 
-func (ec *executionContext) _AskedConnection(ctx context.Context, sel ast.SelectionSet, obj *model.AskedConnection) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, askedConnectionImplementors)
+func (ec *executionContext) _ConnectionRequest(ctx context.Context, sel ast.SelectionSet, obj *model.ConnectionRequest) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, connectionRequestImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	deferred := make(map[string]*graphql.FieldSet)
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("AskedConnection")
-		case "user":
-			out.Values[i] = ec._AskedConnection_user(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("ConnectionRequest")
+		case "id":
+			out.Values[i] = ec._ConnectionRequest_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
-		case "connectedTo":
-			out.Values[i] = ec._AskedConnection_connectedTo(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
+		case "fromUser":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ConnectionRequest_fromUser(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "connectedToUser":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ConnectionRequest_connectedToUser(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "status":
-			out.Values[i] = ec._AskedConnection_status(ctx, field, obj)
+			out.Values[i] = ec._ConnectionRequest_status(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -7892,13 +8024,13 @@ func (ec *executionContext) _ExperienceEntry(ctx context.Context, sel ast.Select
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "description":
+			out.Values[i] = ec._ExperienceEntry_description(ctx, field, obj)
 		case "experienceType":
 			out.Values[i] = ec._ExperienceEntry_experienceType(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "description":
-			out.Values[i] = ec._ExperienceEntry_description(ctx, field, obj)
 		case "startDate":
 			out.Values[i] = ec._ExperienceEntry_startDate(ctx, field, obj)
 		case "endDate":
@@ -9499,7 +9631,33 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalOAskedConnection2ᚕᚖLinkKrecᚋgraphᚋmodelᚐAskedConnection(ctx context.Context, sel ast.SelectionSet, v []*model.AskedConnection) graphql.Marshaler {
+func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
+	res, err := graphql.UnmarshalBoolean(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
+	res := graphql.MarshalBoolean(v)
+	return res
+}
+
+func (ec *executionContext) unmarshalOBoolean2ᚖbool(ctx context.Context, v interface{}) (*bool, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalBoolean(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast.SelectionSet, v *bool) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalBoolean(*v)
+	return res
+}
+
+func (ec *executionContext) marshalOConnectionRequest2ᚕᚖLinkKrecᚋgraphᚋmodelᚐConnectionRequest(ctx context.Context, sel ast.SelectionSet, v []*model.ConnectionRequest) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -9526,7 +9684,7 @@ func (ec *executionContext) marshalOAskedConnection2ᚕᚖLinkKrecᚋgraphᚋmod
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOAskedConnection2ᚖLinkKrecᚋgraphᚋmodelᚐAskedConnection(ctx, sel, v[i])
+			ret[i] = ec.marshalOConnectionRequest2ᚖLinkKrecᚋgraphᚋmodelᚐConnectionRequest(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -9540,37 +9698,11 @@ func (ec *executionContext) marshalOAskedConnection2ᚕᚖLinkKrecᚋgraphᚋmod
 	return ret
 }
 
-func (ec *executionContext) marshalOAskedConnection2ᚖLinkKrecᚋgraphᚋmodelᚐAskedConnection(ctx context.Context, sel ast.SelectionSet, v *model.AskedConnection) graphql.Marshaler {
+func (ec *executionContext) marshalOConnectionRequest2ᚖLinkKrecᚋgraphᚋmodelᚐConnectionRequest(ctx context.Context, sel ast.SelectionSet, v *model.ConnectionRequest) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec._AskedConnection(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
-	res, err := graphql.UnmarshalBoolean(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
-	res := graphql.MarshalBoolean(v)
-	return res
-}
-
-func (ec *executionContext) unmarshalOBoolean2ᚖbool(ctx context.Context, v interface{}) (*bool, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalBoolean(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast.SelectionSet, v *bool) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalBoolean(*v)
-	return res
+	return ec._ConnectionRequest(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalODegreeType2ᚖLinkKrecᚋgraphᚋmodelᚐDegreeType(ctx context.Context, v interface{}) (*model.DegreeType, error) {
