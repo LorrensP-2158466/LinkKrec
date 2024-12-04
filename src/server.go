@@ -232,10 +232,7 @@ func setupRouter(repo *sparql.Repo, updateRepo *sparql.Repo) *gin.Engine {
 	r.GET("/auth/:provider", signInWithProvider)
 	r.GET("/auth/:provider/callback", callbackHandler)
 
-	// Protected GraphQL routes
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Repo: repo}}))
-	// playground no auth to make it easier?
-	r.GET("/playground", gin.WrapH(playground.Handler("GraphQL playground", "/graphql")))
 
 	protected := r.Group("/")
 	protected.Use(AuthMiddleware())
