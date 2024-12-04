@@ -18,6 +18,9 @@ func MapPrimitiveBindingsToStruct[T any](bindings map[string]rdf.Term) (T, error
 		bindingVal := bindings[bindingKey]
 
 		if bindingVal != nil {
+			if isEnumType(field.Type) {
+				continue
+			}
 			if field.Type.Kind() == reflect.Slice && field.Type.Elem().Kind() == reflect.Ptr && field.Type.Elem().Elem().Kind() == reflect.String {
 				var sliceValues []*string
 				for _, v := range strings.Split(bindingVal.String(), ", ") {
@@ -32,12 +35,20 @@ func MapPrimitiveBindingsToStruct[T any](bindings map[string]rdf.Term) (T, error
 				if field.Type.Elem().Kind() == reflect.Bool {
 					v, _ := strconv.ParseBool(bindingVal.String())
 					structValue.Field(i).Set(reflect.ValueOf(&v))
+				} else if field.Type.Elem().Kind() == reflect.String {
+					strPtr := new(string)
+					*strPtr = bindingVal.String()
+					structValue.Field(i).Set(reflect.ValueOf(strPtr))
 				}
 			}
 		}
 	}
 	result := structValue.Interface().(T)
 	return result, nil
+}
+
+func isEnumType(fieldType reflect.Type) bool {
+	return fieldType.PkgPath() != "" && (fieldType.Kind() == reflect.Int || fieldType.Kind() == reflect.String)
 }
 
 // map array to new array using a function

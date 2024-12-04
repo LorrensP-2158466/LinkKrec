@@ -8,10 +8,11 @@ import (
 	"strconv"
 )
 
-type AskedConnection struct {
-	User        *User `json:"user"`
-	ConnectedTo *User `json:"connectedTo"`
-	Status      bool  `json:"status"`
+type ConnectionRequest struct {
+	ID              string `json:"id"`
+	FromUser        *User  `json:"fromUser"`
+	ConnectedToUser *User  `json:"connectedToUser"`
+	Status          bool   `json:"status"`
 }
 
 type CreateVacancyInput struct {
@@ -23,6 +24,7 @@ type CreateVacancyInput struct {
 }
 
 type EducationEntry struct {
+	ID          string      `json:"id"`
 	Institution string      `json:"institution"`
 	Info        string      `json:"info"`
 	Degree      DegreeType  `json:"degree"`
@@ -44,9 +46,10 @@ type Employer struct {
 }
 
 type ExperienceEntry struct {
+	ID             string         `json:"id"`
 	Title          string         `json:"title"`
-	ExperienceType ExperienceType `json:"experienceType"`
 	Description    *string        `json:"description,omitempty"`
+	ExperienceType ExperienceType `json:"experienceType"`
 	StartDate      *string        `json:"startDate,omitempty"`
 	EndDate        *string        `json:"endDate,omitempty"`
 }
@@ -63,8 +66,9 @@ type Mutation struct {
 
 type Notification struct {
 	ID        string  `json:"id"`
-	ForUser   *User   `json:"forUser"`
+	Title     string  `json:"title"`
 	Message   string  `json:"message"`
+	ForUser   *User   `json:"forUser"`
 	CreatedAt *string `json:"createdAt,omitempty"`
 }
 

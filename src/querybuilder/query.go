@@ -28,11 +28,12 @@ type GroupConcat struct {
 }
 
 type Where struct {
-	clauses     []SubWhere
-	extractions []WhereExtraction
-	filters     []Filter
-	binds       []Bind
-	subQueries  []string
+	clauses         []SubWhere
+	optionalClauses []OptionalClause
+	extractions     []WhereExtraction
+	filters         []Filter
+	binds           []Bind
+	subQueries      []string
 }
 
 type SubWhere struct {
@@ -90,6 +91,11 @@ const (
 	IN          = "IN"
 )
 
+type OptionalClause struct {
+	subject *WhereSubject
+	clauses []WhereClause
+}
+
 func QueryBuilder() *Query {
 	return &Query{
 		sel:     &Select{},
@@ -124,12 +130,21 @@ func (q *Query) WhereSubject(binding string, obj string) *Query {
 }
 
 func (q *Query) Where(field string, binding string) *Query {
+	// If no subject has been defined, initialize it first
+	if len(q.where.clauses) == 0 {
+		q.where.clauses = append(q.where.clauses, SubWhere{
+			subj: &WhereSubject{binding: "user", obj: "User"},
+		})
+	}
+
+	// Now append the new clause to the last where clause
 	var c = WhereClause{
 		field:   field,
 		binding: binding,
 	}
 	var curr = &q.where.clauses[len(q.where.clauses)-1]
 	curr.clauses = append(curr.clauses, c)
+
 	return q
 }
 
@@ -196,6 +211,36 @@ func (q *Query) OrFilter(field string, value []string, op FilterOp) *Query {
 	return q
 }
 
+func (q *Query) OptionalSubject(binding string, obj string) *Query {
+	var opt = OptionalClause{
+		subject: &WhereSubject{binding: binding, obj: obj},
+	}
+	q.where.optionalClauses = append(q.where.optionalClauses, opt)
+	return q
+}
+
+func (q *Query) Optional(predicate, object string) *Query {
+	// Check if the clauses list is empty and initialize it if necessary
+	if len(q.where.clauses) == 0 {
+		// Initialize the first subject if it's missing
+		q.where.clauses = append(q.where.clauses, SubWhere{
+			subj: &WhereSubject{binding: "user", obj: "User"},
+		})
+	}
+
+	// Add the OPTIONAL clause
+	q.where.clauses = append(q.where.clauses, SubWhere{
+		subj: &WhereSubject{binding: "user", obj: "User"},
+		clauses: []WhereClause{
+			{
+				field:   predicate,
+				binding: object,
+			},
+		},
+	})
+	return q
+}
+
 func (q *Query) Build() string {
 	var output = PREFIXES + "\n\n"
 	output += buildSelect(*q.sel) + "\n"
@@ -250,6 +295,22 @@ func buildWhere(wh Where) string {
 	for _, sub := range wh.subQueries {
 		output += sub + "\n"
 	}
+
+	for _, opt := range wh.optionalClauses {
+		output += "OPTIONAL {\n"
+		output += fmt.Sprintf("?%s a lr:%s ;\n", opt.subject.binding, opt.subject.obj)
+		for idx, cl := range opt.clauses {
+			output += fmt.Sprintf("lr:%s ?%s", cl.field, cl.binding)
+			if (idx) == len(opt.clauses)-1 {
+				output += " ."
+			} else {
+				output += " ;"
+			}
+			output += "\n"
+		}
+		output += "}\n"
+	}
+
 	if len(wh.binds) > 0 {
 		output += buildBinds(wh.binds) + "\n"
 	}
