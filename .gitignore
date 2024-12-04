@@ -13,10 +13,10 @@
 go.work
 
 # Fuseki data
-run/databases/
-run/logs/
-run/backups/
-run/system_files/
+src/run/databases/
+src/run/logs/
+src/run/backups/
+src/run/system_files/
 
 # IDE
 .idea/
