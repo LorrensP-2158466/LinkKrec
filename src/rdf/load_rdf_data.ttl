@@ -45,13 +45,15 @@ lr:User3 a lr:User ;
 
 lr:EducationEntry1 a lr:EducationEntry ;
     lr:Id "1" ;
-    lr:educationInstitution "Stanford University" ;
+    lr:institutionName "Stanford University";
+    lr:institutionInfo "https://www.stanford.edu" ;
     lr:degreeType "ProfBachelor" ;
     lr:degreeField "Computer Science" .
 
 lr:EducationEntry2 a lr:EducationEntry ;
     lr:Id "2" ;
-    lr:educationInstitution "Harvard Business School" ;
+    lr:institutionName "Harvard Business School" ;
+    lr:institutionInfo "https://www.hbs.edu" ;
     lr:degreeType "Master" ;
     lr:degreeField "Engineering" .
 

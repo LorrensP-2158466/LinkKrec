@@ -2,6 +2,7 @@ package util
 
 import (
 	"LinkKrec/graph/model"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -19,6 +20,7 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 		connections = append(connections, &model.User{ID: con})
 	}
 	userObj.Connections = connections
+	fmt.Println("connections userObj: ", userObj)
 
 	var educations = make([]*model.EducationEntry, 0)
 	for _, edu := range strings.Split(user["educations"].String(), ", ") {
@@ -26,11 +28,15 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 	}
 	userObj.Education = educations
 
+	fmt.Println("educations userObj: ", userObj)
+
 	var experiences = make([]*model.ExperienceEntry, 0)
 	for _, exp := range strings.Split(user["experiences"].String(), ", ") {
 		experiences = append(experiences, &model.ExperienceEntry{ID: exp})
 	}
 	userObj.Experience = experiences
+
+	fmt.Println("experiences userObj: ", userObj)
 
 	return &userObj, nil
 }
@@ -113,8 +119,10 @@ func MapRdfNotificationToGQL(notification map[string]rdf.Term) (*model.Notificat
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("primitive notificationObj: ", notificationObj)
 
 	notificationObj.ForUser = &model.User{ID: notification["forUserId"].String()}
+	fmt.Println("foruser notifcationObj: ", notificationObj)
 	startDate := notification["createdAt"].String()
 	notificationObj.CreatedAt = &startDate
 
@@ -151,10 +159,12 @@ func MapRdfEducationEntryToGQL(educationEntry map[string]rdf.Term) (*model.Educa
 }
 
 func MapRdfExperienceEntryToGQL(experienceEntry map[string]rdf.Term) (*model.ExperienceEntry, error) {
+	fmt.Println("experienceEntry: ", experienceEntry)
 	experienceEntryObj, err := MapPrimitiveBindingsToStruct[model.ExperienceEntry](experienceEntry)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("primitive experienceEntryObj: ", experienceEntryObj)
 
 	experienceType := (experienceEntry["experienceType"].String())
 	var experience model.ExperienceType

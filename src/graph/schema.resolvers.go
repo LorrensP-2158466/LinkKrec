@@ -94,8 +94,8 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		Select([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).
 		GroupConcat("skill", ", ", "skills", true).
 		GroupConcat("connectionName", ", ", "connections", true).
-		GroupConcat("educationEntryId", ", ", "educationEntries", true).
-		GroupConcat("experienceEntryId", ", ", "experienceEntries", true).
+		GroupConcat("educationEntryId", ", ", "educations", true).
+		GroupConcat("experienceEntryId", ", ", "experiences", true).
 		WhereSubject("user", "User").
 		Where("Id", "id").
 		Where("hasName", "name").

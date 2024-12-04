@@ -23,7 +23,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-		SELECT ?name ?id ?email ?isEmployer ?location ?isLookingForOpportunities
+		SELECT ?name ?id ?email ?isEmployer ?location ?lookingForOpportunities
 			(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
 			(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections)
 			(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
@@ -37,6 +37,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 				lr:hasLocation ?location ;
 				lr:isLookingForOpportunities ?isLookingForOpportunities ;
 				lr:hasSkill ?skill .
+		BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
 
 		OPTIONAL {
 			?user lr:hasConnection ?connection .
@@ -53,12 +54,14 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 
 		FILTER(%s)
 		}
-		GROUP BY ?name ?id ?email ?isEmployer ?location ?isLookingForOpportunities
+		GROUP BY ?name ?id ?email ?isEmployer ?location ?lookingForOpportunities
 	`, filter)
 	res, err := u.Repo.Query(q)
 	if err != nil {
 		return nil, []error{err}
 	}
+
+	fmt.Println("res: ", res)
 
 	users := make([]*model.User, len(userIDs))
 	errs := make([]error, len(userIDs))
@@ -221,9 +224,9 @@ func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []
 			?education a lr:EducationEntry ;
 			lr:Id ?id ;
 			lr:institutionName ?institution ;
-			lr:educationInfo ?info ;
-			lr:educationDegree ?degree ;
-			lr:educationField ?field .
+			lr:institutionInfo ?info ;
+			lr:degreeType ?degree ;
+			lr:degreeField ?field .
 
 		FILTER(%s)
 		}
@@ -233,6 +236,7 @@ func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []
 	if err != nil {
 		return nil, []error{err}
 	}
+	fmt.Println("res: ", res)
 
 	educationEntries := make([]*model.EducationEntry, len(educationEntryIDs))
 	errs := make([]error, len(educationEntryIDs))
