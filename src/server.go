@@ -20,7 +20,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/playground"
 )
 
-const port = "6969"
+const port = "8080"
 
 var store *sessions.CookieStore
 
@@ -69,7 +69,7 @@ func callbackHandler(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusTemporaryRedirect, "/")
+	c.Redirect(http.StatusTemporaryRedirect, "/is_authorized")
 }
 
 func AuthMiddleware() gin.HandlerFunc {
@@ -78,12 +78,12 @@ func AuthMiddleware() gin.HandlerFunc {
 		if err != nil {
 			session.Options.MaxAge = -1
 			_ = session.Save(c.Request, c.Writer)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized", "authorization_urls": []string{"/auth/google"}})
 			return
 		}
 
 		if _, ok := session.Values["access_token"]; !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized", "authorization_urls": []string{"/auth/google"}})
 			return
 		}
 
@@ -94,19 +94,17 @@ func AuthMiddleware() gin.HandlerFunc {
 func setupRouter(repo *sparql.Repo) *gin.Engine {
 	r := gin.Default()
 
-	// Auth routes
 	r.GET("/auth/:provider", signInWithProvider)
 	r.GET("/auth/:provider/callback", callbackHandler)
 
-	// Protected GraphQL routes
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Repo: repo}}))
 	injected_srv := loaders.Middleware(repo, srv)
-	// playground no auth to make it easier?
-	r.GET("/playground", gin.WrapH(playground.Handler("GraphQL playground", "/graphql")))
 
 	protected := r.Group("/")
 	protected.Use(AuthMiddleware())
 	{
+		protected.GET("/playground", gin.WrapH(playground.Handler("GraphQL playground", "/graphql")))
+		protected.GET("/is_authorized", func(c *gin.Context) { c.String(http.StatusAccepted, "AUTHORIZED") })
 		protected.GET("/graphql", gin.WrapH(injected_srv))
 	}
 
