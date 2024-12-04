@@ -101,11 +101,12 @@ func setupRouter(repo *sparql.Repo) *gin.Engine {
 	// Protected GraphQL routes
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Repo: repo}}))
 	injected_srv := loaders.Middleware(repo, srv)
+	// playground no auth to make it easier?
+	r.GET("/playground", gin.WrapH(playground.Handler("GraphQL playground", "/graphql")))
 
 	protected := r.Group("/")
 	protected.Use(AuthMiddleware())
 	{
-		protected.GET("/playground", gin.WrapH(playground.Handler("GraphQL playground", "/graphql")))
 		protected.GET("/graphql", gin.WrapH(injected_srv))
 	}
 
@@ -113,7 +114,7 @@ func setupRouter(repo *sparql.Repo) *gin.Engine {
 }
 
 func main() {
-	if err := godotenv.Load(); err != nil {
+	if err := godotenv.Load("../.env"); err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
