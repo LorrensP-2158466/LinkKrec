@@ -335,7 +335,7 @@ func (u *DataBase) getConnectionRequests(ctx context.Context, connectionRequestI
 			lr:Id ?id ;
 			lr:fromUser ?fromUser ;
 			lr:connectedToUser ?connectedToUser ;
-			lr:status ?status .
+			lr:requestStatus ?status .
 			?fromUser lr:Id ?fromUserId .
 			?connectedToUser lr:Id ?connectedToUserId .
 

@@ -62,26 +62,24 @@ func (r *mutationResolver) AddConnectionRequest(ctx context.Context, fromUserID 
 	requestID := uuid.New().String()
 
 	q := fmt.Sprintf(`
-		PREFIX lr: <http://linkrec.example.org/schema#>
-		PREFIX schema: <http://schema.org/>
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
 
-
-			INSERT {
-				?request a lr:ConnectionRequest ;
-						 lr:Id "%s" ;
-						 lr:fromUser ?fromUser ;
-						 lr:connectedToUser ?toUser ;
-						 lr:status "true"^^xsd:boolean .
-			}
-			WHERE {
-				?fromUser a lr:User ;
-						lr:Id "%s" .
-				?toUser a lr:User ;
-						lr:Id "%s" .
-			}
-		`, requestID, fromUserID, connectedToUserID)
+		INSERT {
+		  lr:connectionRequest%s a lr:ConnectionRequest ;
+		      lr:Id "%s" ;
+		      lr:fromUser ?fromUser ;
+		      lr:connectedToUser ?toUser ;
+		      lr:requestStatus false .
+		}
+		WHERE {
+		  ?fromUser a lr:User ;
+		            lr:Id "%s" .
+		  ?toUser a lr:User ;
+		          lr:Id "%s" .
+		}
+		`, requestID, requestID, fromUserID, connectedToUserID)
 
 	fmt.Println(q)
 
