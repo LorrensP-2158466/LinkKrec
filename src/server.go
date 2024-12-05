@@ -3,23 +3,40 @@ package main
 import (
 	"LinkKrec/graph"
 	"LinkKrec/graph/loaders"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/securecookie"
+	"github.com/gorilla/sessions"
+	"github.com/joho/godotenv"
+	"github.com/knakk/sparql"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/google"
+
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/knakk/sparql"
 )
 
-const defaultPort = "8080"
+const port = "8080"
 
-func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
+var store *sessions.CookieStore
+
+func init_store() {
+	randomKey := securecookie.GenerateRandomKey(32)
+	store = sessions.NewCookieStore([]byte(randomKey))
+	gothic.Store = store
+
+	store.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   86400 * 7,
+		HttpOnly: true,
+		Secure:   false,
 	}
+}
+
 
 	baseUrl := "http://localhost:3030/link_krec/"
 	queryEndpoint := baseUrl + "query"
@@ -31,19 +48,109 @@ func main() {
 		log.Fatalf("Failed to connect to the SPARQL endpoint: %v", err)
 	}
 	updateRepo, err := sparql.NewRepo(mutateEndpoint)
+
+func signInWithProvider(c *gin.Context) {
+	provider := c.Param("provider")
+	q := c.Request.URL.Query()
+	q.Add("provider", provider)
+	c.Request.URL.RawQuery = q.Encode()
+	gothic.BeginAuthHandler(c.Writer, c.Request)
+}
+
+func callbackHandler(c *gin.Context) {
+	provider := c.Param("provider")
+	q := c.Request.URL.Query()
+	q.Add("provider", provider)
+	c.Request.URL.RawQuery = q.Encode()
+
+	user, err := gothic.CompleteUserAuth(c.Writer, c.Request)
+
 	if err != nil {
-		log.Fatalf("Failed to connect to the SPARQL endpoint: %v", err)
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		return
 	}
 
-	fmt.Println("Starting server on port " + port)
+	session, err := store.Get(c.Request, "user-session")
+	if err != nil {
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Repo: repo, UpdateRepo: updateRepo}}))
 
+	session.Values["access_token"] = user.AccessToken
+	if err := session.Save(c.Request, c.Writer); err != nil {
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	c.Redirect(http.StatusTemporaryRedirect, "/is_authorized")
+}
+
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session, err := store.Get(c.Request, "user-session")
+		if err != nil {
+			session.Options.MaxAge = -1
+			_ = session.Save(c.Request, c.Writer)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized", "authorization_urls": []string{"/auth/google"}})
+			return
+		}
+
+		if _, ok := session.Values["access_token"]; !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized", "authorization_urls": []string{"/auth/google"}})
+			return
+		}
+
+		c.Next()
+	}
+}
+
+func setupRouter(repo *sparql.Repo) *gin.Engine {
+	r := gin.Default()
+
+
+	r.GET("/auth/:provider", signInWithProvider)
+	r.GET("/auth/:provider/callback", callbackHandler)
+
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Repo: repo}}))
 	injected_srv := loaders.Middleware(repo, srv)
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", injected_srv)
+	protected := r.Group("/")
+	protected.Use(AuthMiddleware())
+	{
+		protected.GET("/playground", gin.WrapH(playground.Handler("GraphQL playground", "/graphql")))
+		protected.GET("/is_authorized", func(c *gin.Context) { c.String(http.StatusAccepted, "AUTHORIZED") })
+		protected.GET("/graphql", gin.WrapH(injected_srv))
+	}
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	return r
+}
+
+func main() {
+	if err := godotenv.Load("../.env"); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	clientID := os.Getenv("CLIENT_ID")
+	clientSecret := os.Getenv("CLIENT_SECRET")
+	clientCallbackURL := os.Getenv("CLIENT_CALLBACK")
+
+	if clientID == "" || clientSecret == "" || clientCallbackURL == "" {
+		log.Fatal("Missing required environment variables")
+	}
+
+	endpointURL := "http://localhost:3030/link_krec/sparql"
+	repo, err := sparql.NewRepo(endpointURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to SPARQL endpoint: %v", err)
+	}
+
+	goth.UseProviders(
+		google.New(clientID, clientSecret, clientCallbackURL),
+	)
+	init_store()
+
+	r := setupRouter(repo)
+	log.Printf("Server running at http://localhost:%s/", port)
+	log.Fatal(r.Run(":" + port))
 }
