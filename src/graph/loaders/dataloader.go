@@ -13,7 +13,7 @@ import (
 type ctxKey string
 
 const (
-	loadersKey = ctxKey("dataloaders")
+	LoadersKey = ctxKey("dataloaders")
 )
 
 type DataBase struct {
@@ -48,14 +48,14 @@ func NewLoaders(conn *sparql.Repo) *Loaders {
 func Middleware(conn *sparql.Repo) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		loader := NewLoaders(conn)
-		c.Set(string(loadersKey), loader)
+		c.Set(string(LoadersKey), loader)
 		c.Next()
 	}
 }
 
 // For returns the dataloader for a given context
 func For(ctx context.Context) *Loaders {
-	return ctx.Value(loadersKey).(*Loaders)
+	return ctx.Value(LoadersKey).(*Loaders)
 }
 
 // GetUser returns single user by id efficiently

@@ -372,6 +372,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ExperienceEntry.Title(childComplexity), true
 
+	case "Mutation.addConnectionRequest":
+		if e.complexity.Mutation.AddConnectionRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_addConnectionRequest_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AddConnectionRequest(childComplexity, args["fromUserId"].(string), args["connectedToUserId"].(string)), true
 
 	case "Mutation.completeUserProfile":
 		if e.complexity.Mutation.CompleteUserProfile == nil {
@@ -384,18 +395,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CompleteUserProfile(childComplexity, args["id"].(*string), args["input"].(model.UpdateUserInput)), true
-
-	case "Mutation.createVacancy":
-		if e.complexity.Mutation.CreateVacancy == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_addConnectionRequest_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.AddConnectionRequest(childComplexity, args["fromUserId"].(string), args["connectedToUserId"].(string)), true
 
 	case "Mutation.createVacancy":
 		if e.complexity.Mutation.CreateVacancy == nil {
@@ -990,6 +989,46 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Mutation_addConnectionRequest_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	arg0, err := ec.field_Mutation_addConnectionRequest_argsFromUserID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["fromUserId"] = arg0
+	arg1, err := ec.field_Mutation_addConnectionRequest_argsConnectedToUserID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["connectedToUserId"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_addConnectionRequest_argsFromUserID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("fromUserId"))
+	if tmp, ok := rawArgs["fromUserId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_addConnectionRequest_argsConnectedToUserID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("connectedToUserId"))
+	if tmp, ok := rawArgs["connectedToUserId"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
 
 func (ec *executionContext) field_Mutation_completeUserProfile_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1029,47 +1068,6 @@ func (ec *executionContext) field_Mutation_completeUserProfile_argsInput(
 	}
 
 	var zeroVal model.UpdateUserInput
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_createVacancy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	arg0, err := ec.field_Mutation_addConnectionRequest_argsFromUserID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["fromUserId"] = arg0
-	arg1, err := ec.field_Mutation_addConnectionRequest_argsConnectedToUserID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["connectedToUserId"] = arg1
-	return args, nil
-}
-func (ec *executionContext) field_Mutation_addConnectionRequest_argsFromUserID(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("fromUserId"))
-	if tmp, ok := rawArgs["fromUserId"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Mutation_addConnectionRequest_argsConnectedToUserID(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("connectedToUserId"))
-	if tmp, ok := rawArgs["connectedToUserId"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
 	return zeroVal, nil
 }
 

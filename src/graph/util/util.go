@@ -1,14 +1,21 @@
 package util
 
 import (
+	"context"
+	"encoding/gob"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/knakk/rdf"
 )
 
 const SessionInfoKey = "sessInfo"
+const GinContextKey = "GinContextKey"
+const QueryRepoKey = "queryrepo"
+const UpdateRepoKey = "updateRepo"
 
 type UserSessionInfo struct {
 	// convenience to quickly determine of this user has a completed account
@@ -18,6 +25,33 @@ type UserSessionInfo struct {
 	Id         string `json:"id"`
 	Cookie     string
 	// TODO: More?
+}
+
+func init() {
+	gob.Register(UserSessionInfo{}) // Register the type for serialization
+}
+
+func GinContextToContextMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx := context.WithValue(c.Request.Context(), GinContextKey, c)
+		c.Request = c.Request.WithContext(ctx)
+		c.Next()
+	}
+}
+
+func GinContextFromContext(ctx context.Context) (*gin.Context, error) {
+	ginContext := ctx.Value(GinContextKey)
+	if ginContext == nil {
+		err := fmt.Errorf("could not retrieve gin.Context")
+		return nil, err
+	}
+
+	gc, ok := ginContext.(*gin.Context)
+	if !ok {
+		err := fmt.Errorf("gin.Context has wrong type")
+		return nil, err
+	}
+	return gc, nil
 }
 
 func MapPrimitiveBindingsToStruct[T any](bindings map[string]rdf.Term) (T, error) {
