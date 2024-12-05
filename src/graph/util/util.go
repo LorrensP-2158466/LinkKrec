@@ -8,6 +8,18 @@ import (
 	"github.com/knakk/rdf"
 )
 
+const SessionInfoKey = "sessInfo"
+
+type UserSessionInfo struct {
+	// convenience to quickly determine of this user has a completed account
+	IsComplete bool `json:"ProfileCompleted"`
+	IsUser     bool
+	Email      string `json:"email"`
+	Id         string `json:"id"`
+	Cookie     string
+	// TODO: More?
+}
+
 func MapPrimitiveBindingsToStruct[T any](bindings map[string]rdf.Term) (T, error) {
 	structType := reflect.TypeOf(*new(T))
 	structValue := reflect.New(structType).Elem()

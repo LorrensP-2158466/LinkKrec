@@ -1,6 +1,8 @@
 package graph
 
-import "github.com/knakk/sparql"
+import (
+	"github.com/knakk/sparql"
+)
 
 // This file will not be regenerated automatically.
 //
