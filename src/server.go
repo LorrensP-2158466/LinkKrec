@@ -51,6 +51,18 @@ func init_store() {
 	}
 }
 
+
+	baseUrl := "http://localhost:3030/link_krec/"
+	queryEndpoint := baseUrl + "query"
+	mutateEndpoint := baseUrl + "update"
+
+	// Connect to the SPARQL endpoints
+	repo, err := sparql.NewRepo(queryEndpoint)
+	if err != nil {
+		log.Fatalf("Failed to connect to the SPARQL endpoint: %v", err)
+	}
+	updateRepo, err := sparql.NewRepo(mutateEndpoint)
+
 func signInWithProvider(c *gin.Context) {
 	provider := c.Param("provider")
 	q := c.Request.URL.Query()
@@ -189,6 +201,7 @@ func setupRouter(repo *sparql.Repo) *gin.Engine {
 	r := gin.Default()
 	r.Use(func(c *gin.Context) { c.Set(string(repoKey), repo); c.Next() })
 	r.Use(loaders.Middleware(repo))
+
 
 	r.GET("/auth/:provider", signInWithProvider)
 	r.GET("/auth/:provider/callback", callbackHandler)

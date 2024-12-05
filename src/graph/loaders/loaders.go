@@ -315,3 +315,60 @@ func (u *DataBase) getExperienceEntries(ctx context.Context, experienceEntryIDs 
 	}
 	return experienceEntries, errs
 }
+
+func (u *DataBase) getConnectionRequests(ctx context.Context, connectionRequestIDs []string) ([]*model.ConnectionRequest, []error) {
+	var ids []string
+	for _, id := range connectionRequestIDs {
+		s := fmt.Sprintf("?id = \"%s\"", id)
+		ids = append(ids, s)
+	}
+	filter := strings.Join(ids, " || ")
+	fmt.Println("filter: ", filter)
+	q := fmt.Sprintf(`
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX schema: <http://schema.org/>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+		SELECT ?id ?fromUserId ?connectedToUserId ?status
+		WHERE {
+			?connectionRequest a lr:ConnectionRequest ;
+			lr:Id ?id ;
+			lr:fromUser ?fromUser ;
+			lr:connectedToUser ?connectedToUser ;
+			lr:requestStatus ?status .
+			?fromUser lr:Id ?fromUserId .
+			?connectedToUser lr:Id ?connectedToUserId .
+
+		FILTER(%s)
+		}
+	`, filter)
+	fmt.Println("q: ", q)
+	res, err := u.Repo.Query(q)
+	fmt.Println("res: ", res)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	connectionRequests := make([]*model.ConnectionRequest, len(connectionRequestIDs))
+	errs := make([]error, len(connectionRequestIDs))
+
+	var foundConnectionRequests = make(map[string]*model.ConnectionRequest)
+	for _, m := range res.Solutions() {
+		connectionRequest, err := util.MapRdfConnectionRequestToGQL(m)
+		if err != nil {
+			return nil, []error{err}
+		}
+		foundConnectionRequests[connectionRequest.ID] = connectionRequest
+	}
+	// fill return array with empty objects so the lengths match
+	for i, id := range connectionRequestIDs {
+		if connectionRequest, found := foundConnectionRequests[id]; found {
+			connectionRequests[i] = connectionRequest
+			errs[i] = nil
+		} else {
+			connectionRequests[i] = &model.ConnectionRequest{ID: id}
+			errs[i] = fmt.Errorf("connectionRequest not found for ID: %s", id)
+		}
+	}
+	return connectionRequests, errs
+}

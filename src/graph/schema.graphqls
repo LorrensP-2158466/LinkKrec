@@ -65,8 +65,11 @@ type Mutation {
  # Update user profile details (nested, such as education or experience)
  updateUserProfile(id: ID!, input: UpdateProfileInput!): User
 
- # Add or remove a connection between users
- manageConnection(userId: ID!, connectedUserId: ID!, action: String!): ConnectionRequest
+ # Add a connection between users
+ addConnectionRequest(fromUserId: ID!, connectedToUserId: ID!): ConnectionRequest
+ 
+ # Set connection request on not active
+ setConnectionRequestStatusFalse(id: ID!): ConnectionRequest
 
  # Notify a user when someone visits their profile
  notifyProfileVisit(visitorId: ID!, visitedUserId: ID!): Notification
