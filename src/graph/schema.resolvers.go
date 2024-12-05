@@ -12,6 +12,8 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+
+	"github.com/google/uuid"
 )
 
 // FromUser is the resolver for the fromUser field.
@@ -55,9 +57,47 @@ func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, inp
 	panic(fmt.Errorf("not implemented: UpdateUserProfile - updateUserProfile"))
 }
 
-// ManageConnection is the resolver for the manageConnection field.
-func (r *mutationResolver) ManageConnection(ctx context.Context, userID string, connectedUserID string, action string) (*model.ConnectionRequest, error) {
-	panic(fmt.Errorf("not implemented: ManageConnection - manageConnection"))
+// AddConnectionRequest is the resolver for the addConnectionRequest field.
+func (r *mutationResolver) AddConnectionRequest(ctx context.Context, fromUserID string, connectedToUserID string) (*model.ConnectionRequest, error) {
+	requestID := uuid.New().String()
+
+	q := fmt.Sprintf(`
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX schema: <http://schema.org/>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+
+			INSERT {
+				?request a lr:ConnectionRequest ;
+						 lr:Id "%s" ;
+						 lr:fromUser ?fromUser ;
+						 lr:connectedToUser ?toUser ;
+						 lr:status "true"^^xsd:boolean .
+			}
+			WHERE {
+				?fromUser a lr:User ;
+						lr:Id "%s" .
+				?toUser a lr:User ;
+						lr:Id "%s" .
+			}
+		`, requestID, fromUserID, connectedToUserID)
+
+	fmt.Println(q)
+
+	err := r.UpdateRepo.Update(q)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("err:", err)
+
+	// If the query was successful, return the updated user
+	return loaders.GetConnectionRequest(ctx, requestID)
+}
+
+// SetConnectionRequestStatusFalse is the resolver for the setConnectionRequestStatusFalse field.
+func (r *mutationResolver) SetConnectionRequestStatusFalse(ctx context.Context, id string) (*model.ConnectionRequest, error) {
+	panic(fmt.Errorf("not implemented: SetConnectionRequestStatusFalse - setConnectionRequestStatusFalse"))
 }
 
 // NotifyProfileVisit is the resolver for the notifyProfileVisit field.
@@ -82,7 +122,38 @@ func (r *mutationResolver) DeleteVacancy(ctx context.Context, id string) (*bool,
 
 // UpdateUserLookingForOpportunities is the resolver for the updateUserLookingForOpportunities field.
 func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context, userID string, looking bool) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: UpdateUserLookingForOpportunities - updateUserLookingForOpportunities"))
+	// Convert the `looking` boolean to a string representation
+	lookingStr := strconv.FormatBool(looking)
+
+	// SPARQL update query to change the isLookingForOpportunities value
+	q := fmt.Sprintf(`
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX schema: <http://schema.org/>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+        DELETE {
+            ?user lr:isLookingForOpportunities ?currentValue .
+        }
+        INSERT {
+            ?user lr:isLookingForOpportunities "%s"^^xsd:boolean .
+        }
+        WHERE {
+            ?user a lr:User ;
+            lr:Id "%s" ;
+            lr:isLookingForOpportunities ?currentValue .
+        }
+    `, lookingStr, userID)
+	fmt.Println(q)
+
+	err := r.UpdateRepo.Update(q)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(err)
+
+	// If the query was successful, return the updated user
+	return loaders.GetUser(ctx, userID)
 }
 
 // ForUser is the resolver for the forUser field.

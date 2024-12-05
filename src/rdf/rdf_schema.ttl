@@ -195,18 +195,18 @@ lr:notificationCreatedAt a rdf:Property ;
     rdfs:range schema:Date .
 
 # Connection Requests
-lr:AskedConnection a rdfs:Class .
+lr:ConnectionRequest a rdfs:Class .
 lr:Id a rdf:Property ;
-    rdfs:domain lr:AskedConnection ;
+    rdfs:domain lr:ConnectionRequest ;
     rdfs:range schema:Text .
 lr:fromUser a rdf:Property ;
-    rdfs:domain lr:AskedConnection ;
+    rdfs:domain lr:ConnectionRequest ;
     rdfs:range lr:User .
 lr:connectedToUser a rdf:Property ;
-    rdfs:domain lr:AskedConnection ;
+    rdfs:domain lr:ConnectionRequest ;
     rdfs:range lr:User .
 lr:requestStatus a rdf:Property ;
-    rdfs:domain lr:AskedConnection ;
+    rdfs:domain lr:ConnectionRequest ;
     rdfs:range schema:Boolean .
 
 

@@ -22,11 +22,12 @@ type DataBase struct {
 
 // Loaders wrap your data loaders to inject via middleware
 type Loaders struct {
-	UserLoader            *dataloadgen.Loader[string, *model.User]
-	VacancyLoader         *dataloadgen.Loader[string, *model.Vacancy]
-	EmployerLoader        *dataloadgen.Loader[string, *model.Employer]
-	EducationEntryLoader  *dataloadgen.Loader[string, *model.EducationEntry]
-	ExperienceEntryLoader *dataloadgen.Loader[string, *model.ExperienceEntry]
+	UserLoader              *dataloadgen.Loader[string, *model.User]
+	VacancyLoader           *dataloadgen.Loader[string, *model.Vacancy]
+	EmployerLoader          *dataloadgen.Loader[string, *model.Employer]
+	EducationEntryLoader    *dataloadgen.Loader[string, *model.EducationEntry]
+	ExperienceEntryLoader   *dataloadgen.Loader[string, *model.ExperienceEntry]
+	ConnectionRequestLoader *dataloadgen.Loader[string, *model.ConnectionRequest]
 }
 
 // NewLoaders instantiates data loaders for the middleware
@@ -34,11 +35,12 @@ func NewLoaders(conn *sparql.Repo) *Loaders {
 	// define the data loader
 	ur := &DataBase{Repo: conn}
 	return &Loaders{
-		UserLoader:            dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
-		VacancyLoader:         dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
-		EmployerLoader:        dataloadgen.NewLoader(ur.getEmployers, dataloadgen.WithWait(time.Millisecond)),
-		EducationEntryLoader:  dataloadgen.NewLoader(ur.getEducationEntries, dataloadgen.WithWait(time.Millisecond)),
-		ExperienceEntryLoader: dataloadgen.NewLoader(ur.getExperienceEntries, dataloadgen.WithWait(time.Millisecond)),
+		UserLoader:              dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
+		VacancyLoader:           dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
+		EmployerLoader:          dataloadgen.NewLoader(ur.getEmployers, dataloadgen.WithWait(time.Millisecond)),
+		EducationEntryLoader:    dataloadgen.NewLoader(ur.getEducationEntries, dataloadgen.WithWait(time.Millisecond)),
+		ExperienceEntryLoader:   dataloadgen.NewLoader(ur.getExperienceEntries, dataloadgen.WithWait(time.Millisecond)),
+		ConnectionRequestLoader: dataloadgen.NewLoader(ur.getConnectionRequests, dataloadgen.WithWait(time.Millisecond)),
 	}
 }
 
@@ -108,4 +110,14 @@ func GetExperienceEntry(ctx context.Context, experienceEntryID string) (*model.E
 func GetExperienceEntries(ctx context.Context, experienceEntryIDs []string) ([]*model.ExperienceEntry, error) {
 	loaders := For(ctx)
 	return loaders.ExperienceEntryLoader.LoadAll(ctx, experienceEntryIDs)
+}
+
+func GetConnectionRequest(ctx context.Context, connectionRequestID string) (*model.ConnectionRequest, error) {
+	loaders := For(ctx)
+	return loaders.ConnectionRequestLoader.Load(ctx, connectionRequestID)
+}
+
+func getConnectionRequests(ctx context.Context, connectionRequestIDs []string) ([]*model.ConnectionRequest, error) {
+	loaders := For(ctx)
+	return loaders.ConnectionRequestLoader.LoadAll(ctx, connectionRequestIDs)
 }

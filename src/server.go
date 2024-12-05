@@ -21,17 +21,23 @@ func main() {
 		port = defaultPort
 	}
 
-	endpointURL := "http://localhost:3030/link_krec/sparql"
+	baseUrl := "http://localhost:3030/link_krec/"
+	queryEndpoint := baseUrl + "query"
+	mutateEndpoint := baseUrl + "update"
 
-	// Connect to the SPARQL endpoint
-	repo, err := sparql.NewRepo(endpointURL)
+	// Connect to the SPARQL endpoints
+	repo, err := sparql.NewRepo(queryEndpoint)
+	if err != nil {
+		log.Fatalf("Failed to connect to the SPARQL endpoint: %v", err)
+	}
+	updateRepo, err := sparql.NewRepo(mutateEndpoint)
 	if err != nil {
 		log.Fatalf("Failed to connect to the SPARQL endpoint: %v", err)
 	}
 
 	fmt.Println("Starting server on port " + port)
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Repo: repo}}))
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Repo: repo, UpdateRepo: updateRepo}}))
 
 	injected_srv := loaders.Middleware(repo, srv)
 

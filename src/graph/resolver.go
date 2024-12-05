@@ -7,5 +7,6 @@ import "github.com/knakk/sparql"
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	Repo *sparql.Repo
+	Repo       *sparql.Repo
+	UpdateRepo *sparql.Repo
 }
