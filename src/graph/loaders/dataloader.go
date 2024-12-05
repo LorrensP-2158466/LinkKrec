@@ -2,7 +2,9 @@ package loaders
 
 import (
 	"LinkKrec/graph/model"
+	"LinkKrec/graph/util"
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,7 +15,7 @@ import (
 type ctxKey string
 
 const (
-	LoadersKey = ctxKey("dataloaders")
+	LoadersKey = "dataloaders"
 )
 
 type DataBase struct {
@@ -55,6 +57,10 @@ func Middleware(conn *sparql.Repo) gin.HandlerFunc {
 
 // For returns the dataloader for a given context
 func For(ctx context.Context) *Loaders {
+	fmt.Println("Request", ctx.Value(util.QueryRepoKey))
+	fmt.Println("util", ctx.Value(util.UpdateRepoKey))
+	fmt.Println("loaders", ctx.Value(LoadersKey))
+	fmt.Println("util", ctx.Value(util.SessionInfoKey))
 	return ctx.Value(LoadersKey).(*Loaders)
 }
 

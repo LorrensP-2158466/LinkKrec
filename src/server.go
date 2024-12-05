@@ -69,23 +69,20 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*util.UserSessionInfo, 
 	query_repo := GetQueryRepo(c)
 
 	// check if the user already exists
-	res, err := query_repo.Query(fmt.Sprintf(`
-			
-    PREFIX lr: <http://linkRec.org/ontology/>
-    PREFIX schema: <http://schema.org/>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+	res, err := query_repo.Query(fmt.Sprintf(`			
+	    PREFIX lr: <http://linkRec.org/ontology/>
 
-    SELECT ?id ?email ?name ?accountCompleted
-    WHERE{
-    	?user a lr:User;
-    		lr:Id ?id ;
-    		lr:hasName ?name;
-    		lr:hasEmail ?email;
-    		lr:isEmplyer false ;
-    		lr:isProfileComplete ?accountCompleted .
+		SELECT ?id ?email ?name ?accountCompleted
+		WHERE{
+			?user a lr:User;
+				lr:Id ?id ;
+				lr:hasName ?name;
+				lr:hasEmail ?email;
+				lr:isEmployer false ;
+				lr:isProfileComplete ?accountCompleted .
 
-    	FILTER(?email = "%s")
-    }
+			FILTER(?email = "%s")
+		}
 		`, goth_user.Email))
 
 	if err != nil {
@@ -96,7 +93,7 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*util.UserSessionInfo, 
 		update_repo := GetUpdateRepo(c)
 		uuid := uuid.New().String()
 		insertQuery := fmt.Sprintf(`
-	    PREFIX lr: <http://linkRec.org/ontology/>
+		PREFIX lr: <http://linkrec.example.org/schema#>
 
 	    INSERT DATA {
 	        lr:User%s a lr:User ;
@@ -105,9 +102,14 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*util.UserSessionInfo, 
 	            lr:hasEmail "%s" ;
 	            lr:isEmployer false ;
 	            lr:isProfileComplete false .
-	    }`, uuid, uuid, goth_user.Name, goth_user.Email)
+	    }
+	    WHERE {
+	    	
+	    }
+	    `, uuid, uuid, goth_user.Name, goth_user.Email)
 
 		err := update_repo.Update(insertQuery)
+		fmt.Println("MADE UPDATE")
 		if err != nil {
 			return nil, err
 		}
@@ -183,9 +185,11 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if _, ok := session.Values[util.SessionInfoKey]; !ok {
+		if val, ok := session.Values[util.SessionInfoKey]; !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Can't get session info", "authorization_urls": []string{"/auth/google"}})
 			return
+		} else {
+			c.Set(string(util.SessionInfoKey), val)
 		}
 
 		c.Next()
@@ -194,12 +198,16 @@ func AuthMiddleware() gin.HandlerFunc {
 
 func ginCtxToRawCtx(gqlHandler *handler.Server) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		keys := []string{util.QueryRepoKey, util.UpdateRepoKey, loaders.LoadersKey, util.SessionInfoKey}
 
-		// Create a new context with the Gin context information
-		ctx := context.WithValue(c.Request.Context(), util.QueryRepoKey, c.Value(string(util.QueryRepoKey)))
-		ctx = context.WithValue(ctx, util.UpdateRepoKey, c.Value(string(util.UpdateRepoKey)))
-		ctx = context.WithValue(ctx, loaders.LoadersKey, c.Value(string(loaders.LoadersKey)))
-		ctx = context.WithValue(ctx, util.SessionInfoKey, c.Value(string(util.SessionInfoKey)))
+		ctx := c.Request.Context()
+		for _, key := range keys {
+			val, exists := c.Get(string(key))
+			if !exists || val == nil {
+				c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("Man wtf man: %s", key))
+			}
+			ctx = context.WithValue(ctx, key, c.Value(string(key)))
+		}
 
 		// Create a new request with the modified context
 		req := c.Request.WithContext(ctx)
@@ -217,7 +225,6 @@ func setupRouter(repo *sparql.Repo, updateRepo *sparql.Repo) *gin.Engine {
 		c.Next()
 	})
 	r.Use(loaders.Middleware(repo))
-	r.Use(util.GinContextToContextMiddleware())
 
 	r.GET("/auth/:provider", signInWithProvider)
 	r.GET("/auth/:provider/callback", callbackHandler)
@@ -228,8 +235,8 @@ func setupRouter(repo *sparql.Repo, updateRepo *sparql.Repo) *gin.Engine {
 	{
 		protected.GET("/playground", gin.WrapH(playground.Handler("GraphQL playground", "/graphql")))
 		protected.GET("/is_authorized", func(c *gin.Context) { c.String(http.StatusAccepted, "AUTHORIZED") })
-		protected.GET("/graphql", gin.WrapH(srv))
-		protected.POST("/graphql", gin.WrapH(srv))
+		protected.GET("/graphql", ginCtxToRawCtx(srv))
+		protected.POST("/graphql", ginCtxToRawCtx(srv))
 		protected.GET("/test_sess_info", func(c *gin.Context) {
 			session, _ := store.Get(c.Request, "user-session")
 			c.JSON(http.StatusOK, session.Values[util.SessionInfoKey])
