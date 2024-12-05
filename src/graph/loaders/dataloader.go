@@ -3,9 +3,9 @@ package loaders
 import (
 	"LinkKrec/graph/model"
 	"context"
-	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/knakk/sparql"
 	"github.com/vikstrous/dataloadgen"
 )
@@ -43,12 +43,12 @@ func NewLoaders(conn *sparql.Repo) *Loaders {
 }
 
 // Middleware injects data loaders into the context
-func Middleware(conn *sparql.Repo, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func Middleware(conn *sparql.Repo) gin.HandlerFunc {
+	return func(c *gin.Context) {
 		loader := NewLoaders(conn)
-		r = r.WithContext(context.WithValue(r.Context(), loadersKey, loader))
-		next.ServeHTTP(w, r)
-	})
+		c.Set(string(loadersKey), loader)
+		c.Next()
+	}
 }
 
 // For returns the dataloader for a given context

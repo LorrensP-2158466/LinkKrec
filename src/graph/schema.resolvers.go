@@ -11,6 +11,7 @@ import (
 	query_builder "LinkKrec/querybuilder"
 	"context"
 	"fmt"
+	"log"
 	"strconv"
 )
 
@@ -42,7 +43,63 @@ func (r *employerResolver) Employees(ctx context.Context, obj *model.Employer) (
 
 // RegisterUser is the resolver for the registerUser field.
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.RegisterUserInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: RegisterUser - registerUser"))
+	insert := fmt.Sprintf(`
+		%s
+		INSERT {
+		    ?newUser a lr:User ;
+		        lr:hasName ?name ;
+		        lr:hasEmail ?email ;
+		        lr:isEmployer ?isEmployer ;
+		        lr:isProfileComplete false .
+		}
+		WHERE {
+		    {
+		        SELECT (COUNT(?existingUser) + 1 AS ?userCount)
+		        WHERE {
+		            ?existingUser a lr:User .
+		        }
+		    }
+		    BIND(IRI(CONCAT(STR(lr:), "User", STR(?userCount))) AS ?newUser)
+		    BIND("%s" AS ?name)
+		    BIND("%s" AS ?email)
+		    BIND(false AS ?isEmployer)
+		}
+		`, query_builder.PREFIXES, input.Name, input.Email)
+
+	_, err := r.Repo.Query(insert)
+
+	if err != nil {
+		log.Println("Error registering user {}", err)
+		return nil, err
+	}
+	query := fmt.Sprintf(`
+			%s
+			SELECT ?name ?email ?isEmployer
+			WHERE {
+			    ?user a lr:User ;
+			        lr:hasName ?name ;
+			        lr:hasEmail "john@example.com" ;
+			        lr:isEmployer ?isEmployer .
+			}
+			LIMIT 1
+		`, query_builder.PREFIXES)
+
+	res, err := r.Repo.Query(query)
+
+	if len(res.Solutions()) > 1 {
+		panic("For some reason registering a user returned ")
+	}
+	for _, user := range res.Solutions() {
+		// only 1 user
+		return util.MapRdfUserToGQL(user)
+	}
+
+	return nil, fmt.Errorf("Could Not Register User Because i am working on it my g")
+}
+
+// CompleteUserProfile is the resolver for the completeUserProfile field.
+func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id *string, input model.UpdateUserInput) (*model.User, error) {
+	panic(fmt.Errorf("not implemented: CompleteUserProfile - completeUserProfile"))
 }
 
 // UpdateUser is the resolver for the updateUser field.
@@ -341,6 +398,72 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 		connectionRequests = append(connectionRequests, obj)
 	}
 	return connectionRequests, nil
+}
+
+// GetPotentialCandiatesForVacancy is the resolver for the getPotentialCandiatesForVacancy field.
+func (r *queryResolver) GetPotentialCandiatesForVacancy(ctx context.Context, id string, distanceInKm int) ([]*model.User, error) {
+	_ = fmt.Sprintf(
+		`
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX lr: <http://linkrec.example.org/schema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+PREFIX schema: <http://schema.org/> 
+PREFIX vcard: <http://www.w3.org/2006/vcard/ns#> 
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
+PREFIX esco: <http://data.europa.eu/esco/model#>
+PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+PREFIX ofn: <http://www.ontotext.com/sparql/functions/>
+PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
+
+SELECT ?userId ?userName ?userEmail ?userDegreeField ?userDegreeType ?userSkill ?distanceInKm
+WHERE {
+  # declare pi for convenience
+  VALUES (?pi) { ( 3.1415926535897932384) }
+
+  VALUES ?vacancyId {"%s"}
+  ?vacancy lr:Id ?vacancyId ;
+    lr:requiredSkill ?requiredSkill ;
+    lr:vacancyLocation ?vacancyLoc ;
+    lr:requiredDegreeType ?requiredDegreeType;
+    lr:requiredDegreeField ?requiredDegreeField .
+  
+
+  ?vacancyLoc lr:longitude ?long2 ;
+    lr:latitude ?lat2 .
+    
+  ?user lr:Id ?userId ;
+    lr:hasEmail ?userEmail ;
+    lr:hasName ?userName ;
+    lr:hasLocation ?userLoc;
+    lr:hasSkill ?requiredSkill;  
+    lr:hasEducation ?education ;
+    lr:isProfileComplete true ;
+    lr:isLookingForOpportunities true ;
+    lr:isEmployer false .
+    
+  ?userLoc lr:longitude ?long1 ;
+    lr:latitude ?lat1 .
+    
+  ?education lr:degreeType ?userDegreeType;
+    lr:degreeField ?userDegreeField.
+    
+
+  ?userDegreeType rdfs:subClassOf* ?requiredDegreeType .
+  ?userDegreeField rdfs:subClassOf* ?requiredDegreeField .
+  
+  BIND(6371 * 2 * lfn:sin-1(lfn:sqrt(
+    lfn:pow(lfn:sin((?lat2 - ?lat1) * ?pi / 360), 2) +
+    lfn:cos(?lat1 * ?pi / 180) * lfn:cos(?lat2 * ?pi / 180) *
+    lfn:pow(lfn:sin((?long2 - ?long1) * ?pi / 360), 2)
+  )) AS ?distanceInKm)
+  
+  FILTER(?distanceInKm <= %d)
+}
+		`, id, distanceInKm)
+
+	panic(fmt.Errorf("not implemented: GetPotentialCandiatesForVacancy - getPotentialCandiatesForVacancy"))
 }
 
 // NewConnectionRequest is the resolver for the newConnectionRequest field.

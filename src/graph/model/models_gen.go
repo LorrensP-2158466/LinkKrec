@@ -78,9 +78,8 @@ type Query struct {
 type RegisterUserInput struct {
 	Name          string              `json:"name"`
 	Email         string              `json:"email"`
-	Password      string              `json:"password"`
-	IsEmployer    *bool               `json:"isEmployer,omitempty"`
-	ProfileUpdate *UpdateProfileInput `json:"profileUpdate"`
+	IsEmployer    bool                `json:"isEmployer"`
+	ProfileUpdate *UpdateProfileInput `json:"profileUpdate,omitempty"`
 }
 
 type Subscription struct {
@@ -91,12 +90,15 @@ type UpdateProfileInput struct {
 	Experience                []*ExperienceEntryInput `json:"experience,omitempty"`
 	Skills                    []*string               `json:"skills,omitempty"`
 	IsLookingForOpportunities *bool                   `json:"isLookingForOpportunities,omitempty"`
+	Country                   string                  `json:"country"`
+	City                      string                  `json:"city"`
+	Streetname                string                  `json:"streetname"`
+	Streetnumber              string                  `json:"streetnumber"`
 }
 
 type UpdateUserInput struct {
-	Name     *string `json:"name,omitempty"`
-	Email    *string `json:"email,omitempty"`
-	Location *string `json:"location,omitempty"`
+	Name  *string `json:"name,omitempty"`
+	Email *string `json:"email,omitempty"`
 }
 
 type User struct {

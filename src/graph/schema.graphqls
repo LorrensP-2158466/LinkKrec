@@ -41,12 +41,23 @@ type Query {
    userId: ID!,
    status: Boolean,
  ): [ConnectionRequest]
+
+
+ # Based on Vacancy, find potential candidates  for this vacancy in a desired distance from the job position
+ getPotentialCandiatesForVacancy(
+   id: ID!,
+   distanceInKm: Int!
+ ): [User]!
 }
 
 
 type Mutation {
  # User registration
  registerUser(input: RegisterUserInput!): User
+
+ # when creating an account, we must set a flag that the profile is complete 
+ # before the user can do anything on the service
+ completeUserProfile(id: ID, input: UpdateUserInput!): User
 
  # Update user profile
  updateUser(id: ID!, input: UpdateUserInput!): User
@@ -209,16 +220,14 @@ type Notification {
 input RegisterUserInput {
  name: String!
  email: String!
- password: String!
- isEmployer: Boolean
- profileUpdate: UpdateProfileInput!
+ isEmployer: Boolean!
+ profileUpdate: UpdateProfileInput
 }
 
 
 input UpdateUserInput {
  name: String
  email: String
- location: String
 }
 
 
@@ -227,6 +236,10 @@ input UpdateProfileInput {
  experience: [ExperienceEntryInput]
  skills: [String]
  isLookingForOpportunities: Boolean
+ country: String!
+ city: String!
+ streetname: String!
+ streetnumber: String!
 }
 
 
