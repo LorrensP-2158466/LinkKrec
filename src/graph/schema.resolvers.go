@@ -81,8 +81,6 @@ func (r *mutationResolver) AddConnectionRequest(ctx context.Context, fromUserID 
 		}
 		`, requestID, requestID, fromUserID, connectedToUserID)
 
-	fmt.Println(q)
-
 	err := r.UpdateRepo.Update(q)
 	if err != nil {
 		return nil, err
@@ -142,7 +140,6 @@ func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context
             lr:isLookingForOpportunities ?currentValue .
         }
     `, lookingStr, userID)
-	fmt.Println(q)
 
 	err := r.UpdateRepo.Update(q)
 	if err != nil {
@@ -165,15 +162,13 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, er
 }
 
 // GetUsers is the resolver for the getUsers field.
-func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
-	fmt.Println("GetUsers")
+func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
 	q := query_builder.
 		QueryBuilder().
 		Select([]string{"id", "name", "email", "location", "lookingForOpportunities"}).
 		GroupConcat("skill", ", ", "skills", true).
 		GroupConcat("connectionName", ", ", "connections", true).
-		GroupConcat("educationEntryId", ", ", "educations", true).
-		GroupConcat("experienceEntryId", ", ", "experiences", true).
+		GroupConcat("educationEntry", ", ", "educations", true).
 		GroupConcat("companyId", ", ", "companies", true).
 		WhereSubject("user", "User").
 		Where("Id", "id").
@@ -181,6 +176,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		Where("hasEmail", "email").
 		Where("hasLocation", "location").
 		Where("isLookingForOpportunities", "isLookingForOpportunities").
+		Bind("isLookingForOpportunities", "lookingForOpportunities").
 		NewOptional("user", "lr:hasLocation", "locationEntry").
 		AddOptionalTriple("locationEntry", "lr:Id", "location").
 		NewOptional("user", "lr:hasSkill", "escoSkill").
@@ -191,7 +187,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		AddOptionalTriple("education", "lr:Id", "educationEntry").
 		NewOptional("user", "lr:hasCompany", "company").
 		AddOptionalTriple("company", "lr:Id", "companyId").
-		Bind("isLookingForOpportunities", "lookingForOpportunities")
+		Filter("skill", []string{"\"en\""}, query_builder.EQ)
 	if name != nil {
 		q.Filter("name", []string{*name}, query_builder.EQ)
 	}
@@ -209,14 +205,11 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 	}
 	qs := q.GroupBy([]string{"id", "name", "email", "location", "lookingForOpportunities"}).Build()
 
-	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-
-	fmt.Println("res:", res)
 
 	users := make([]*model.User, 0)
 	for _, user := range res.Solutions() {
@@ -233,7 +226,6 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 func (r *queryResolver) GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error) {
 	q := query_builder.
 		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "education"}).
-		GroupConcat("experienceType", ", ", "experienceTypes", true).
 		GroupConcat("experienceDuration", ", ", "experienceDurations", true).
 		WhereSubject("vacancy", "Vacancy").
 		Where("Id", "id").
@@ -245,7 +237,6 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 		Where("vacancyEndDate", "endDate").
 		Where("vacancyStatus", "status").
 		Where("requiredEducation", "education").
-		Where("requiredExperienceType", "experienceType").
 		Where("requiredExperienceDuration", "experienceDuration").
 		WhereExtraction("postedBy", "Id", "postedById")
 	if title != nil {
@@ -262,7 +253,6 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 	}
 	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "education"}).Build()
 
-	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
@@ -276,7 +266,6 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 			return nil, err
 		}
 		vacancies = append(vacancies, obj)
-		fmt.Println("obj:", obj)
 	}
 	return vacancies, nil
 }
@@ -311,12 +300,11 @@ func (r *queryResolver) GetCompanies(ctx context.Context, name *string, location
 	}
 	qs := q.GroupBy([]string{"id", "name", "email", "location"}).Build()
 
-	fmt.Println(qs)
-	res, err := r.Repo.Query(qs)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
+	// res, err := r.Repo.Query(qs)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return nil, err
+	// }
 
 	companies := make([]*model.Company, 0)
 	for _, company := range res.Solutions() {
@@ -351,13 +339,11 @@ func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]
 	}
 	qs := q.GroupBy([]string{"id", "title", "message", "forUserId", "createdAt"}).Build()
 
-	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	fmt.Println("res:", res)
 
 	notifications := make([]*model.Notification, 0)
 	for _, notification := range res.Solutions() {
@@ -393,13 +379,11 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 	}
 	qs := q.GroupBy([]string{"id", "fromUserId", "connectedToUserId", "status"}).Build()
 
-	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	fmt.Println("res:", res)
 
 	connectionRequests := make([]*model.ConnectionRequest, 0)
 	for _, connectionRequest := range res.Solutions() {
@@ -410,6 +394,70 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 		connectionRequests = append(connectionRequests, obj)
 	}
 	return connectionRequests, nil
+}
+
+// MatchVacancyToUsers is the resolver for the matchVacancyToUsers field.
+func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID string) ([]*model.User, error) {
+	q := fmt.Sprintf(`
+SELECT ?userId ?userName ?userEmail ?userDegreeField ?userDegreeType ?userSkill ?distanceInKm
+WHERE {
+  # constants
+  VALUES (?pi ?earthRadius ) { 
+  ( 3.1415926535 6378.137)
+  }
+
+  ?vacancy lr:Id ?%s ;
+    lr:requiredSkill ?requiredSkill ;
+    lr:vacancyLocation ?vacancyLoc ;
+    lr:requiredDegreeType ?requiredDegreeType;
+    lr:requiredDegreeField ?requiredDegreeField .
+  
+  # Use property path for location coordinates
+  ?vacancyLoc lr:longitude ?long2 ;
+    lr:latitude ?lat2 .
+    
+  # Combine user properties with FILTER early
+  ?user lr:Id ?userId ;
+    lr:hasEmail ?userEmail ;
+    lr:hasName ?userName ;
+    lr:hasLocation ?userLoc;
+    lr:hasSkill ?requiredSkill;  # Direct match instead of FILTER
+    lr:hasEducation ?education ;
+    lr:isProfileComplete true ;
+    lr:isLookingForOpportunities true ;
+    lr:isEmployer false .
+    
+  ?userLoc lr:longitude ?long1 ;
+    lr:latitude ?lat1 .
+    
+  ?education lr:degreeType ?userDegreeType;
+    lr:degreeField ?userDegreeField.
+    
+  # Move subclass relationships after main pattern matching
+  ?userDegreeType rdfs:subClassOf* ?requiredDegreeType .
+  ?userDegreeField rdfs:subClassOf* ?requiredDegreeField .
+  
+  # Simplified distance calculation
+  BIND(?earthRadius * 2 * lfn:sin-1(lfn:sqrt(
+    lfn:pow(lfn:sin((?lat2 - ?lat1) * ?pi / 360), 2) +
+    lfn:cos(?lat1 * ?pi / 180) * lfn:cos(?lat2 * ?pi / 180) *
+    lfn:pow(lfn:sin((?long2 - ?long1) * ?pi / 360), 2)
+  )) AS ?distanceInKm)
+  
+  FILTER(?distanceInKm <= 30)
+}
+	`, vacancyID)
+
+	res, _ := r.Repo.Query(q)
+	users := make([]*model.User, 0)
+	for _, user := range res.Solutions() {
+		obj, err := util.MapRdfUserToGQL(user)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, obj)
+	}
+	return users, nil
 }
 
 // NewConnectionRequest is the resolver for the newConnectionRequest field.
@@ -446,14 +494,6 @@ func (r *userResolver) Education(ctx context.Context, obj *model.User) ([]*model
 		return e.ID
 	})
 	return loaders.GetEducationEntries(ctx, ids)
-}
-
-// Experience is the resolver for the experience field.
-func (r *userResolver) Experience(ctx context.Context, obj *model.User) ([]*model.ExperienceEntry, error) {
-	ids := util.Map(obj.Experience, func(e *model.ExperienceEntry) string {
-		return e.ID
-	})
-	return loaders.GetExperienceEntries(ctx, ids)
 }
 
 // Companies is the resolver for the companies field.
@@ -503,3 +543,18 @@ type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type vacancyResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *userResolver) Experience(ctx context.Context, obj *model.User) ([]*model.ExperienceEntry, error) {
+	ids := util.Map(obj.Experience, func(e *model.ExperienceEntry) string {
+		return e.ID
+	})
+	return loaders.GetExperienceEntries(ctx, ids)
+}
+*/

@@ -35,11 +35,11 @@ func NewLoaders(conn *sparql.Repo) *Loaders {
 	// define the data loader
 	ur := &DataBase{Repo: conn}
 	return &Loaders{
-		UserLoader:              dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
-		VacancyLoader:           dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
-		CompanyLoader:           dataloadgen.NewLoader(ur.getCompanies, dataloadgen.WithWait(time.Millisecond)),
-		EducationEntryLoader:    dataloadgen.NewLoader(ur.getEducationEntries, dataloadgen.WithWait(time.Millisecond)),
-		ExperienceEntryLoader:   dataloadgen.NewLoader(ur.getExperienceEntries, dataloadgen.WithWait(time.Millisecond)),
+		UserLoader:           dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
+		VacancyLoader:        dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
+		CompanyLoader:        dataloadgen.NewLoader(ur.getCompanies, dataloadgen.WithWait(time.Millisecond)),
+		EducationEntryLoader: dataloadgen.NewLoader(ur.getEducationEntries, dataloadgen.WithWait(time.Millisecond)),
+		// ExperienceEntryLoader:   dataloadgen.NewLoader(ur.getExperienceEntries, dataloadgen.WithWait(time.Millisecond)),
 		ConnectionRequestLoader: dataloadgen.NewLoader(ur.getConnectionRequests, dataloadgen.WithWait(time.Millisecond)),
 	}
 }

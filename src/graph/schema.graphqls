@@ -1,6 +1,6 @@
 type Query {
- # Fetch a specific user by ID
- getUser(id: ID!): User
+    # Fetch a specific user by ID
+    getUser(id: ID!): User
 
  # Fetch users by filtering on various fields
  getUsers(
@@ -10,16 +10,16 @@ type Query {
    lookingForOpportunities: Boolean,
  ): [User]
 
- # Fetch all job vacancies with optional filtering
- getVacancies(
-   title: String, 
-   location: String,
-   requiredEducation: DegreeType,
-   status: Boolean,
- ): [Vacancy]
+    # Fetch all job vacancies with optional filtering
+    getVacancies(
+        title: String
+        location: String
+        requiredEducation: DegreeType
+        status: Boolean
+    ): [Vacancy]
 
- # Fetch a specific job vacancy by ID
- getVacancy(id: ID!): Vacancy
+    # Fetch a specific job vacancy by ID
+    getVacancy(id: ID!): Vacancy
 
 # Fetch companies with optional filtering
  getCompanies(
@@ -30,37 +30,33 @@ type Query {
  # Fetch specific company by ID, with details about their vacancies and employees
  getCompany(id: ID!): Company
 
- # Fetch all notifications for a user, with optional filtering by read status or timeframe
- getNotifications(
-   userId: ID!,
- ): [Notification]
+    # Fetch all notifications for a user, with optional filtering by read status or timeframe
+    getNotifications(userId: ID!): [Notification]
 
- # Fetch connection requests sent to a user, with optional filtering by status
- getConnectionRequests(
-   userId: ID!,
-   status: Boolean,
- ): [ConnectionRequest]
+    # Fetch connection requests sent to a user, with optional filtering by status
+    getConnectionRequests(userId: ID!, status: Boolean): [ConnectionRequest]
+
+    matchVacancyToUsers(vacancyId: ID!): [User]
 }
 
-
 type Mutation {
- # User registration
- registerUser(input: RegisterUserInput!): User
+    # User registration
+    registerUser(input: RegisterUserInput!): User
 
- # Update user profile
- updateUser(id: ID!, input: UpdateUserInput!): User
+    # Update user profile
+    updateUser(id: ID!, input: UpdateUserInput!): User
 
- # Update user profile details (nested, such as education or experience)
- updateUserProfile(id: ID!, input: UpdateProfileInput!): User
+    # Update user profile details (nested, such as education)
+    updateUserProfile(id: ID!, input: UpdateProfileInput!): User
 
- # Add a connection between users
- addConnectionRequest(fromUserId: ID!, connectedToUserId: ID!): ConnectionRequest
- 
- # Set connection request on not active
- setConnectionRequestStatusFalse(id: ID!): ConnectionRequest
+    # Add a connection between users
+    addConnectionRequest(fromUserId: ID!, connectedToUserId: ID!): ConnectionRequest
 
- # Notify a user when someone visits their profile
- notifyProfileVisit(visitorId: ID!, visitedUserId: ID!): Notification
+    # Set connection request on not active
+    setConnectionRequestStatusFalse(id: ID!): ConnectionRequest
+
+    # Notify a user when someone visits their profile
+    notifyProfileVisit(visitorId: ID!, visitedUserId: ID!): Notification
 
  # Create a job vacancy (companies only)
  createVacancy(companyId: ID!, input: CreateVacancyInput!): Vacancy
@@ -71,38 +67,35 @@ type Mutation {
  # Delete a job vacancy (companies only)
  deleteVacancy(id: ID!): Boolean
 
- # Set user looking for job opportunities
- updateUserLookingForOpportunities(userId: ID!, looking: Boolean!): User
+    # Set user looking for job opportunities
+    updateUserLookingForOpportunities(userId: ID!, looking: Boolean!): User
 }
-
 
 # We just thought about these, so we don't know if these will be used or are correct
 type Subscription {
- # Notify users of a new connection request
- newConnectionRequest(forUserId: ID!): ConnectionRequest
-  # Notify users of changes in connection request status (accepted or declined)
- connectionRequestStatusUpdate(forUserId: ID!): ConnectionRequest
-  # Notify users when a new job vacancy that matches their profile is posted
- newMatchingVacancy(userId: ID!): Vacancy
-  # Notify users of general notifications (e.g., profile views, vacancy matches)
- newNotification(forUserId: ID!): Notification
+    # Notify users of a new connection request
+    newConnectionRequest(forUserId: ID!): ConnectionRequest
+    # Notify users of changes in connection request status (accepted or declined)
+    connectionRequestStatusUpdate(forUserId: ID!): ConnectionRequest
+    # Notify users when a new job vacancy that matches their profile is posted
+    newMatchingVacancy(userId: ID!): Vacancy
+    # Notify users of general notifications (e.g., profile views, vacancy matches)
+    newNotification(forUserId: ID!): Notification
 }
-
 
 # User is a person who wants to use LinkRec to find jobs or connect with others
 type User {
- id: ID!
- name: String!
- email: String!
- location: String
- connections: [User]
- education: [EducationEntry]
- experience: [ExperienceEntry]
- skills: [String]
- lookingForOpportunities: Boolean
+    id: ID!
+    name: String!
+    email: String!
+    location: String
+       connections: [User]
+    education: [EducationEntry]
+    skills: [String]
+    lookingForOpportunities: Boolean
+    isProfileComplete: Boolean
  companies: [Company]
 }
-
 
 # A company/person who wants to recruit Users
 type Company{
@@ -114,99 +107,92 @@ type Company{
  employees: [User!]!,
 }
 
-
 # A Degree obtained from an institution, used for matching candidates
-enum DegreeType{
- None,
- ProfBachelor,
- AcBachelor,
- Master,
- PhD
+enum DegreeType {
+    None
+    ProfBachelor
+    AcBachelor
+    Master
+    PhD
 }
 
-enum DegreeField{
-    ComputerScience,
-    Engineering,
-    Business,
-    Economics,
-    Marketing,
-    Finance,
-    Medicine,
-    Law,
-    Psychology,
- # We can always add more ofcourse
+enum DegreeField {
+    ComputerScience
+    Engineering
+    Business
+    Economics
+    Marketing
+    Finance
+    Medicine
+    Law
+    Psychology
+    # We can always add more ofcourse
 }
 
 # An education that a user can put on their profile
 type EducationEntry {
- id: ID!,
- institution: String!,
- info: String!,
- degree: DegreeType!,
- field: DegreeField!
+    id: ID!
+    institution: String!
+    info: String!
+    degree: DegreeType!
+    field: DegreeField!
 }
 
-
-# A field a user can have experience
-enum ExperienceType{
-IT,
-Engineering,
-Sales,
-HR,
-Consultancy,
-Research,
-Marketing,
-Finance,
-Customer Support,
-Operation,
-# We can always add more ofcourse
+enum ExperienceType {
+    IT
+    Engineering
+    Sales
+    HR
+    Consultancy
+    Research
+    Marketing
+    Finance
+    Customer
+    Support
+    Operation
+    # We can always add more ofcourse
 }
 
- # Same as EducationEntry, but for job experiences, also used for matching
+# Same as EducationEntry, but for job experiences (not used)
 type ExperienceEntry {
- id: ID!,
- title: String!,
- description: String,
- experienceType: ExperienceType!,
- startDate: String,
- endDate: String
+    id: ID!
+    title: String!
+    description: String
+    experienceType: ExperienceType!
+    startDate: String
+    endDate: String
 }
-
 
 # A Job vacancy a Company can place on LinkRec
 type Vacancy {
- id: ID!,
- title: String!,
- description: String! ,
- requiredEducation: DegreeType!,
- requiredExperiences: [ExperienceType!]!,
- requiredExperienceDurations: [Int!]! # in years, per experience in order
- location: String!,
- postedBy: Company!,
- startDate: String,
- endDate: String,
- status: Boolean
+    id: ID!
+    title: String!
+    description: String!
+    requiredEducation: DegreeType!
+    requiredExperienceDurations: [Int!]! # in years, per experience in order
+    location: String!
+    postedBy: Company!
+    startDate: String
+    endDate: String
+    status: Boolean
 }
-
 
 # A connection request from a user to a user
 type ConnectionRequest {
- id: ID!,
- fromUser: User!,
- connectedToUser: User!,
- status: Boolean! # keep this in data so we have audit trails
+    id: ID!
+    fromUser: User!
+    connectedToUser: User!
+    status: Boolean! # keep this in data so we have audit trails
 }
-
 
 # a notification
 type Notification {
- id: ID!,
- title: String!,
- message: String!,
- forUser: User!,
- createdAt: String,
+    id: ID!
+    title: String!
+    message: String!
+    forUser: User!
+    createdAt: String
 }
-
 
 input RegisterUserInput {
  name: String!
@@ -215,40 +201,34 @@ input RegisterUserInput {
  profileUpdate: UpdateProfileInput!
 }
 
-
 input UpdateUserInput {
- name: String
- email: String
- location: String
+    name: String
+    email: String
+    location: String
 }
-
 
 input UpdateProfileInput {
- education: [EducationEntryInput]
- experience: [ExperienceEntryInput]
- skills: [String]
- isLookingForOpportunities: Boolean
+    education: [EducationEntryInput]
+    skills: [String]
+    isLookingForOpportunities: Boolean
 }
-
 
 input EducationEntryInput {
- institution: String!
- degree: String!
+    institution: String!
+    degree: String!
 }
-
 
 input ExperienceEntryInput {
- title: String!
- description: String
- startDate: String
- endDate: String
+    title: String!
+    description: String
+    startDate: String
+    endDate: String
 }
 
-
 input CreateVacancyInput {
- title: String!
- description: String!
- location: String
- startDate: String
- endDate: String
+    title: String!
+    description: String!
+    location: String
+    startDate: String
+    endDate: String
 }

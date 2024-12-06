@@ -1,61 +1,87 @@
 PREFIX lr: <http://linkrec.example.org/schema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+PREFIX schema: <http://schema.org/> 
+PREFIX vcard: <http://www.w3.org/2006/vcard/ns#> 
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
+PREFIX esco: <http://data.europa.eu/esco/model#>
+PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 
 lr:User1 a lr:User ;
     lr:Id "1" ;
     lr:hasName "Alice" ;
     lr:hasEmail "alice.gmail.com" ;
-    lr:hasLocation "San Francisco" ;
+    lr:isEmployer false ;
+    lr:hasLocation lr:Location2 ;
     lr:hasConnection lr:User2 ;
     lr:hasConnection lr:User3 ;
     lr:hasEducation lr:EducationEntry1 ;
-    lr:hasExperience lr:ExperienceEntry1 ;
-    lr:hasSkill "Python" ;
-    lr:hasSkill "Java" ;
+    lr:hasSkill esco_skill:19a8293b-8e95-4de3-983f-77484079c389 ;
     lr:isLookingForOpportunities true ;
-    lr:hasCompany lr:Company1 ;
-    lr:hasCompany lr:Company2 .
-
+    lr:isProfileComplete true .
 
 lr:User2 a lr:User ;
     lr:Id "2" ;
     lr:hasName "Bob" ;
     lr:hasEmail "bob@gmail.com" ;
-    lr:hasLocation "New York" ;
-    lr:hasSkill "C++" ;
-    lr:hasSkill "Project Management" ;
-    lr:isLookingForOpportunities false ;
+    lr:isEmployer true ;
+    lr:hasLocation lr:Location2 ;
+    lr:hasSkill esco_skill:b633eb55-8f1f-4ae6-ab4c-2022ffe2cb7f ;
+    lr:hasSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
+    lr:isLookingForOpportunities true ;
     lr:hasConnection lr:User3 ;
     lr:hasEducation lr:EducationEntry2 ;
-    lr:hasExperience lr:ExperienceEntry2 .
+    lr:isLookingForOpportunities true ;
+    lr:isProfileComplete true .
 
 lr:User3 a lr:User ;
     lr:Id "3" ;
     lr:hasName "Charlie" ;
     lr:hasEmail "charlie@yahoo.com" ;
-    lr:hasLocation "Los Angeles" ;
-    lr:hasSkill "JavaScript" ;
-    lr:hasSkill "React" ;
-    lr:hasSkill "Node.js" ;
+    lr:isEmployer false ;
+    lr:hasLocation lr:Location1 ;
+    lr:hasSkill esco_skill:3cd569a2-4f88-4c1e-9995-8dce8c5e51a7 ;
+    lr:hasSkill esco_skill:9b9de2a4-d8af-4a7b-933a-a8334ae60067;
     lr:isLookingForOpportunities true ;
     lr:hasConnection lr:User2 ;
     lr:hasEducation lr:EducationEntry1 ;
-    lr:hasExperience lr:ExperienceEntry2 ;
-    lr:hasCompany lr:Company2 .
+    lr:isLookingForOpportunities true ;
+    lr:isProfileComplete true .
+
+lr:User4 a lr:User ;
+    lr:Id "4" ;
+    lr:hasName "Ivan" ;
+    lr:hasEmail "Ivan@student.uhasselt.be" ;
+    lr:isEmployer false ;
+    lr:hasLocation lr:Location1 ;
+    lr:hasSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
+    lr:isLookingForOpportunities true ;
+    lr:hasEducation lr:EducationEntry3 ;
+    lr:isLookingForOpportunities true ;
+    lr:isProfileComplete true .
 
 
 lr:EducationEntry1 a lr:EducationEntry ;
     lr:Id "1" ;
     lr:institutionName "Stanford University";
     lr:institutionInfo "https://www.stanford.edu" ;
-    lr:degreeType "ProfBachelor" ;
-    lr:degreeField "Computer Science" .
+    lr:degreeType lr:ProfBachelor ;
+    lr:degreeField lr:SoftwareEngineering .
 
 lr:EducationEntry2 a lr:EducationEntry ;
     lr:Id "2" ;
     lr:institutionName "Harvard Business School" ;
     lr:institutionInfo "https://www.hbs.edu" ;
-    lr:degreeType "Master" ;
-    lr:degreeField "Engineering" .
+    lr:degreeType lr:Master ;
+    lr:degreeField lr:MechanicalEngineering .
+
+lr:EducationEntry3 a lr:EducationEntry ;
+    lr:Id "3" ;
+    lr:institutionName "UHasselt" ;
+    lr:institutionInfo "https://www.uhasselt.be" ;
+    lr:degreeType lr:Master ;
+    lr:degreeField lr:ComputerScience.
 
 lr:ExperienceEntry1 a lr:ExperienceEntry ;
     lr:Id "1" ;
@@ -73,13 +99,23 @@ lr:ExperienceEntry2 a lr:ExperienceEntry ;
     lr:experienceStartDate "2018-01-01"^^xsd:date ;
     lr:experienceEndDate "2021-12-31"^^xsd:date .
 
+lr:Location1 a lr:Location ;
+    lr:Id "1" ;
+    lr:inCountry "Belgium" ;
+    lr:inCity "Riemst";
+    lr:inStreet "Tongersesteenweg" ;
+    lr:houseNumber "147" ;
+    lr:longitude "5.570508"^^xsd:double ;
+    lr:latitude "50.8028571"^^xsd:double .
+
 lr:Vacancy1 a lr:Vacancy ;
     lr:Id "1" ;
     lr:vacancyTitle "Software Engineer" ;
     lr:vacancyDescription "Develop software applications" ;
     lr:postedBy lr:Company1 ;
     lr:vacancyLocation "San Francisco" ;
-    lr:requiredEducation "ProfBachelor" ;
+    lr:requiredDegreeType lr:ProfBachelor ;
+    lr:requiredDegreeField lr:SoftwareEngineering ;
     lr:requiredExperienceType "IT" ;
     lr:requiredExperienceDuration 2 ;
     lr:vacancyStartDate "2022-01-01" ;
@@ -90,29 +126,40 @@ lr:Vacancy2 a lr:Vacancy ;
     lr:Id "2" ;
     lr:vacancyTitle "Project Manager" ;
     lr:vacancyDescription "Manage software development projects" ;
-    lr:postedBy lr:Company1 ;
-    lr:vacancyLocation "New York" ;
-    lr:requiredEducation "Master" ;
+    lr:postedBy lr:Employer1 ;
+    lr:vacancyLocation lr:Location2 ;
+    lr:requiredDegreeType lr:Master ;
+    lr:requiredDegreeField lr:ComputerScience ;
+    lr:requiredSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
     lr:requiredExperienceType "IT" ;
-    lr:requiredExperienceType "Engineering" ;
     lr:requiredExperienceDuration 3 ;
     lr:requiredExperienceDuration 4 ;
     lr:vacancyStartDate "2022-02-01"^^xsd:date ;
     lr:vacancyEndDate "2022-07-31"^^xsd:date ;
     lr:vacancyStatus true .
 
+lr:Location2 a lr:Location ;
+    lr:Id "2" ;
+    lr:inCountry "Belgium" ;
+    lr:inCity "Hasselt";
+    lr:inStreet "Gouverneur Verwilghensingel" ;
+    lr:houseNumber "70" ;
+    lr:longitude "5.3615975"^^xsd:double ;
+    lr:latitude "50.932204"^^xsd:double .
+
 lr:Vacancy3 a lr:Vacancy ;
     lr:Id "3" ;
-    lr:vacancyTitle "Full-Stack Developer" ;
-    lr:vacancyDescription "Develop web applications" ;
-    lr:postedBy lr:Company2 ;
+    lr:vacancyTitle "BIG CORP lawyer" ;
+    lr:vacancyDescription "You will defend devils" ;
+    lr:postedBy lr:Employer2 ;
     lr:vacancyLocation "Los Angeles" ;
-    lr:requiredEducation "AcBachelor" ;
-    lr:requiredExperienceType "IT" ;
+    lr:requiredDegreeType lr:AcBachelor ;
+    lr:requiredDegreeField lr:CorporateLaw;
+    lr:requiredExperienceType "Law" ;
     lr:requiredExperienceDuration 2 ;
     lr:vacancyStartDate "2022-03-01"^^xsd:date ;
     lr:vacancyEndDate "2022-08-31"^^xsd:date ;
-    lr:vacancyStatus false .
+    lr:vacancyStatus true .
 
 lr:Company1 a lr:Company ;
     lr:Id "1" ;

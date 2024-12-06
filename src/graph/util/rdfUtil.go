@@ -15,39 +15,21 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 		return nil, err
 	}
 
+	var connections = make([]*model.User, 0)
 	if user["connections"] != nil {
-		var connections = make([]*model.User, 0)
 		for _, con := range strings.Split(user["connections"].String(), ", ") {
 			connections = append(connections, &model.User{ID: con})
 		}
-		userObj.Connections = connections
-	} else {
-		userObj.Connections = nil
 	}
-	fmt.Println("connections userObj: ", userObj)
+	userObj.Connections = connections
 
+	var educations = make([]*model.EducationEntry, 0)
 	if user["educations"] != nil {
-		var educations = make([]*model.EducationEntry, 0)
 		for _, edu := range strings.Split(user["educations"].String(), ", ") {
 			educations = append(educations, &model.EducationEntry{ID: edu})
 		}
-		userObj.Education = educations
-	} else {
-		userObj.Education = nil
 	}
-
-	fmt.Println("educations userObj: ", userObj)
-
-	if user["experiences"] != nil {
-		var experiences = make([]*model.ExperienceEntry, 0)
-		for _, exp := range strings.Split(user["experiences"].String(), ", ") {
-			experiences = append(experiences, &model.ExperienceEntry{ID: exp})
-		}
-		userObj.Experience = experiences
-	} else {
-		userObj.Experience = nil
-	}
-	fmt.Println("experiences userObj: ", userObj)
+	userObj.Education = educations
 
 	if user["companies"] != nil {
 		var companies = make([]*model.Company, 0)
@@ -58,9 +40,6 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 	} else {
 		userObj.Companies = nil
 	}
-
-	fmt.Println("companies userObj: ", userObj)
-
 	return &userObj, nil
 }
 
@@ -132,19 +111,6 @@ func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
 	}
 	vacancyObj.RequiredEducation = degree
 
-	experienceType := vacancy["experienceTypes"].String()
-	experienceTypes := strings.Split(experienceType, ", ")
-	var experiences []model.ExperienceType
-	for _, e := range experienceTypes {
-		for _, f := range model.AllExperienceType {
-			if f.String() == e {
-				experiences = append(experiences, f)
-				break
-			}
-		}
-	}
-	vacancyObj.RequiredExperiences = experiences
-
 	experienceDuration := vacancy["experienceDurations"].String()
 	experienceDurations := strings.Split(experienceDuration, ", ")
 	var durations []int
@@ -162,7 +128,6 @@ func MapRdfNotificationToGQL(notification map[string]rdf.Term) (*model.Notificat
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("primitive notificationObj: ", notificationObj)
 
 	notificationObj.ForUser = &model.User{ID: notification["forUserId"].String()}
 	fmt.Println("foruser notifcationObj: ", notificationObj)
@@ -217,29 +182,29 @@ func MapRdfEducationEntryToGQL(educationEntry map[string]rdf.Term) (*model.Educa
 	return &educationEntryObj, nil
 }
 
-func MapRdfExperienceEntryToGQL(experienceEntry map[string]rdf.Term) (*model.ExperienceEntry, error) {
-	fmt.Println("experienceEntry: ", experienceEntry)
-	experienceEntryObj, err := MapPrimitiveBindingsToStruct[model.ExperienceEntry](experienceEntry)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Println("primitive experienceEntryObj: ", experienceEntryObj)
+// func MapRdfExperienceEntryToGQL(experienceEntry map[string]rdf.Term) (*model.ExperienceEntry, error) {
+// 	fmt.Println("experienceEntry: ", experienceEntry)
+// 	experienceEntryObj, err := MapPrimitiveBindingsToStruct[model.ExperienceEntry](experienceEntry)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	fmt.Println("primitive experienceEntryObj: ", experienceEntryObj)
 
-	experienceType := (experienceEntry["experienceType"].String())
-	var experience model.ExperienceType
-	for _, e := range model.AllExperienceType {
-		if e.String() == experienceType {
-			experience = e
-			break
-		}
-	}
-	experienceEntryObj.ExperienceType = experience
+// 	experienceType := (experienceEntry["experienceType"].String())
+// 	var experience model.ExperienceType
+// 	for _, e := range model.AllExperienceType {
+// 		if e.String() == experienceType {
+// 			experience = e
+// 			break
+// 		}
+// 	}
+// 	experienceEntryObj.ExperienceType = experience
 
-	startDate := experienceEntry["startDate"].String()
-	experienceEntryObj.StartDate = &startDate
+// 	startDate := experienceEntry["startDate"].String()
+// 	experienceEntryObj.StartDate = &startDate
 
-	endDate := experienceEntry["endDate"].String()
-	experienceEntryObj.EndDate = &endDate
+// 	endDate := experienceEntry["endDate"].String()
+// 	experienceEntryObj.EndDate = &endDate
 
-	return &experienceEntryObj, nil
-}
+// 	return &experienceEntryObj, nil
+// }
