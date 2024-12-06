@@ -103,7 +103,9 @@ models:
         resolver: true
       experience:
         resolver: true
-  Employer:
+      companies:
+        resolver: true
+  Company:
     fields:
       vacancies:
         resolver: true

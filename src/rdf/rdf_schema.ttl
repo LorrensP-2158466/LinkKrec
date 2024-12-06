@@ -7,7 +7,7 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
 
-# User (represents a person or employer on LinkRec)
+# User (represents a person on LinkRec)
 lr:User a rdfs:Class .
 lr:Id a rdf:Property ;
     rdfs:domain lr:User ;
@@ -18,9 +18,6 @@ lr:hasName a rdf:Property ;
 lr:hasEmail a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range schema:Text .
-lr:isEmployer a rdf:Property ;
-    rdfs:domain lr:User ;
-    rdfs:range schema:Boolean .
 lr:hasLocation a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range schema:Text .
@@ -39,29 +36,32 @@ lr:hasSkill a rdf:Property ;
 lr:isLookingForOpportunities a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range schema:Boolean .
+lr:hasCompanies a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range lr:Company .
 
-# Employer (represents a company or employer)
-lr:Employer a rdfs:Class .
+# Company (represents a company)
+lr:Company a rdfs:Class .
 lr:Id a rdf:Property ;
-    rdfs:domain lr:Employer ;
+    rdfs:domain lr:Company ;
     rdfs:range schema:Text .
-lr:employerName a rdf:Property ;
-    rdfs:domain lr:Employer ;
+lr:companyName a rdf:Property ;
+    rdfs:domain lr:Company ;
     rdfs:range schema:Text .
-lr:employerEmail a rdf:Property ;
-    rdfs:domain lr:Employer ;
+lr:companyEmail a rdf:Property ;
+    rdfs:domain lr:Company ;
     rdfs:range schema:Text .
-lr:employerLocation a rdf:Property ;
-    rdfs:domain lr:Employer ;
+lr:companyLocation a rdf:Property ;
+    rdfs:domain lr:Company ;
     rdfs:range schema:Text .
 lr:hasVacancy a rdf:Property ;
-    rdfs:domain lr:Employer ;
+    rdfs:domain lr:Company ;
     rdfs:range lr:Vacancy .
 lr:hasEmployee a rdf:Property ;
-    rdfs:domain lr:Employer ;
+    rdfs:domain lr:Company ;
     rdfs:range lr:User .
 
-# Vacancy (job posting created by an employer)
+# Vacancy (job posting created by an company)
 lr:Vacancy a rdfs:Class .
 lr:Id a rdf:Property ;
     rdfs:domain lr:Vacancy ;
@@ -77,7 +77,7 @@ lr:vacancyLocation a rdf:Property ;
     rdfs:range schema:Text .
 lr:postedBy a rdf:Property ;
     rdfs:domain lr:Vacancy ;
-    rdfs:range lr:Employer .
+    rdfs:range lr:Company .
 lr:vacancyStartDate a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range schema:Date .

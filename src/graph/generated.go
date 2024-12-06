@@ -40,8 +40,8 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Company() CompanyResolver
 	ConnectionRequest() ConnectionRequestResolver
-	Employer() EmployerResolver
 	Mutation() MutationResolver
 	Notification() NotificationResolver
 	Query() QueryResolver
@@ -54,6 +54,15 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Company struct {
+		Email     func(childComplexity int) int
+		Employees func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Location  func(childComplexity int) int
+		Name      func(childComplexity int) int
+		Vacancies func(childComplexity int) int
+	}
+
 	ConnectionRequest struct {
 		ConnectedToUser func(childComplexity int) int
 		FromUser        func(childComplexity int) int
@@ -69,15 +78,6 @@ type ComplexityRoot struct {
 		Institution func(childComplexity int) int
 	}
 
-	Employer struct {
-		Email     func(childComplexity int) int
-		Employees func(childComplexity int) int
-		ID        func(childComplexity int) int
-		Location  func(childComplexity int) int
-		Name      func(childComplexity int) int
-		Vacancies func(childComplexity int) int
-	}
-
 	ExperienceEntry struct {
 		Description    func(childComplexity int) int
 		EndDate        func(childComplexity int) int
@@ -89,7 +89,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AddConnectionRequest              func(childComplexity int, fromUserID string, connectedToUserID string) int
-		CreateVacancy                     func(childComplexity int, employerID string, input model.CreateVacancyInput) int
+		CreateVacancy                     func(childComplexity int, companyID string, input model.CreateVacancyInput) int
 		DeleteVacancy                     func(childComplexity int, id string) int
 		NotifyProfileVisit                func(childComplexity int, visitorID string, visitedUserID string) int
 		RegisterUser                      func(childComplexity int, input model.RegisterUserInput) int
@@ -109,12 +109,12 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		GetCompanies          func(childComplexity int, name *string, location *string) int
+		GetCompany            func(childComplexity int, id string) int
 		GetConnectionRequests func(childComplexity int, userID string, status *bool) int
-		GetEmployer           func(childComplexity int, id string) int
-		GetEmployers          func(childComplexity int, name *string, location *string) int
 		GetNotifications      func(childComplexity int, userID string) int
 		GetUser               func(childComplexity int, id string) int
-		GetUsers              func(childComplexity int, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) int
+		GetUsers              func(childComplexity int, name *string, location *string, skills []*string, lookingForOpportunities *bool) int
 		GetVacancies          func(childComplexity int, title *string, location *string, requiredEducation *model.DegreeType, status *bool) int
 		GetVacancy            func(childComplexity int, id string) int
 	}
@@ -127,12 +127,12 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
+		Companies               func(childComplexity int) int
 		Connections             func(childComplexity int) int
 		Education               func(childComplexity int) int
 		Email                   func(childComplexity int) int
 		Experience              func(childComplexity int) int
 		ID                      func(childComplexity int) int
-		IsEmployer              func(childComplexity int) int
 		Location                func(childComplexity int) int
 		LookingForOpportunities func(childComplexity int) int
 		Name                    func(childComplexity int) int
@@ -154,13 +154,13 @@ type ComplexityRoot struct {
 	}
 }
 
+type CompanyResolver interface {
+	Vacancies(ctx context.Context, obj *model.Company) ([]*model.Vacancy, error)
+	Employees(ctx context.Context, obj *model.Company) ([]*model.User, error)
+}
 type ConnectionRequestResolver interface {
 	FromUser(ctx context.Context, obj *model.ConnectionRequest) (*model.User, error)
 	ConnectedToUser(ctx context.Context, obj *model.ConnectionRequest) (*model.User, error)
-}
-type EmployerResolver interface {
-	Vacancies(ctx context.Context, obj *model.Employer) ([]*model.Vacancy, error)
-	Employees(ctx context.Context, obj *model.Employer) ([]*model.User, error)
 }
 type MutationResolver interface {
 	RegisterUser(ctx context.Context, input model.RegisterUserInput) (*model.User, error)
@@ -169,7 +169,7 @@ type MutationResolver interface {
 	AddConnectionRequest(ctx context.Context, fromUserID string, connectedToUserID string) (*model.ConnectionRequest, error)
 	SetConnectionRequestStatusFalse(ctx context.Context, id string) (*model.ConnectionRequest, error)
 	NotifyProfileVisit(ctx context.Context, visitorID string, visitedUserID string) (*model.Notification, error)
-	CreateVacancy(ctx context.Context, employerID string, input model.CreateVacancyInput) (*model.Vacancy, error)
+	CreateVacancy(ctx context.Context, companyID string, input model.CreateVacancyInput) (*model.Vacancy, error)
 	UpdateVacancy(ctx context.Context, id string, input model.CreateVacancyInput) (*model.Vacancy, error)
 	DeleteVacancy(ctx context.Context, id string) (*bool, error)
 	UpdateUserLookingForOpportunities(ctx context.Context, userID string, looking bool) (*model.User, error)
@@ -179,11 +179,11 @@ type NotificationResolver interface {
 }
 type QueryResolver interface {
 	GetUser(ctx context.Context, id string) (*model.User, error)
-	GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*model.User, error)
+	GetUsers(ctx context.Context, name *string, location *string, skills []*string, lookingForOpportunities *bool) ([]*model.User, error)
 	GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error)
 	GetVacancy(ctx context.Context, id string) (*model.Vacancy, error)
-	GetEmployers(ctx context.Context, name *string, location *string) ([]*model.Employer, error)
-	GetEmployer(ctx context.Context, id string) (*model.Employer, error)
+	GetCompanies(ctx context.Context, name *string, location *string) ([]*model.Company, error)
+	GetCompany(ctx context.Context, id string) (*model.Company, error)
 	GetNotifications(ctx context.Context, userID string) ([]*model.Notification, error)
 	GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*model.ConnectionRequest, error)
 }
@@ -197,9 +197,11 @@ type UserResolver interface {
 	Connections(ctx context.Context, obj *model.User) ([]*model.User, error)
 	Education(ctx context.Context, obj *model.User) ([]*model.EducationEntry, error)
 	Experience(ctx context.Context, obj *model.User) ([]*model.ExperienceEntry, error)
+
+	Companies(ctx context.Context, obj *model.User) ([]*model.Company, error)
 }
 type VacancyResolver interface {
-	PostedBy(ctx context.Context, obj *model.Vacancy) (*model.Employer, error)
+	PostedBy(ctx context.Context, obj *model.Vacancy) (*model.Company, error)
 }
 
 type executableSchema struct {
@@ -220,6 +222,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Company.email":
+		if e.complexity.Company.Email == nil {
+			break
+		}
+
+		return e.complexity.Company.Email(childComplexity), true
+
+	case "Company.employees":
+		if e.complexity.Company.Employees == nil {
+			break
+		}
+
+		return e.complexity.Company.Employees(childComplexity), true
+
+	case "Company.id":
+		if e.complexity.Company.ID == nil {
+			break
+		}
+
+		return e.complexity.Company.ID(childComplexity), true
+
+	case "Company.location":
+		if e.complexity.Company.Location == nil {
+			break
+		}
+
+		return e.complexity.Company.Location(childComplexity), true
+
+	case "Company.name":
+		if e.complexity.Company.Name == nil {
+			break
+		}
+
+		return e.complexity.Company.Name(childComplexity), true
+
+	case "Company.vacancies":
+		if e.complexity.Company.Vacancies == nil {
+			break
+		}
+
+		return e.complexity.Company.Vacancies(childComplexity), true
 
 	case "ConnectionRequest.connectedToUser":
 		if e.complexity.ConnectionRequest.ConnectedToUser == nil {
@@ -283,48 +327,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.EducationEntry.Institution(childComplexity), true
-
-	case "Employer.email":
-		if e.complexity.Employer.Email == nil {
-			break
-		}
-
-		return e.complexity.Employer.Email(childComplexity), true
-
-	case "Employer.employees":
-		if e.complexity.Employer.Employees == nil {
-			break
-		}
-
-		return e.complexity.Employer.Employees(childComplexity), true
-
-	case "Employer.id":
-		if e.complexity.Employer.ID == nil {
-			break
-		}
-
-		return e.complexity.Employer.ID(childComplexity), true
-
-	case "Employer.location":
-		if e.complexity.Employer.Location == nil {
-			break
-		}
-
-		return e.complexity.Employer.Location(childComplexity), true
-
-	case "Employer.name":
-		if e.complexity.Employer.Name == nil {
-			break
-		}
-
-		return e.complexity.Employer.Name(childComplexity), true
-
-	case "Employer.vacancies":
-		if e.complexity.Employer.Vacancies == nil {
-			break
-		}
-
-		return e.complexity.Employer.Vacancies(childComplexity), true
 
 	case "ExperienceEntry.description":
 		if e.complexity.ExperienceEntry.Description == nil {
@@ -390,7 +392,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateVacancy(childComplexity, args["employerId"].(string), args["input"].(model.CreateVacancyInput)), true
+		return e.complexity.Mutation.CreateVacancy(childComplexity, args["companyId"].(string), args["input"].(model.CreateVacancyInput)), true
 
 	case "Mutation.deleteVacancy":
 		if e.complexity.Mutation.DeleteVacancy == nil {
@@ -523,6 +525,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Notification.Title(childComplexity), true
 
+	case "Query.getCompanies":
+		if e.complexity.Query.GetCompanies == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getCompanies_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetCompanies(childComplexity, args["name"].(*string), args["location"].(*string)), true
+
+	case "Query.getCompany":
+		if e.complexity.Query.GetCompany == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getCompany_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetCompany(childComplexity, args["id"].(string)), true
+
 	case "Query.getConnectionRequests":
 		if e.complexity.Query.GetConnectionRequests == nil {
 			break
@@ -534,30 +560,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetConnectionRequests(childComplexity, args["userId"].(string), args["status"].(*bool)), true
-
-	case "Query.getEmployer":
-		if e.complexity.Query.GetEmployer == nil {
-			break
-		}
-
-		args, err := ec.field_Query_getEmployer_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.GetEmployer(childComplexity, args["id"].(string)), true
-
-	case "Query.getEmployers":
-		if e.complexity.Query.GetEmployers == nil {
-			break
-		}
-
-		args, err := ec.field_Query_getEmployers_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.GetEmployers(childComplexity, args["name"].(*string), args["location"].(*string)), true
 
 	case "Query.getNotifications":
 		if e.complexity.Query.GetNotifications == nil {
@@ -593,7 +595,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetUsers(childComplexity, args["name"].(*string), args["location"].(*string), args["isEmployer"].(*bool), args["skills"].([]*string), args["lookingForOpportunities"].(*bool)), true
+		return e.complexity.Query.GetUsers(childComplexity, args["name"].(*string), args["location"].(*string), args["skills"].([]*string), args["lookingForOpportunities"].(*bool)), true
 
 	case "Query.getVacancies":
 		if e.complexity.Query.GetVacancies == nil {
@@ -667,6 +669,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Subscription.NewNotification(childComplexity, args["forUserId"].(string)), true
 
+	case "User.companies":
+		if e.complexity.User.Companies == nil {
+			break
+		}
+
+		return e.complexity.User.Companies(childComplexity), true
+
 	case "User.connections":
 		if e.complexity.User.Connections == nil {
 			break
@@ -701,13 +710,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.ID(childComplexity), true
-
-	case "User.isEmployer":
-		if e.complexity.User.IsEmployer == nil {
-			break
-		}
-
-		return e.complexity.User.IsEmployer(childComplexity), true
 
 	case "User.location":
 		if e.complexity.User.Location == nil {
@@ -1005,11 +1007,11 @@ func (ec *executionContext) field_Mutation_addConnectionRequest_argsConnectedToU
 func (ec *executionContext) field_Mutation_createVacancy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	arg0, err := ec.field_Mutation_createVacancy_argsEmployerID(ctx, rawArgs)
+	arg0, err := ec.field_Mutation_createVacancy_argsCompanyID(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["employerId"] = arg0
+	args["companyId"] = arg0
 	arg1, err := ec.field_Mutation_createVacancy_argsInput(ctx, rawArgs)
 	if err != nil {
 		return nil, err
@@ -1017,12 +1019,12 @@ func (ec *executionContext) field_Mutation_createVacancy_args(ctx context.Contex
 	args["input"] = arg1
 	return args, nil
 }
-func (ec *executionContext) field_Mutation_createVacancy_argsEmployerID(
+func (ec *executionContext) field_Mutation_createVacancy_argsCompanyID(
 	ctx context.Context,
 	rawArgs map[string]interface{},
 ) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("employerId"))
-	if tmp, ok := rawArgs["employerId"]; ok {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("companyId"))
+	if tmp, ok := rawArgs["companyId"]; ok {
 		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
@@ -1340,6 +1342,70 @@ func (ec *executionContext) field_Query___type_argsName(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Query_getCompanies_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	arg0, err := ec.field_Query_getCompanies_argsName(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["name"] = arg0
+	arg1, err := ec.field_Query_getCompanies_argsLocation(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["location"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Query_getCompanies_argsName(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+	if tmp, ok := rawArgs["name"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getCompanies_argsLocation(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
+	if tmp, ok := rawArgs["location"]; ok {
+		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+	}
+
+	var zeroVal *string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getCompany_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	arg0, err := ec.field_Query_getCompany_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Query_getCompany_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Query_getConnectionRequests_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1378,70 +1444,6 @@ func (ec *executionContext) field_Query_getConnectionRequests_argsStatus(
 	}
 
 	var zeroVal *bool
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_getEmployer_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	arg0, err := ec.field_Query_getEmployer_argsID(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	return args, nil
-}
-func (ec *executionContext) field_Query_getEmployer_argsID(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalNID2string(ctx, tmp)
-	}
-
-	var zeroVal string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_getEmployers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	arg0, err := ec.field_Query_getEmployers_argsName(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["name"] = arg0
-	arg1, err := ec.field_Query_getEmployers_argsLocation(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["location"] = arg1
-	return args, nil
-}
-func (ec *executionContext) field_Query_getEmployers_argsName(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (*string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-	if tmp, ok := rawArgs["name"]; ok {
-		return ec.unmarshalOString2ᚖstring(ctx, tmp)
-	}
-
-	var zeroVal *string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_getEmployers_argsLocation(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (*string, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
-	if tmp, ok := rawArgs["location"]; ok {
-		return ec.unmarshalOString2ᚖstring(ctx, tmp)
-	}
-
-	var zeroVal *string
 	return zeroVal, nil
 }
 
@@ -1504,21 +1506,16 @@ func (ec *executionContext) field_Query_getUsers_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["location"] = arg1
-	arg2, err := ec.field_Query_getUsers_argsIsEmployer(ctx, rawArgs)
+	arg2, err := ec.field_Query_getUsers_argsSkills(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["isEmployer"] = arg2
-	arg3, err := ec.field_Query_getUsers_argsSkills(ctx, rawArgs)
+	args["skills"] = arg2
+	arg3, err := ec.field_Query_getUsers_argsLookingForOpportunities(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["skills"] = arg3
-	arg4, err := ec.field_Query_getUsers_argsLookingForOpportunities(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["lookingForOpportunities"] = arg4
+	args["lookingForOpportunities"] = arg3
 	return args, nil
 }
 func (ec *executionContext) field_Query_getUsers_argsName(
@@ -1544,19 +1541,6 @@ func (ec *executionContext) field_Query_getUsers_argsLocation(
 	}
 
 	var zeroVal *string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_getUsers_argsIsEmployer(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (*bool, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("isEmployer"))
-	if tmp, ok := rawArgs["isEmployer"]; ok {
-		return ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
-	}
-
-	var zeroVal *bool
 	return zeroVal, nil
 }
 
@@ -1832,6 +1816,313 @@ func (ec *executionContext) field___Type_fields_argsIncludeDeprecated(
 
 // region    **************************** field.gotpl *****************************
 
+func (ec *executionContext) _Company_id(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Company_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Company_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Company_name(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Company_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Company_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Company_email(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Company_email(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Email, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Company_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Company_location(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Company_location(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Location, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Company_location(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Company_vacancies(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Company_vacancies(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Company().Vacancies(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Vacancy)
+	fc.Result = res
+	return ec.marshalNVacancy2ᚕᚖLinkKrecᚋgraphᚋmodelᚐVacancyᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Company_vacancies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Vacancy_id(ctx, field)
+			case "title":
+				return ec.fieldContext_Vacancy_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Vacancy_description(ctx, field)
+			case "requiredEducation":
+				return ec.fieldContext_Vacancy_requiredEducation(ctx, field)
+			case "requiredExperiences":
+				return ec.fieldContext_Vacancy_requiredExperiences(ctx, field)
+			case "requiredExperienceDurations":
+				return ec.fieldContext_Vacancy_requiredExperienceDurations(ctx, field)
+			case "location":
+				return ec.fieldContext_Vacancy_location(ctx, field)
+			case "postedBy":
+				return ec.fieldContext_Vacancy_postedBy(ctx, field)
+			case "startDate":
+				return ec.fieldContext_Vacancy_startDate(ctx, field)
+			case "endDate":
+				return ec.fieldContext_Vacancy_endDate(ctx, field)
+			case "status":
+				return ec.fieldContext_Vacancy_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Vacancy", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Company_employees(ctx context.Context, field graphql.CollectedField, obj *model.Company) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Company_employees(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Company().Employees(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖLinkKrecᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Company_employees(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Company",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "location":
+				return ec.fieldContext_User_location(ctx, field)
+			case "connections":
+				return ec.fieldContext_User_connections(ctx, field)
+			case "education":
+				return ec.fieldContext_User_education(ctx, field)
+			case "experience":
+				return ec.fieldContext_User_experience(ctx, field)
+			case "skills":
+				return ec.fieldContext_User_skills(ctx, field)
+			case "lookingForOpportunities":
+				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _ConnectionRequest_id(ctx context.Context, field graphql.CollectedField, obj *model.ConnectionRequest) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_ConnectionRequest_id(ctx, field)
 	if err != nil {
@@ -1923,8 +2214,6 @@ func (ec *executionContext) fieldContext_ConnectionRequest_fromUser(_ context.Co
 				return ec.fieldContext_User_email(ctx, field)
 			case "location":
 				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
 			case "connections":
 				return ec.fieldContext_User_connections(ctx, field)
 			case "education":
@@ -1935,6 +2224,8 @@ func (ec *executionContext) fieldContext_ConnectionRequest_fromUser(_ context.Co
 				return ec.fieldContext_User_skills(ctx, field)
 			case "lookingForOpportunities":
 				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -1989,8 +2280,6 @@ func (ec *executionContext) fieldContext_ConnectionRequest_connectedToUser(_ con
 				return ec.fieldContext_User_email(ctx, field)
 			case "location":
 				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
 			case "connections":
 				return ec.fieldContext_User_connections(ctx, field)
 			case "education":
@@ -2001,6 +2290,8 @@ func (ec *executionContext) fieldContext_ConnectionRequest_connectedToUser(_ con
 				return ec.fieldContext_User_skills(ctx, field)
 			case "lookingForOpportunities":
 				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2267,313 +2558,6 @@ func (ec *executionContext) fieldContext_EducationEntry_field(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DegreeField does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Employer_id(ctx context.Context, field graphql.CollectedField, obj *model.Employer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Employer_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Employer_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Employer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Employer_name(ctx context.Context, field graphql.CollectedField, obj *model.Employer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Employer_name(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Employer_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Employer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Employer_email(ctx context.Context, field graphql.CollectedField, obj *model.Employer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Employer_email(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Email, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Employer_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Employer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Employer_location(ctx context.Context, field graphql.CollectedField, obj *model.Employer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Employer_location(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Location, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Employer_location(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Employer",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Employer_vacancies(ctx context.Context, field graphql.CollectedField, obj *model.Employer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Employer_vacancies(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Employer().Vacancies(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.Vacancy)
-	fc.Result = res
-	return ec.marshalNVacancy2ᚕᚖLinkKrecᚋgraphᚋmodelᚐVacancyᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Employer_vacancies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Employer",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Vacancy_id(ctx, field)
-			case "title":
-				return ec.fieldContext_Vacancy_title(ctx, field)
-			case "description":
-				return ec.fieldContext_Vacancy_description(ctx, field)
-			case "requiredEducation":
-				return ec.fieldContext_Vacancy_requiredEducation(ctx, field)
-			case "requiredExperiences":
-				return ec.fieldContext_Vacancy_requiredExperiences(ctx, field)
-			case "requiredExperienceDurations":
-				return ec.fieldContext_Vacancy_requiredExperienceDurations(ctx, field)
-			case "location":
-				return ec.fieldContext_Vacancy_location(ctx, field)
-			case "postedBy":
-				return ec.fieldContext_Vacancy_postedBy(ctx, field)
-			case "startDate":
-				return ec.fieldContext_Vacancy_startDate(ctx, field)
-			case "endDate":
-				return ec.fieldContext_Vacancy_endDate(ctx, field)
-			case "status":
-				return ec.fieldContext_Vacancy_status(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Vacancy", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Employer_employees(ctx context.Context, field graphql.CollectedField, obj *model.Employer) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Employer_employees(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Employer().Employees(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚕᚖLinkKrecᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Employer_employees(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Employer",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_User_id(ctx, field)
-			case "name":
-				return ec.fieldContext_User_name(ctx, field)
-			case "email":
-				return ec.fieldContext_User_email(ctx, field)
-			case "location":
-				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
-			case "connections":
-				return ec.fieldContext_User_connections(ctx, field)
-			case "education":
-				return ec.fieldContext_User_education(ctx, field)
-			case "experience":
-				return ec.fieldContext_User_experience(ctx, field)
-			case "skills":
-				return ec.fieldContext_User_skills(ctx, field)
-			case "lookingForOpportunities":
-				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -2878,8 +2862,6 @@ func (ec *executionContext) fieldContext_Mutation_registerUser(ctx context.Conte
 				return ec.fieldContext_User_email(ctx, field)
 			case "location":
 				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
 			case "connections":
 				return ec.fieldContext_User_connections(ctx, field)
 			case "education":
@@ -2890,6 +2872,8 @@ func (ec *executionContext) fieldContext_Mutation_registerUser(ctx context.Conte
 				return ec.fieldContext_User_skills(ctx, field)
 			case "lookingForOpportunities":
 				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2952,8 +2936,6 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_email(ctx, field)
 			case "location":
 				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
 			case "connections":
 				return ec.fieldContext_User_connections(ctx, field)
 			case "education":
@@ -2964,6 +2946,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_skills(ctx, field)
 			case "lookingForOpportunities":
 				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3026,8 +3010,6 @@ func (ec *executionContext) fieldContext_Mutation_updateUserProfile(ctx context.
 				return ec.fieldContext_User_email(ctx, field)
 			case "location":
 				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
 			case "connections":
 				return ec.fieldContext_User_connections(ctx, field)
 			case "education":
@@ -3038,6 +3020,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUserProfile(ctx context.
 				return ec.fieldContext_User_skills(ctx, field)
 			case "lookingForOpportunities":
 				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3258,7 +3242,7 @@ func (ec *executionContext) _Mutation_createVacancy(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateVacancy(rctx, fc.Args["employerId"].(string), fc.Args["input"].(model.CreateVacancyInput))
+		return ec.resolvers.Mutation().CreateVacancy(rctx, fc.Args["companyId"].(string), fc.Args["input"].(model.CreateVacancyInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3492,8 +3476,6 @@ func (ec *executionContext) fieldContext_Mutation_updateUserLookingForOpportunit
 				return ec.fieldContext_User_email(ctx, field)
 			case "location":
 				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
 			case "connections":
 				return ec.fieldContext_User_connections(ctx, field)
 			case "education":
@@ -3504,6 +3486,8 @@ func (ec *executionContext) fieldContext_Mutation_updateUserLookingForOpportunit
 				return ec.fieldContext_User_skills(ctx, field)
 			case "lookingForOpportunities":
 				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3701,8 +3685,6 @@ func (ec *executionContext) fieldContext_Notification_forUser(_ context.Context,
 				return ec.fieldContext_User_email(ctx, field)
 			case "location":
 				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
 			case "connections":
 				return ec.fieldContext_User_connections(ctx, field)
 			case "education":
@@ -3713,6 +3695,8 @@ func (ec *executionContext) fieldContext_Notification_forUser(_ context.Context,
 				return ec.fieldContext_User_skills(ctx, field)
 			case "lookingForOpportunities":
 				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3805,8 +3789,6 @@ func (ec *executionContext) fieldContext_Query_getUser(ctx context.Context, fiel
 				return ec.fieldContext_User_email(ctx, field)
 			case "location":
 				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
 			case "connections":
 				return ec.fieldContext_User_connections(ctx, field)
 			case "education":
@@ -3817,6 +3799,8 @@ func (ec *executionContext) fieldContext_Query_getUser(ctx context.Context, fiel
 				return ec.fieldContext_User_skills(ctx, field)
 			case "lookingForOpportunities":
 				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3849,7 +3833,7 @@ func (ec *executionContext) _Query_getUsers(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetUsers(rctx, fc.Args["name"].(*string), fc.Args["location"].(*string), fc.Args["isEmployer"].(*bool), fc.Args["skills"].([]*string), fc.Args["lookingForOpportunities"].(*bool))
+		return ec.resolvers.Query().GetUsers(rctx, fc.Args["name"].(*string), fc.Args["location"].(*string), fc.Args["skills"].([]*string), fc.Args["lookingForOpportunities"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3879,8 +3863,6 @@ func (ec *executionContext) fieldContext_Query_getUsers(ctx context.Context, fie
 				return ec.fieldContext_User_email(ctx, field)
 			case "location":
 				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
 			case "connections":
 				return ec.fieldContext_User_connections(ctx, field)
 			case "education":
@@ -3891,6 +3873,8 @@ func (ec *executionContext) fieldContext_Query_getUsers(ctx context.Context, fie
 				return ec.fieldContext_User_skills(ctx, field)
 			case "lookingForOpportunities":
 				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4061,8 +4045,8 @@ func (ec *executionContext) fieldContext_Query_getVacancy(ctx context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_getEmployers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_getEmployers(ctx, field)
+func (ec *executionContext) _Query_getCompanies(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getCompanies(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -4075,7 +4059,7 @@ func (ec *executionContext) _Query_getEmployers(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetEmployers(rctx, fc.Args["name"].(*string), fc.Args["location"].(*string))
+		return ec.resolvers.Query().GetCompanies(rctx, fc.Args["name"].(*string), fc.Args["location"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4084,12 +4068,12 @@ func (ec *executionContext) _Query_getEmployers(ctx context.Context, field graph
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Employer)
+	res := resTmp.([]*model.Company)
 	fc.Result = res
-	return ec.marshalOEmployer2ᚕᚖLinkKrecᚋgraphᚋmodelᚐEmployer(ctx, field.Selections, res)
+	return ec.marshalOCompany2ᚕᚖLinkKrecᚋgraphᚋmodelᚐCompany(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getEmployers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getCompanies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -4098,19 +4082,19 @@ func (ec *executionContext) fieldContext_Query_getEmployers(ctx context.Context,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Employer_id(ctx, field)
+				return ec.fieldContext_Company_id(ctx, field)
 			case "name":
-				return ec.fieldContext_Employer_name(ctx, field)
+				return ec.fieldContext_Company_name(ctx, field)
 			case "email":
-				return ec.fieldContext_Employer_email(ctx, field)
+				return ec.fieldContext_Company_email(ctx, field)
 			case "location":
-				return ec.fieldContext_Employer_location(ctx, field)
+				return ec.fieldContext_Company_location(ctx, field)
 			case "vacancies":
-				return ec.fieldContext_Employer_vacancies(ctx, field)
+				return ec.fieldContext_Company_vacancies(ctx, field)
 			case "employees":
-				return ec.fieldContext_Employer_employees(ctx, field)
+				return ec.fieldContext_Company_employees(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Employer", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Company", field.Name)
 		},
 	}
 	defer func() {
@@ -4120,15 +4104,15 @@ func (ec *executionContext) fieldContext_Query_getEmployers(ctx context.Context,
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_getEmployers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_getCompanies_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_getEmployer(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_getEmployer(ctx, field)
+func (ec *executionContext) _Query_getCompany(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getCompany(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -4141,7 +4125,7 @@ func (ec *executionContext) _Query_getEmployer(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetEmployer(rctx, fc.Args["id"].(string))
+		return ec.resolvers.Query().GetCompany(rctx, fc.Args["id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4150,12 +4134,12 @@ func (ec *executionContext) _Query_getEmployer(ctx context.Context, field graphq
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.Employer)
+	res := resTmp.(*model.Company)
 	fc.Result = res
-	return ec.marshalOEmployer2ᚖLinkKrecᚋgraphᚋmodelᚐEmployer(ctx, field.Selections, res)
+	return ec.marshalOCompany2ᚖLinkKrecᚋgraphᚋmodelᚐCompany(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getEmployer(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_getCompany(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -4164,19 +4148,19 @@ func (ec *executionContext) fieldContext_Query_getEmployer(ctx context.Context, 
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Employer_id(ctx, field)
+				return ec.fieldContext_Company_id(ctx, field)
 			case "name":
-				return ec.fieldContext_Employer_name(ctx, field)
+				return ec.fieldContext_Company_name(ctx, field)
 			case "email":
-				return ec.fieldContext_Employer_email(ctx, field)
+				return ec.fieldContext_Company_email(ctx, field)
 			case "location":
-				return ec.fieldContext_Employer_location(ctx, field)
+				return ec.fieldContext_Company_location(ctx, field)
 			case "vacancies":
-				return ec.fieldContext_Employer_vacancies(ctx, field)
+				return ec.fieldContext_Company_vacancies(ctx, field)
 			case "employees":
-				return ec.fieldContext_Employer_employees(ctx, field)
+				return ec.fieldContext_Company_employees(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Employer", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Company", field.Name)
 		},
 	}
 	defer func() {
@@ -4186,7 +4170,7 @@ func (ec *executionContext) fieldContext_Query_getEmployer(ctx context.Context, 
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_getEmployer_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_getCompany_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4941,47 +4925,6 @@ func (ec *executionContext) fieldContext_User_location(_ context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _User_isEmployer(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_isEmployer(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsEmployer, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*bool)
-	fc.Result = res
-	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_isEmployer(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _User_connections(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_connections(ctx, field)
 	if err != nil {
@@ -5026,8 +4969,6 @@ func (ec *executionContext) fieldContext_User_connections(_ context.Context, fie
 				return ec.fieldContext_User_email(ctx, field)
 			case "location":
 				return ec.fieldContext_User_location(ctx, field)
-			case "isEmployer":
-				return ec.fieldContext_User_isEmployer(ctx, field)
 			case "connections":
 				return ec.fieldContext_User_connections(ctx, field)
 			case "education":
@@ -5038,6 +4979,8 @@ func (ec *executionContext) fieldContext_User_connections(_ context.Context, fie
 				return ec.fieldContext_User_skills(ctx, field)
 			case "lookingForOpportunities":
 				return ec.fieldContext_User_lookingForOpportunities(ctx, field)
+			case "companies":
+				return ec.fieldContext_User_companies(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -5230,6 +5173,61 @@ func (ec *executionContext) fieldContext_User_lookingForOpportunities(_ context.
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_companies(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_companies(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Companies(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Company)
+	fc.Result = res
+	return ec.marshalOCompany2ᚕᚖLinkKrecᚋgraphᚋmodelᚐCompany(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_companies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Company_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Company_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Company_email(ctx, field)
+			case "location":
+				return ec.fieldContext_Company_location(ctx, field)
+			case "vacancies":
+				return ec.fieldContext_Company_vacancies(ctx, field)
+			case "employees":
+				return ec.fieldContext_Company_employees(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Company", field.Name)
 		},
 	}
 	return fc, nil
@@ -5569,9 +5567,9 @@ func (ec *executionContext) _Vacancy_postedBy(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Employer)
+	res := resTmp.(*model.Company)
 	fc.Result = res
-	return ec.marshalNEmployer2ᚖLinkKrecᚋgraphᚋmodelᚐEmployer(ctx, field.Selections, res)
+	return ec.marshalNCompany2ᚖLinkKrecᚋgraphᚋmodelᚐCompany(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Vacancy_postedBy(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5583,19 +5581,19 @@ func (ec *executionContext) fieldContext_Vacancy_postedBy(_ context.Context, fie
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Employer_id(ctx, field)
+				return ec.fieldContext_Company_id(ctx, field)
 			case "name":
-				return ec.fieldContext_Employer_name(ctx, field)
+				return ec.fieldContext_Company_name(ctx, field)
 			case "email":
-				return ec.fieldContext_Employer_email(ctx, field)
+				return ec.fieldContext_Company_email(ctx, field)
 			case "location":
-				return ec.fieldContext_Employer_location(ctx, field)
+				return ec.fieldContext_Company_location(ctx, field)
 			case "vacancies":
-				return ec.fieldContext_Employer_vacancies(ctx, field)
+				return ec.fieldContext_Company_vacancies(ctx, field)
 			case "employees":
-				return ec.fieldContext_Employer_employees(ctx, field)
+				return ec.fieldContext_Company_employees(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Employer", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Company", field.Name)
 		},
 	}
 	return fc, nil
@@ -7641,7 +7639,7 @@ func (ec *executionContext) unmarshalInputRegisterUserInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "email", "password", "isEmployer", "profileUpdate"}
+	fieldsInOrder := [...]string{"name", "email", "password", "profileUpdate"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7669,13 +7667,6 @@ func (ec *executionContext) unmarshalInputRegisterUserInput(ctx context.Context,
 				return it, err
 			}
 			it.Password = data
-		case "isEmployer":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isEmployer"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.IsEmployer = data
 		case "profileUpdate":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("profileUpdate"))
 			data, err := ec.unmarshalNUpdateProfileInput2ᚖLinkKrecᚋgraphᚋmodelᚐUpdateProfileInput(ctx, v)
@@ -7785,6 +7776,129 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var companyImplementors = []string{"Company"}
+
+func (ec *executionContext) _Company(ctx context.Context, sel ast.SelectionSet, obj *model.Company) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, companyImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Company")
+		case "id":
+			out.Values[i] = ec._Company_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "name":
+			out.Values[i] = ec._Company_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "email":
+			out.Values[i] = ec._Company_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "location":
+			out.Values[i] = ec._Company_location(ctx, field, obj)
+		case "vacancies":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Company_vacancies(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "employees":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Company_employees(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
 
 var connectionRequestImplementors = []string{"ConnectionRequest"}
 
@@ -7938,129 +8052,6 @@ func (ec *executionContext) _EducationEntry(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var employerImplementors = []string{"Employer"}
-
-func (ec *executionContext) _Employer(ctx context.Context, sel ast.SelectionSet, obj *model.Employer) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, employerImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Employer")
-		case "id":
-			out.Values[i] = ec._Employer_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "name":
-			out.Values[i] = ec._Employer_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "email":
-			out.Values[i] = ec._Employer_email(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
-			}
-		case "location":
-			out.Values[i] = ec._Employer_location(ctx, field, obj)
-		case "vacancies":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Employer_vacancies(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
-		case "employees":
-			field := field
-
-			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Employer_employees(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&fs.Invalids, 1)
-				}
-				return res
-			}
-
-			if field.Deferrable != nil {
-				dfs, ok := deferred[field.Deferrable.Label]
-				di := 0
-				if ok {
-					dfs.AddField(field)
-					di = len(dfs.Values) - 1
-				} else {
-					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
-					deferred[field.Deferrable.Label] = dfs
-				}
-				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
-					return innerFunc(ctx, dfs)
-				})
-
-				// don't run the out.Concurrently() call below
-				out.Values[i] = graphql.Null
-				continue
-			}
-
-			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8403,7 +8394,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "getEmployers":
+		case "getCompanies":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -8412,7 +8403,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getEmployers(ctx, field)
+				res = ec._Query_getCompanies(ctx, field)
 				return res
 			}
 
@@ -8422,7 +8413,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "getEmployer":
+		case "getCompany":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -8431,7 +8422,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getEmployer(ctx, field)
+				res = ec._Query_getCompany(ctx, field)
 				return res
 			}
 
@@ -8564,8 +8555,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "location":
 			out.Values[i] = ec._User_location(ctx, field, obj)
-		case "isEmployer":
-			out.Values[i] = ec._User_isEmployer(ctx, field, obj)
 		case "connections":
 			field := field
 
@@ -8669,6 +8658,39 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._User_skills(ctx, field, obj)
 		case "lookingForOpportunities":
 			out.Values[i] = ec._User_lookingForOpportunities(ctx, field, obj)
+		case "companies":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_companies(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9144,6 +9166,20 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCompany2LinkKrecᚋgraphᚋmodelᚐCompany(ctx context.Context, sel ast.SelectionSet, v model.Company) graphql.Marshaler {
+	return ec._Company(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCompany2ᚖLinkKrecᚋgraphᚋmodelᚐCompany(ctx context.Context, sel ast.SelectionSet, v *model.Company) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Company(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateVacancyInput2LinkKrecᚋgraphᚋmodelᚐCreateVacancyInput(ctx context.Context, v interface{}) (model.CreateVacancyInput, error) {
 	res, err := ec.unmarshalInputCreateVacancyInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -9167,20 +9203,6 @@ func (ec *executionContext) unmarshalNDegreeType2LinkKrecᚋgraphᚋmodelᚐDegr
 
 func (ec *executionContext) marshalNDegreeType2LinkKrecᚋgraphᚋmodelᚐDegreeType(ctx context.Context, sel ast.SelectionSet, v model.DegreeType) graphql.Marshaler {
 	return v
-}
-
-func (ec *executionContext) marshalNEmployer2LinkKrecᚋgraphᚋmodelᚐEmployer(ctx context.Context, sel ast.SelectionSet, v model.Employer) graphql.Marshaler {
-	return ec._Employer(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNEmployer2ᚖLinkKrecᚋgraphᚋmodelᚐEmployer(ctx context.Context, sel ast.SelectionSet, v *model.Employer) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Employer(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNExperienceType2LinkKrecᚋgraphᚋmodelᚐExperienceType(ctx context.Context, v interface{}) (model.ExperienceType, error) {
@@ -9742,6 +9764,54 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) marshalOCompany2ᚕᚖLinkKrecᚋgraphᚋmodelᚐCompany(ctx context.Context, sel ast.SelectionSet, v []*model.Company) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCompany2ᚖLinkKrecᚋgraphᚋmodelᚐCompany(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOCompany2ᚖLinkKrecᚋgraphᚋmodelᚐCompany(ctx context.Context, sel ast.SelectionSet, v *model.Company) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Company(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalOConnectionRequest2ᚕᚖLinkKrecᚋgraphᚋmodelᚐConnectionRequest(ctx context.Context, sel ast.SelectionSet, v []*model.ConnectionRequest) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -9880,54 +9950,6 @@ func (ec *executionContext) unmarshalOEducationEntryInput2ᚖLinkKrecᚋgraphᚋ
 	}
 	res, err := ec.unmarshalInputEducationEntryInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOEmployer2ᚕᚖLinkKrecᚋgraphᚋmodelᚐEmployer(ctx context.Context, sel ast.SelectionSet, v []*model.Employer) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOEmployer2ᚖLinkKrecᚋgraphᚋmodelᚐEmployer(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-
-	return ret
-}
-
-func (ec *executionContext) marshalOEmployer2ᚖLinkKrecᚋgraphᚋmodelᚐEmployer(ctx context.Context, sel ast.SelectionSet, v *model.Employer) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Employer(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOExperienceEntry2ᚕᚖLinkKrecᚋgraphᚋmodelᚐExperienceEntry(ctx context.Context, sel ast.SelectionSet, v []*model.ExperienceEntry) graphql.Marshaler {

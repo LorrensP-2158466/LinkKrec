@@ -16,6 +16,22 @@ import (
 	"github.com/google/uuid"
 )
 
+// Vacancies is the resolver for the vacancies field.
+func (r *companyResolver) Vacancies(ctx context.Context, obj *model.Company) ([]*model.Vacancy, error) {
+	ids := util.Map(obj.Vacancies, func(v *model.Vacancy) string {
+		return v.ID
+	})
+	return loaders.GetVacancies(ctx, ids)
+}
+
+// Employees is the resolver for the employees field.
+func (r *companyResolver) Employees(ctx context.Context, obj *model.Company) ([]*model.User, error) {
+	ids := util.Map(obj.Employees, func(u *model.User) string {
+		return u.ID
+	})
+	return loaders.GetUsers(ctx, ids)
+}
+
 // FromUser is the resolver for the fromUser field.
 func (r *connectionRequestResolver) FromUser(ctx context.Context, obj *model.ConnectionRequest) (*model.User, error) {
 	return loaders.GetUser(ctx, obj.FromUser.ID)
@@ -24,22 +40,6 @@ func (r *connectionRequestResolver) FromUser(ctx context.Context, obj *model.Con
 // ConnectedToUser is the resolver for the connectedToUser field.
 func (r *connectionRequestResolver) ConnectedToUser(ctx context.Context, obj *model.ConnectionRequest) (*model.User, error) {
 	return loaders.GetUser(ctx, obj.ConnectedToUser.ID)
-}
-
-// Vacancies is the resolver for the vacancies field.
-func (r *employerResolver) Vacancies(ctx context.Context, obj *model.Employer) ([]*model.Vacancy, error) {
-	ids := util.Map(obj.Vacancies, func(v *model.Vacancy) string {
-		return v.ID
-	})
-	return loaders.GetVacancies(ctx, ids)
-}
-
-// Employees is the resolver for the employees field.
-func (r *employerResolver) Employees(ctx context.Context, obj *model.Employer) ([]*model.User, error) {
-	ids := util.Map(obj.Employees, func(u *model.User) string {
-		return u.ID
-	})
-	return loaders.GetUsers(ctx, ids)
 }
 
 // RegisterUser is the resolver for the registerUser field.
@@ -104,7 +104,7 @@ func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID str
 }
 
 // CreateVacancy is the resolver for the createVacancy field.
-func (r *mutationResolver) CreateVacancy(ctx context.Context, employerID string, input model.CreateVacancyInput) (*model.Vacancy, error) {
+func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, input model.CreateVacancyInput) (*model.Vacancy, error) {
 	panic(fmt.Errorf("not implemented: CreateVacancy - createVacancy"))
 }
 
@@ -165,38 +165,38 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, er
 }
 
 // GetUsers is the resolver for the getUsers field.
-func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
+func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
 	fmt.Println("GetUsers")
 	q := query_builder.
 		QueryBuilder().
-		Select([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).
+		Select([]string{"id", "name", "email", "location", "lookingForOpportunities"}).
 		GroupConcat("skill", ", ", "skills", true).
 		GroupConcat("connectionName", ", ", "connections", true).
 		GroupConcat("educationEntryId", ", ", "educations", true).
 		GroupConcat("experienceEntryId", ", ", "experiences", true).
+		GroupConcat("companyId", ", ", "companies", true).
 		WhereSubject("user", "User").
 		Where("Id", "id").
 		Where("hasName", "name").
 		Where("hasEmail", "email").
-		Where("isEmployer", "isEmployer").
 		Where("hasLocation", "location").
 		Where("isLookingForOpportunities", "isLookingForOpportunities").
-		Optional("hasSkill", "skill").
-		Optional("hasConnection", "connection").
-		WhereExtraction("connection", "Id", "connectionName").
-		Optional("hasEducation", "educationEntry").
-		WhereExtraction("educationEntry", "Id", "educationEntryId").
-		Optional("hasExperience", "experienceEntry").
-		WhereExtraction("experienceEntry", "Id", "experienceEntryId").
+		NewOptional("user", "lr:hasLocation", "locationEntry").
+		AddOptionalTriple("locationEntry", "lr:Id", "location").
+		NewOptional("user", "lr:hasSkill", "escoSkill").
+		AddOptionalTriple("escoSkill", "skos:prefLabel", "skill").
+		NewOptional("user", "lr:hasConnection", "connection").
+		AddOptionalTriple("connection", "lr:Id", "connectionName").
+		NewOptional("user", "lr:hasEducation", "education").
+		AddOptionalTriple("education", "lr:Id", "educationEntry").
+		NewOptional("user", "lr:hasCompany", "company").
+		AddOptionalTriple("company", "lr:Id", "companyId").
 		Bind("isLookingForOpportunities", "lookingForOpportunities")
 	if name != nil {
 		q.Filter("name", []string{*name}, query_builder.EQ)
 	}
 	if location != nil {
 		q.Filter("location", []string{*location}, query_builder.EQ)
-	}
-	if isEmployer != nil {
-		q.Filter("isEmployer", []string{strconv.FormatBool(*isEmployer)}, query_builder.EQ)
 	}
 	if len(skills) > 0 {
 		convSkills := util.Map(skills, func(s *string) string {
@@ -207,7 +207,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 	if lookingForOpportunities != nil {
 		q.Filter("isLookingForOpportunities", []string{strconv.FormatBool(*lookingForOpportunities)}, query_builder.EQ)
 	}
-	qs := q.GroupBy([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).Build()
+	qs := q.GroupBy([]string{"id", "name", "email", "location", "lookingForOpportunities"}).Build()
 
 	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
@@ -286,23 +286,23 @@ func (r *queryResolver) GetVacancy(ctx context.Context, id string) (*model.Vacan
 	return loaders.GetVacancy(ctx, id)
 }
 
-// GetEmployers is the resolver for the getEmployers field.
-func (r *queryResolver) GetEmployers(ctx context.Context, name *string, location *string) ([]*model.Employer, error) {
+// GetCompanies is the resolver for the getCompanies field.
+func (r *queryResolver) GetCompanies(ctx context.Context, name *string, location *string) ([]*model.Company, error) {
 	q := query_builder.
 		QueryBuilder().Select([]string{"id", "name", "email", "location"}).
 		GroupConcat("vacancyId", ", ", "vacancies", true).
 		GroupConcat("employeeId", ", ", "employees", true).
-		WhereSubject("employer", "Employer").
+		WhereSubject("company", "Company").
 		Where("Id", "id").
-		Where("employerName", "name").
-		Where("employerEmail", "email").
-		Where("employerLocation", "location").
+		Where("companyName", "name").
+		Where("companyEmail", "email").
+		Where("companyLocation", "location").
 		Where("hasVacancy", "vacancy").
 		Where("hasEmployee", "employee").
-		OptionalSubject("vacancy", "Vacancy").
-		Optional("Id", "vacancyId").
-		OptionalSubject("employee", "User").
-		Optional("Id", "employeeId")
+		NewOptional("company", "lr:hasVacancy", "vacancy").
+		AddOptionalTriple("vacancy", "lr:Id", "vacancyId").
+		NewOptional("company", "lr:hasEmployee", "employee").
+		AddOptionalTriple("employee", "lr:Id", "employeeId")
 	if name != nil {
 		q.Filter("name", []string{*name}, query_builder.EQ)
 	}
@@ -318,20 +318,20 @@ func (r *queryResolver) GetEmployers(ctx context.Context, name *string, location
 		return nil, err
 	}
 
-	employers := make([]*model.Employer, 0)
-	for _, employer := range res.Solutions() {
-		obj, err := util.MapRdfEmployerToGQL(employer)
+	companies := make([]*model.Company, 0)
+	for _, company := range res.Solutions() {
+		obj, err := util.MapRdfCompanyToGQL(company)
 		if err != nil {
 			return nil, err
 		}
-		employers = append(employers, obj)
+		companies = append(companies, obj)
 	}
-	return employers, nil
+	return companies, nil
 }
 
-// GetEmployer is the resolver for the getEmployer field.
-func (r *queryResolver) GetEmployer(ctx context.Context, id string) (*model.Employer, error) {
-	return loaders.GetEmployer(ctx, id)
+// GetCompany is the resolver for the getCompany field.
+func (r *queryResolver) GetCompany(ctx context.Context, id string) (*model.Company, error) {
+	return loaders.GetCompany(ctx, id)
 }
 
 // GetNotifications is the resolver for the getNotifications field.
@@ -456,18 +456,26 @@ func (r *userResolver) Experience(ctx context.Context, obj *model.User) ([]*mode
 	return loaders.GetExperienceEntries(ctx, ids)
 }
 
-// PostedBy is the resolver for the postedBy field.
-func (r *vacancyResolver) PostedBy(ctx context.Context, obj *model.Vacancy) (*model.Employer, error) {
-	return loaders.GetEmployer(ctx, obj.PostedBy.ID)
+// Companies is the resolver for the companies field.
+func (r *userResolver) Companies(ctx context.Context, obj *model.User) ([]*model.Company, error) {
+	ids := util.Map(obj.Companies, func(c *model.Company) string {
+		return c.ID
+	})
+	return loaders.GetCompanies(ctx, ids)
 }
+
+// PostedBy is the resolver for the postedBy field.
+func (r *vacancyResolver) PostedBy(ctx context.Context, obj *model.Vacancy) (*model.Company, error) {
+	return loaders.GetCompany(ctx, obj.PostedBy.ID)
+}
+
+// Company returns CompanyResolver implementation.
+func (r *Resolver) Company() CompanyResolver { return &companyResolver{r} }
 
 // ConnectionRequest returns ConnectionRequestResolver implementation.
 func (r *Resolver) ConnectionRequest() ConnectionRequestResolver {
 	return &connectionRequestResolver{r}
 }
-
-// Employer returns EmployerResolver implementation.
-func (r *Resolver) Employer() EmployerResolver { return &employerResolver{r} }
 
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
@@ -487,8 +495,8 @@ func (r *Resolver) User() UserResolver { return &userResolver{r} }
 // Vacancy returns VacancyResolver implementation.
 func (r *Resolver) Vacancy() VacancyResolver { return &vacancyResolver{r} }
 
+type companyResolver struct{ *Resolver }
 type connectionRequestResolver struct{ *Resolver }
-type employerResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type notificationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

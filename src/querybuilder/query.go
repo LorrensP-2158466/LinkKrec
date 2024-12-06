@@ -7,7 +7,9 @@ import (
 
 const PREFIXES = `PREFIX lr: <http://linkrec.example.org/schema#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>`
+PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>`
 
 type Query struct {
 	sel     *Select
@@ -92,8 +94,7 @@ const (
 )
 
 type OptionalClause struct {
-	subject *WhereSubject
-	clauses []WhereClause
+	clauses []WhereExtraction
 }
 
 func QueryBuilder() *Query {
@@ -130,14 +131,12 @@ func (q *Query) WhereSubject(binding string, obj string) *Query {
 }
 
 func (q *Query) Where(field string, binding string) *Query {
-	// If no subject has been defined, initialize it first
 	if len(q.where.clauses) == 0 {
 		q.where.clauses = append(q.where.clauses, SubWhere{
 			subj: &WhereSubject{binding: "user", obj: "User"},
 		})
 	}
 
-	// Now append the new clause to the last where clause
 	var c = WhereClause{
 		field:   field,
 		binding: binding,
@@ -211,32 +210,21 @@ func (q *Query) OrFilter(field string, value []string, op FilterOp) *Query {
 	return q
 }
 
-func (q *Query) OptionalSubject(binding string, obj string) *Query {
-	var opt = OptionalClause{
-		subject: &WhereSubject{binding: binding, obj: obj},
-	}
-	q.where.optionalClauses = append(q.where.optionalClauses, opt)
+func (q *Query) NewOptional(obj string, attr string, binding string) *Query {
+	we := WhereExtraction{field: obj, attribute: attr, binding: binding}
+	q.where.optionalClauses = append(q.where.optionalClauses, OptionalClause{
+		clauses: []WhereExtraction{we},
+	})
 	return q
 }
 
-func (q *Query) Optional(predicate, object string) *Query {
-	// Check if the clauses list is empty and initialize it if necessary
-	if len(q.where.clauses) == 0 {
-		// Initialize the first subject if it's missing
-		q.where.clauses = append(q.where.clauses, SubWhere{
-			subj: &WhereSubject{binding: "user", obj: "User"},
-		})
-	}
-
-	// Add the OPTIONAL clause
-	q.where.clauses = append(q.where.clauses, SubWhere{
-		subj: &WhereSubject{binding: "user", obj: "User"},
-		clauses: []WhereClause{
-			{
-				field:   predicate,
-				binding: object,
-			},
-		},
+func (q *Query) AddOptionalTriple(field string, attr string, bind string) *Query {
+	clauses := q.where.optionalClauses
+	currClause := &clauses[len(clauses)-1]
+	currClause.clauses = append(currClause.clauses, WhereExtraction{
+		field:     field,
+		attribute: attr,
+		binding:   bind,
 	})
 	return q
 }
@@ -298,15 +286,8 @@ func buildWhere(wh Where) string {
 
 	for _, opt := range wh.optionalClauses {
 		output += "OPTIONAL {\n"
-		output += fmt.Sprintf("?%s a lr:%s ;\n", opt.subject.binding, opt.subject.obj)
-		for idx, cl := range opt.clauses {
-			output += fmt.Sprintf("lr:%s ?%s", cl.field, cl.binding)
-			if (idx) == len(opt.clauses)-1 {
-				output += " ."
-			} else {
-				output += " ;"
-			}
-			output += "\n"
+		for _, cl := range opt.clauses {
+			output += fmt.Sprintf("?%s %s ?%s .\n", cl.field, cl.attribute, cl.binding)
 		}
 		output += "}\n"
 	}
@@ -330,19 +311,25 @@ func buildGroupBy(gb GroupBy) string {
 }
 
 func buildFilter(filters []Filter) string {
-	var output = "FILTER("
+	var output = ""
 	for _, fil := range filters {
+		var filter = "FILTER("
 		if fil.op == IN {
-			output += fmt.Sprintf("?%s IN (%s)", fil.field, strings.Join(fil.value, ", "))
+			filter += fmt.Sprintf("?%s IN (%s)", fil.field, strings.Join(fil.value, ", "))
 		} else {
 			if len(fil.opWithPrevFilter) == 0 {
-				output += fmt.Sprintf("?%s %s %s", fil.field, fil.op, fil.value[0])
+				if fil.value[0] == "\"en\"" {
+					filter += fmt.Sprintf("LANG(?%s) %s %s", fil.field, fil.op, fil.value[0])
+				} else {
+					filter += fmt.Sprintf("?%s %s %s", fil.field, fil.op, fil.value[0])
+				}
 			} else {
-				output += fmt.Sprintf(" %s ?%s %s %s", fil.opWithPrevFilter, fil.field, fil.op, fil.value[0])
+				filter += fmt.Sprintf(" %s ?%s %s %s", fil.opWithPrevFilter, fil.field, fil.op, fil.value[0])
 			}
 		}
+		output += filter + ")\n"
 	}
-	return output + ")"
+	return output
 }
 
 func buildBinds(binds []Bind) string {

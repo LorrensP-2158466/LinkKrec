@@ -15,54 +15,89 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 		return nil, err
 	}
 
-	var connections = make([]*model.User, 0)
-	for _, con := range strings.Split(user["connections"].String(), ", ") {
-		connections = append(connections, &model.User{ID: con})
+	if user["connections"] != nil {
+		var connections = make([]*model.User, 0)
+		for _, con := range strings.Split(user["connections"].String(), ", ") {
+			connections = append(connections, &model.User{ID: con})
+		}
+		userObj.Connections = connections
+	} else {
+		userObj.Connections = nil
 	}
-	userObj.Connections = connections
 	fmt.Println("connections userObj: ", userObj)
 
-	var educations = make([]*model.EducationEntry, 0)
-	for _, edu := range strings.Split(user["educations"].String(), ", ") {
-		educations = append(educations, &model.EducationEntry{ID: edu})
+	if user["educations"] != nil {
+		var educations = make([]*model.EducationEntry, 0)
+		for _, edu := range strings.Split(user["educations"].String(), ", ") {
+			educations = append(educations, &model.EducationEntry{ID: edu})
+		}
+		userObj.Education = educations
+	} else {
+		userObj.Education = nil
 	}
-	userObj.Education = educations
 
 	fmt.Println("educations userObj: ", userObj)
 
-	var experiences = make([]*model.ExperienceEntry, 0)
-	for _, exp := range strings.Split(user["experiences"].String(), ", ") {
-		experiences = append(experiences, &model.ExperienceEntry{ID: exp})
+	if user["experiences"] != nil {
+		var experiences = make([]*model.ExperienceEntry, 0)
+		for _, exp := range strings.Split(user["experiences"].String(), ", ") {
+			experiences = append(experiences, &model.ExperienceEntry{ID: exp})
+		}
+		userObj.Experience = experiences
+	} else {
+		userObj.Experience = nil
 	}
-	userObj.Experience = experiences
-
 	fmt.Println("experiences userObj: ", userObj)
+
+	if user["companies"] != nil {
+		var companies = make([]*model.Company, 0)
+		for _, comp := range strings.Split(user["companies"].String(), ", ") {
+			companies = append(companies, &model.Company{ID: comp})
+		}
+		userObj.Companies = companies
+	} else {
+		userObj.Companies = nil
+	}
+
+	fmt.Println("companies userObj: ", userObj)
 
 	return &userObj, nil
 }
 
-func MapRdfEmployerToGQL(employer map[string]rdf.Term) (*model.Employer, error) {
-	employerObj, err := MapPrimitiveBindingsToStruct[model.Employer](employer)
+func MapRdfCompanyToGQL(company map[string]rdf.Term) (*model.Company, error) {
+	companyObj, err := MapPrimitiveBindingsToStruct[model.Company](company)
 	if err != nil {
 		return nil, err
 	}
 
-	var location = employer["location"].String()
-	employerObj.Location = &location
-
-	var vacancies = make([]*model.Vacancy, 0)
-	for _, vac := range strings.Split(employer["vacancies"].String(), ", ") {
-		vacancies = append(vacancies, &model.Vacancy{ID: vac})
+	if company["location"] != nil {
+		var location = company["location"].String()
+		companyObj.Location = &location
+	} else {
+		companyObj.Location = nil
 	}
-	employerObj.Vacancies = vacancies
 
-	var employees = make([]*model.User, 0)
-	for _, emp := range strings.Split(employer["employees"].String(), ", ") {
-		employees = append(employees, &model.User{ID: emp})
+	if company["vacancies"] != nil {
+		var vacancies = make([]*model.Vacancy, 0)
+		for _, vac := range strings.Split(company["vacancies"].String(), ", ") {
+			vacancies = append(vacancies, &model.Vacancy{ID: vac})
+		}
+		companyObj.Vacancies = vacancies
+	} else {
+		companyObj.Vacancies = nil
 	}
-	employerObj.Employees = employees
 
-	return &employerObj, nil
+	if company["employees"] != nil {
+		var employees = make([]*model.User, 0)
+		for _, emp := range strings.Split(company["employees"].String(), ", ") {
+			employees = append(employees, &model.User{ID: emp})
+		}
+		companyObj.Employees = employees
+	} else {
+		companyObj.Employees = nil
+	}
+
+	return &companyObj, nil
 }
 
 func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
@@ -71,13 +106,21 @@ func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
 		return nil, err
 	}
 
-	startDate := vacancy["startDate"].String()
-	vacancyObj.StartDate = &startDate
+	if vacancy["startDate"] != nil {
+		startDate := vacancy["startDate"].String()
+		vacancyObj.StartDate = &startDate
+	} else {
+		vacancyObj.StartDate = nil
+	}
 
-	endDate := vacancy["endDate"].String()
-	vacancyObj.EndDate = &endDate
+	if vacancy["endDate"] != nil {
+		endDate := vacancy["endDate"].String()
+		vacancyObj.EndDate = &endDate
+	} else {
+		vacancyObj.EndDate = nil
+	}
 
-	vacancyObj.PostedBy = &model.Employer{ID: vacancy["postedById"].String()}
+	vacancyObj.PostedBy = &model.Company{ID: vacancy["postedById"].String()}
 
 	education := (vacancy["education"].String())
 	var degree model.DegreeType
@@ -123,8 +166,12 @@ func MapRdfNotificationToGQL(notification map[string]rdf.Term) (*model.Notificat
 
 	notificationObj.ForUser = &model.User{ID: notification["forUserId"].String()}
 	fmt.Println("foruser notifcationObj: ", notificationObj)
-	startDate := notification["createdAt"].String()
-	notificationObj.CreatedAt = &startDate
+	if notification["createdAt"] != nil {
+		startDate := notification["createdAt"].String()
+		notificationObj.CreatedAt = &startDate
+	} else {
+		notificationObj.CreatedAt = nil
+	}
 
 	return &notificationObj, nil
 }

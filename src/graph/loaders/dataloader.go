@@ -24,7 +24,7 @@ type DataBase struct {
 type Loaders struct {
 	UserLoader              *dataloadgen.Loader[string, *model.User]
 	VacancyLoader           *dataloadgen.Loader[string, *model.Vacancy]
-	EmployerLoader          *dataloadgen.Loader[string, *model.Employer]
+	CompanyLoader           *dataloadgen.Loader[string, *model.Company]
 	EducationEntryLoader    *dataloadgen.Loader[string, *model.EducationEntry]
 	ExperienceEntryLoader   *dataloadgen.Loader[string, *model.ExperienceEntry]
 	ConnectionRequestLoader *dataloadgen.Loader[string, *model.ConnectionRequest]
@@ -37,7 +37,7 @@ func NewLoaders(conn *sparql.Repo) *Loaders {
 	return &Loaders{
 		UserLoader:              dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
 		VacancyLoader:           dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
-		EmployerLoader:          dataloadgen.NewLoader(ur.getEmployers, dataloadgen.WithWait(time.Millisecond)),
+		CompanyLoader:           dataloadgen.NewLoader(ur.getCompanies, dataloadgen.WithWait(time.Millisecond)),
 		EducationEntryLoader:    dataloadgen.NewLoader(ur.getEducationEntries, dataloadgen.WithWait(time.Millisecond)),
 		ExperienceEntryLoader:   dataloadgen.NewLoader(ur.getExperienceEntries, dataloadgen.WithWait(time.Millisecond)),
 		ConnectionRequestLoader: dataloadgen.NewLoader(ur.getConnectionRequests, dataloadgen.WithWait(time.Millisecond)),
@@ -82,14 +82,14 @@ func GetVacancies(ctx context.Context, vacancyIDs []string) ([]*model.Vacancy, e
 	return loaders.VacancyLoader.LoadAll(ctx, vacancyIDs)
 }
 
-func GetEmployer(ctx context.Context, employerID string) (*model.Employer, error) {
+func GetCompany(ctx context.Context, companyID string) (*model.Company, error) {
 	loaders := For(ctx)
-	return loaders.EmployerLoader.Load(ctx, employerID)
+	return loaders.CompanyLoader.Load(ctx, companyID)
 }
 
-func GetEmployers(ctx context.Context, employerIDs []string) ([]*model.Employer, error) {
+func GetCompanies(ctx context.Context, companyIDs []string) ([]*model.Company, error) {
 	loaders := For(ctx)
-	return loaders.EmployerLoader.LoadAll(ctx, employerIDs)
+	return loaders.CompanyLoader.LoadAll(ctx, companyIDs)
 }
 
 func GetEducationEntry(ctx context.Context, educationEntryID string) (*model.EducationEntry, error) {

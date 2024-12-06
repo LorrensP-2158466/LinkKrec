@@ -6,7 +6,6 @@ type Query {
  getUsers(
    name: String,
    location: String,
-   isEmployer: Boolean,
    skills: [String],
    lookingForOpportunities: Boolean,
  ): [User]
@@ -22,14 +21,14 @@ type Query {
  # Fetch a specific job vacancy by ID
  getVacancy(id: ID!): Vacancy
 
-# Fetch employers with optional filtering
- getEmployers(
+# Fetch companies with optional filtering
+ getCompanies(
    name: String,
    location: String,
- ): [Employer]
+ ): [Company]
 
- # Fetch specific employer by ID, with details about their vacancies and employees
- getEmployer(id: ID!): Employer
+ # Fetch specific company by ID, with details about their vacancies and employees
+ getCompany(id: ID!): Company
 
  # Fetch all notifications for a user, with optional filtering by read status or timeframe
  getNotifications(
@@ -63,13 +62,13 @@ type Mutation {
  # Notify a user when someone visits their profile
  notifyProfileVisit(visitorId: ID!, visitedUserId: ID!): Notification
 
- # Create a job vacancy (employer only)
- createVacancy(employerId: ID!, input: CreateVacancyInput!): Vacancy
+ # Create a job vacancy (companies only)
+ createVacancy(companyId: ID!, input: CreateVacancyInput!): Vacancy
 
- # Update job vacancy details (employer only)
+ # Update job vacancy details (companies only)
  updateVacancy(id: ID!, input: CreateVacancyInput!): Vacancy
 
- # Delete a job vacancy (employer only)
+ # Delete a job vacancy (companies only)
  deleteVacancy(id: ID!): Boolean
 
  # Set user looking for job opportunities
@@ -96,17 +95,17 @@ type User {
  name: String!
  email: String!
  location: String
- isEmployer: Boolean
  connections: [User]
  education: [EducationEntry]
  experience: [ExperienceEntry]
  skills: [String]
  lookingForOpportunities: Boolean
+ companies: [Company]
 }
 
 
 # A company/person who wants to recruit Users
-type Employer{
+type Company{
  id: ID!,
  name: String!,
  email: String!,
@@ -183,7 +182,7 @@ type Vacancy {
  requiredExperiences: [ExperienceType!]!,
  requiredExperienceDurations: [Int!]! # in years, per experience in order
  location: String!,
- postedBy: Employer!,
+ postedBy: Company!,
  startDate: String,
  endDate: String,
  status: Boolean
@@ -213,7 +212,6 @@ input RegisterUserInput {
  name: String!
  email: String!
  password: String!
- isEmployer: Boolean
  profileUpdate: UpdateProfileInput!
 }
 

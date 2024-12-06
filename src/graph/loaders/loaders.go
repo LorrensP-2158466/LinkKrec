@@ -23,38 +23,40 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-		SELECT ?name ?id ?email ?isEmployer ?location ?lookingForOpportunities
-			(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
-			(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections)
-			(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
-			(GROUP_CONCAT(DISTINCT ?experienceEntry; separator=", ") AS ?experiences)
-		WHERE {
+		SELECT ?id ?name ?email ?location ?lookingForOpportunities (GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills) (GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections) (GROUP_CONCAT(DISTINCT ?educationEntryId; separator=", ") AS ?educations) (GROUP_CONCAT(DISTINCT ?experienceEntryId; separator=", ") AS ?experiences) (GROUP_CONCAT(DISTINCT ?companyId; separator=", ") AS ?companies)
+	WHERE {
+	?user a lr:User ;
+	lr:Id ?id ;
+	lr:hasName ?name ;
+	lr:hasEmail ?email ;
+	lr:hasLocation ?location ;
+	lr:isLookingForOpportunities ?isLookingForOpportunities .
+	?user a lr:User ;
+	lr:hasSkill ?skill .
+	OPTIONAL {
 		?user a lr:User ;
-				lr:Id ?id ;
-				lr:hasName ?name ;
-				lr:hasEmail ?email ;
-				lr:isEmployer ?isEmployer ;
-				lr:hasLocation ?location ;
-				lr:isLookingForOpportunities ?isLookingForOpportunities ;
-				lr:hasSkill ?skill .
-		BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
-
-		OPTIONAL {
-			?user lr:hasConnection ?connection .
-			?connection lr:Id ?connectionName .
-		}
-		OPTIONAL {
-			?user lr:hasEducation ?education .
-			?education lr:Id ?educationEntry .
-		}
-		OPTIONAL {
-			?user lr:hasExperience ?experience .
-			?experience lr:Id ?experienceEntry .
-		}
-
-		FILTER(%s)
-		}
-		GROUP BY ?name ?id ?email ?isEmployer ?location ?lookingForOpportunities
+		lr:hasConnection ?connection .
+		?connection lr:Id ?connectionName .
+	  }
+	OPTIONAL {
+		?user a lr:User ;
+		lr:hasEducation ?educationEntry .
+		?educationEntry lr:Id ?educationEntryId .
+	}
+	OPTIONAL {?user a lr:User ;
+		lr:hasExperience ?experienceEntry .
+		?experienceEntry lr:Id ?experienceEntryId .
+	}
+	OPTIONAL {
+		?user a lr:User ;
+		lr:hasCompany ?company .
+		?company lr:Id ?companyId .
+	}
+	BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
+	
+	FILTER(%s)
+	}
+	GROUP BY ?id ?name ?email ?location ?lookingForOpportunities
 	`, filter)
 	res, err := u.Repo.Query(q)
 	if err != nil {
@@ -150,9 +152,9 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 	return vacancies, errs
 }
 
-func (u *DataBase) getEmployers(ctx context.Context, employerIDs []string) ([]*model.Employer, []error) {
+func (u *DataBase) getCompanies(ctx context.Context, companyIDs []string) ([]*model.Company, []error) {
 	var ids []string
-	for _, id := range employerIDs {
+	for _, id := range companyIDs {
 		s := fmt.Sprintf("?id = \"%s\"", id)
 		ids = append(ids, s)
 	}
@@ -164,11 +166,11 @@ func (u *DataBase) getEmployers(ctx context.Context, employerIDs []string) ([]*m
 
 		SELECT ?id ?name ?email ?location (GROUP_CONCAT(DISTINCT ?vacancyId; separator=", ") AS ?vacancies) (GROUP_CONCAT(DISTINCT ?employeeId; separator=", ") AS ?employees)   
 		WHERE {
-		?employer a lr:Employer ;
+		?company a lr:Company ;
 			lr:Id ?id ;
-			lr:employerName ?name ;
-			lr:employerEmail ?email ;
-			lr:employerLocation ?location ;
+			lr:companyName ?name ;
+			lr:companyEmail ?email ;
+			lr:companyLocation ?location ;
 			lr:hasVacancy ?vacancy ;
 			lr:hasEmployee ?employee .
 			?vacancy lr:Id ?vacancyId .
@@ -183,28 +185,28 @@ func (u *DataBase) getEmployers(ctx context.Context, employerIDs []string) ([]*m
 		return nil, []error{err}
 	}
 
-	employers := make([]*model.Employer, len(employerIDs))
-	errs := make([]error, len(employerIDs))
+	companies := make([]*model.Company, len(companyIDs))
+	errs := make([]error, len(companyIDs))
 
-	var foundEmployers = make(map[string]*model.Employer)
+	var foundEmployers = make(map[string]*model.Company)
 	for _, m := range res.Solutions() {
-		employer, err := util.MapRdfEmployerToGQL(m)
+		company, err := util.MapRdfCompanyToGQL(m)
 		if err != nil {
 			return nil, []error{err}
 		}
-		foundEmployers[employer.ID] = employer
+		foundEmployers[company.ID] = company
 	}
 	// fill return array with empty objects so the lengths match
-	for i, id := range employerIDs {
-		if employer, found := foundEmployers[id]; found {
-			employers[i] = employer
+	for i, id := range companyIDs {
+		if company, found := foundEmployers[id]; found {
+			companies[i] = company
 			errs[i] = nil
 		} else {
-			employers[i] = &model.Employer{ID: id}
-			errs[i] = fmt.Errorf("employer not found for ID: %s", id)
+			companies[i] = &model.Company{ID: id}
+			errs[i] = fmt.Errorf("company not found for ID: %s", id)
 		}
 	}
-	return employers, errs
+	return companies, errs
 }
 
 func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []string) ([]*model.EducationEntry, []error) {
