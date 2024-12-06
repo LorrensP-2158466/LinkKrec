@@ -1,3 +1,6 @@
+scalar Date
+
+
 type Query {
  # Fetch a specific user by ID
  getUser(id: ID!): User
@@ -57,7 +60,7 @@ type Mutation {
 
  # when creating an account, we must set a flag that the profile is complete 
  # before the user can do anything on the service
- completeUserProfile(id: ID, input: UpdateUserInput!): User
+ completeUserProfile(id: ID!, input: UpdateProfileInput!): User
 
  # Update user profile
  updateUser(id: ID!, input: UpdateUserInput!): User
@@ -136,24 +139,120 @@ enum DegreeType{
  PhD
 }
 
-enum DegreeField{
-    ComputerScience,
-    Engineering,
-    Business,
-    Economics,
-    Marketing,
-    Finance,
-    Medicine,
-    Law,
-    Psychology,
- # We can always add more ofcourse
+enum DegreeField {
+    # Computer Science and subfields
+    ComputerScience
+    SoftwareEngineering
+    ArtificialIntelligence
+    CyberSecurity
+    DataScience
+
+    # Engineering and subfields
+    Engineering
+    MechanicalEngineering
+    ElectricalEngineering
+    CivilEngineering
+    ChemicalEngineering
+
+    # Business and subfields
+    Business
+    Marketing
+    Finance
+    Management
+    Entrepreneurship
+
+    # Mathematics and subfields
+    Mathematics
+    PureMathematics
+    AppliedMathematics
+    Statistics
+    MathematicalModeling
+
+    # Physics and subfields
+    Physics
+    TheoreticalPhysics
+    QuantumPhysics
+    AstrophysicsAndAstronomy
+    NuclearPhysics
+
+    # Chemistry and subfields
+    Chemistry
+    OrganicChemistry
+    InorganicChemistry
+    PhysicalChemistry
+    BiochemistryAndMolecularBiology
+
+    # Medicine and subfields
+    Medicine
+    GeneralMedicine
+    Surgery
+    Pediatrics
+    Psychiatry
+
+    # Law and subfields
+    Law
+    CorporateLaw
+    CriminalLaw
+    InternationalLaw
+    ConstitutionalLaw
+
+    # Social Science and subfields
+    SocialScience
+    Sociology
+    PoliticalScience
+    Economics
+    Anthropology
+
+    # Humanities and subfields
+    Humanities
+    Literature
+    Philosophy
+    History
+    Linguistics
+
+    # Art and subfields
+    Art
+    Painting
+    Sculpture
+    GraphicDesign
+    Photography
+
+    # Music and subfields
+    Music
+    Composition
+    Performance
+    MusicTheory
+    Conducting
+
+    # Sport and subfields
+    Sport
+    SportsScience
+    SportsManagement
+    PhysicalEducation
+    SportsTherapy
+
+    # Education and subfields
+    Education
+    ElementaryEducation
+    SecondaryEducation
+    SpecialEducation
+    EducationalLeadership
+
+    # Psychology and subfields
+    Psychology
+    ClinicalPsychology
+    CognitivePsychology
+    DevelopmentalPsychology
+    IndustrialPsychology
 }
 
 # An education that a user can put on their profile
 type EducationEntry {
  id: ID!,
  institution: String!,
- info: String!,
+ extra_info: String,
+ from: Date!,
+ till: Date!,
  degree: DegreeType!,
  field: DegreeField!
 }
@@ -238,17 +337,21 @@ input UpdateProfileInput {
  education: [EducationEntryInput]
  experience: [ExperienceEntryInput]
  skills: [String]
- isLookingForOpportunities: Boolean
+ isLookingForOpportunities: Boolean!
  country: String!
  city: String!
  streetname: String!
- streetnumber: String!
+ housenumber: String!
 }
 
 
 input EducationEntryInput {
- institution: String!
- degree: String!
+ institution: String!,
+ extra_info: String,
+ from: Date!,
+ till: Date!,
+ degree: DegreeType!,
+ field: DegreeField!
 }
 
 

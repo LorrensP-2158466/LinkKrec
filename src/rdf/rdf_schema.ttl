@@ -135,9 +135,15 @@ lr:Id a rdf:Property ;
 lr:institutionName a rdf:Property ;
     rdfs:domain lr:EducationEntry ;
     rdfs:range schema:Text .
-lr:institutionInfo a rdf:Property ;
+lr:extraInfo a rdf:Property ;
     rdfs:domain lr:EducationEntry ;
     rdfs:range schema:Text .
+lr:startDate a rdf:Property ;
+    rdfs:domain lr:EducationEntry ;
+    rdfs:range xsd:dateTime .
+lr:endDate a rdf:Property ;
+    rdfs:domain lr:EducationEntry ;
+    rdfs:range xsd:dateTime .
 lr:degreeType a rdf:Property ;
     rdfs:domain lr:EducationEntry ;
     rdfs:range lr:DegreeType .

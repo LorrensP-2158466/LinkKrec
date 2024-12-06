@@ -1,34 +1,12 @@
 package util
 
 import (
-	"encoding/gob"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/knakk/rdf"
 )
-
-const (
-	SessionInfoKey = "sessInfo"
-	GinContextKey  = "GinContextKey"
-	QueryRepoKey   = "queryrepo"
-	UpdateRepoKey  = "updateRepo"
-)
-
-type UserSessionInfo struct {
-	// convenience to quickly determine of this user has a completed account
-	IsComplete bool `json:"ProfileCompleted"`
-	IsUser     bool
-	Email      string `json:"email"`
-	Id         string `json:"id"`
-	Cookie     string
-	// TODO: More?
-}
-
-func init() {
-	gob.Register(UserSessionInfo{}) // Register the type for serialization
-}
 
 func MapPrimitiveBindingsToStruct[T any](bindings map[string]rdf.Term) (T, error) {
 	structType := reflect.TypeOf(*new(T))

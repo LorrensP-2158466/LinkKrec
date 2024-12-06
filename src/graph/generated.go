@@ -4,6 +4,7 @@ package graph
 
 import (
 	"LinkKrec/graph/model"
+	"LinkKrec/graph/scalar"
 	"bytes"
 	"context"
 	"embed"
@@ -63,10 +64,12 @@ type ComplexityRoot struct {
 
 	EducationEntry struct {
 		Degree      func(childComplexity int) int
+		ExtraInfo   func(childComplexity int) int
 		Field       func(childComplexity int) int
+		From        func(childComplexity int) int
 		ID          func(childComplexity int) int
-		Info        func(childComplexity int) int
 		Institution func(childComplexity int) int
+		Till        func(childComplexity int) int
 	}
 
 	Employer struct {
@@ -89,7 +92,7 @@ type ComplexityRoot struct {
 
 	Mutation struct {
 		AddConnectionRequest              func(childComplexity int, fromUserID string, connectedToUserID string) int
-		CompleteUserProfile               func(childComplexity int, id *string, input model.UpdateUserInput) int
+		CompleteUserProfile               func(childComplexity int, id string, input model.UpdateProfileInput) int
 		CreateVacancy                     func(childComplexity int, employerID string, input model.CreateVacancyInput) int
 		DeleteVacancy                     func(childComplexity int, id string) int
 		NotifyProfileVisit                func(childComplexity int, visitorID string, visitedUserID string) int
@@ -166,7 +169,7 @@ type EmployerResolver interface {
 }
 type MutationResolver interface {
 	RegisterUser(ctx context.Context, input model.RegisterUserInput) (*model.User, error)
-	CompleteUserProfile(ctx context.Context, id *string, input model.UpdateUserInput) (*model.User, error)
+	CompleteUserProfile(ctx context.Context, id string, input model.UpdateProfileInput) (*model.User, error)
 	UpdateUser(ctx context.Context, id string, input model.UpdateUserInput) (*model.User, error)
 	UpdateUserProfile(ctx context.Context, id string, input model.UpdateProfileInput) (*model.User, error)
 	AddConnectionRequest(ctx context.Context, fromUserID string, connectedToUserID string) (*model.ConnectionRequest, error)
@@ -260,12 +263,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.EducationEntry.Degree(childComplexity), true
 
+	case "EducationEntry.extra_info":
+		if e.complexity.EducationEntry.ExtraInfo == nil {
+			break
+		}
+
+		return e.complexity.EducationEntry.ExtraInfo(childComplexity), true
+
 	case "EducationEntry.field":
 		if e.complexity.EducationEntry.Field == nil {
 			break
 		}
 
 		return e.complexity.EducationEntry.Field(childComplexity), true
+
+	case "EducationEntry.from":
+		if e.complexity.EducationEntry.From == nil {
+			break
+		}
+
+		return e.complexity.EducationEntry.From(childComplexity), true
 
 	case "EducationEntry.id":
 		if e.complexity.EducationEntry.ID == nil {
@@ -274,19 +291,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.EducationEntry.ID(childComplexity), true
 
-	case "EducationEntry.info":
-		if e.complexity.EducationEntry.Info == nil {
-			break
-		}
-
-		return e.complexity.EducationEntry.Info(childComplexity), true
-
 	case "EducationEntry.institution":
 		if e.complexity.EducationEntry.Institution == nil {
 			break
 		}
 
 		return e.complexity.EducationEntry.Institution(childComplexity), true
+
+	case "EducationEntry.till":
+		if e.complexity.EducationEntry.Till == nil {
+			break
+		}
+
+		return e.complexity.EducationEntry.Till(childComplexity), true
 
 	case "Employer.email":
 		if e.complexity.Employer.Email == nil {
@@ -394,7 +411,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CompleteUserProfile(childComplexity, args["id"].(*string), args["input"].(model.UpdateUserInput)), true
+		return e.complexity.Mutation.CompleteUserProfile(childComplexity, args["id"].(string), args["input"].(model.UpdateProfileInput)), true
 
 	case "Mutation.createVacancy":
 		if e.complexity.Mutation.CreateVacancy == nil {
@@ -1048,26 +1065,26 @@ func (ec *executionContext) field_Mutation_completeUserProfile_args(ctx context.
 func (ec *executionContext) field_Mutation_completeUserProfile_argsID(
 	ctx context.Context,
 	rawArgs map[string]interface{},
-) (*string, error) {
+) (string, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 	if tmp, ok := rawArgs["id"]; ok {
-		return ec.unmarshalOID2ᚖstring(ctx, tmp)
+		return ec.unmarshalNID2string(ctx, tmp)
 	}
 
-	var zeroVal *string
+	var zeroVal string
 	return zeroVal, nil
 }
 
 func (ec *executionContext) field_Mutation_completeUserProfile_argsInput(
 	ctx context.Context,
 	rawArgs map[string]interface{},
-) (model.UpdateUserInput, error) {
+) (model.UpdateProfileInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNUpdateUserInput2LinkKrecᚋgraphᚋmodelᚐUpdateUserInput(ctx, tmp)
+		return ec.unmarshalNUpdateProfileInput2LinkKrecᚋgraphᚋmodelᚐUpdateProfileInput(ctx, tmp)
 	}
 
-	var zeroVal model.UpdateUserInput
+	var zeroVal model.UpdateProfileInput
 	return zeroVal, nil
 }
 
@@ -2250,8 +2267,8 @@ func (ec *executionContext) fieldContext_EducationEntry_institution(_ context.Co
 	return fc, nil
 }
 
-func (ec *executionContext) _EducationEntry_info(ctx context.Context, field graphql.CollectedField, obj *model.EducationEntry) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_EducationEntry_info(ctx, field)
+func (ec *executionContext) _EducationEntry_extra_info(ctx context.Context, field graphql.CollectedField, obj *model.EducationEntry) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EducationEntry_extra_info(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -2264,7 +2281,48 @@ func (ec *executionContext) _EducationEntry_info(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Info, nil
+		return obj.ExtraInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EducationEntry_extra_info(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EducationEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EducationEntry_from(ctx context.Context, field graphql.CollectedField, obj *model.EducationEntry) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EducationEntry_from(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.From, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2276,19 +2334,63 @@ func (ec *executionContext) _EducationEntry_info(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(scalar.Date)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNDate2LinkKrecᚋgraphᚋscalarᚐDate(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_EducationEntry_info(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_EducationEntry_from(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "EducationEntry",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			return nil, errors.New("field of type Date does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _EducationEntry_till(ctx context.Context, field graphql.CollectedField, obj *model.EducationEntry) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_EducationEntry_till(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Till, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(scalar.Date)
+	fc.Result = res
+	return ec.marshalNDate2LinkKrecᚋgraphᚋscalarᚐDate(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_EducationEntry_till(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "EducationEntry",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Date does not have child fields")
 		},
 	}
 	return fc, nil
@@ -3032,7 +3134,7 @@ func (ec *executionContext) _Mutation_completeUserProfile(ctx context.Context, f
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CompleteUserProfile(rctx, fc.Args["id"].(*string), fc.Args["input"].(model.UpdateUserInput))
+		return ec.resolvers.Mutation().CompleteUserProfile(rctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateProfileInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5346,8 +5448,12 @@ func (ec *executionContext) fieldContext_User_education(_ context.Context, field
 				return ec.fieldContext_EducationEntry_id(ctx, field)
 			case "institution":
 				return ec.fieldContext_EducationEntry_institution(ctx, field)
-			case "info":
-				return ec.fieldContext_EducationEntry_info(ctx, field)
+			case "extra_info":
+				return ec.fieldContext_EducationEntry_extra_info(ctx, field)
+			case "from":
+				return ec.fieldContext_EducationEntry_from(ctx, field)
+			case "till":
+				return ec.fieldContext_EducationEntry_till(ctx, field)
 			case "degree":
 				return ec.fieldContext_EducationEntry_degree(ctx, field)
 			case "field":
@@ -7820,7 +7926,7 @@ func (ec *executionContext) unmarshalInputEducationEntryInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"institution", "degree"}
+	fieldsInOrder := [...]string{"institution", "extra_info", "from", "till", "degree", "field"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7834,13 +7940,41 @@ func (ec *executionContext) unmarshalInputEducationEntryInput(ctx context.Contex
 				return it, err
 			}
 			it.Institution = data
+		case "extra_info":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("extra_info"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExtraInfo = data
+		case "from":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("from"))
+			data, err := ec.unmarshalNDate2LinkKrecᚋgraphᚋscalarᚐDate(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.From = data
+		case "till":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("till"))
+			data, err := ec.unmarshalNDate2LinkKrecᚋgraphᚋscalarᚐDate(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Till = data
 		case "degree":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("degree"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalNDegreeType2LinkKrecᚋgraphᚋmodelᚐDegreeType(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Degree = data
+		case "field":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("field"))
+			data, err := ec.unmarshalNDegreeField2LinkKrecᚋgraphᚋmodelᚐDegreeField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Field = data
 		}
 	}
 
@@ -7950,7 +8084,7 @@ func (ec *executionContext) unmarshalInputUpdateProfileInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"education", "experience", "skills", "isLookingForOpportunities", "country", "city", "streetname", "streetnumber"}
+	fieldsInOrder := [...]string{"education", "experience", "skills", "isLookingForOpportunities", "country", "city", "streetname", "housenumber"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7980,7 +8114,7 @@ func (ec *executionContext) unmarshalInputUpdateProfileInput(ctx context.Context
 			it.Skills = data
 		case "isLookingForOpportunities":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("isLookingForOpportunities"))
-			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8006,13 +8140,13 @@ func (ec *executionContext) unmarshalInputUpdateProfileInput(ctx context.Context
 				return it, err
 			}
 			it.Streetname = data
-		case "streetnumber":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("streetnumber"))
+		case "housenumber":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("housenumber"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Streetnumber = data
+			it.Housenumber = data
 		}
 	}
 
@@ -8198,8 +8332,15 @@ func (ec *executionContext) _EducationEntry(ctx context.Context, sel ast.Selecti
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "info":
-			out.Values[i] = ec._EducationEntry_info(ctx, field, obj)
+		case "extra_info":
+			out.Values[i] = ec._EducationEntry_extra_info(ctx, field, obj)
+		case "from":
+			out.Values[i] = ec._EducationEntry_from(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "till":
+			out.Values[i] = ec._EducationEntry_till(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -9450,6 +9591,16 @@ func (ec *executionContext) unmarshalNCreateVacancyInput2LinkKrecᚋgraphᚋmode
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNDate2LinkKrecᚋgraphᚋscalarᚐDate(ctx context.Context, v interface{}) (scalar.Date, error) {
+	var res scalar.Date
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDate2LinkKrecᚋgraphᚋscalarᚐDate(ctx context.Context, sel ast.SelectionSet, v scalar.Date) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNDegreeField2LinkKrecᚋgraphᚋmodelᚐDegreeField(ctx context.Context, v interface{}) (model.DegreeField, error) {
 	var res model.DegreeField
 	err := res.UnmarshalGQL(v)
@@ -10338,22 +10489,6 @@ func (ec *executionContext) unmarshalOExperienceEntryInput2ᚖLinkKrecᚋgraph�
 	}
 	res, err := ec.unmarshalInputExperienceEntryInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalID(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalID(*v)
-	return res
 }
 
 func (ec *executionContext) marshalONotification2ᚕᚖLinkKrecᚋgraphᚋmodelᚐNotification(ctx context.Context, sel ast.SelectionSet, v []*model.Notification) graphql.Marshaler {
