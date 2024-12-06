@@ -15,14 +15,18 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 	}
 
 	var connections = make([]*model.User, 0)
-	for _, con := range strings.Split(user["connections"].String(), ", ") {
-		connections = append(connections, &model.User{ID: con})
+	if user["connections"] != nil {
+		for _, con := range strings.Split(user["connections"].String(), ", ") {
+			connections = append(connections, &model.User{ID: con})
+		}
 	}
 	userObj.Connections = connections
 
 	var educations = make([]*model.EducationEntry, 0)
-	for _, edu := range strings.Split(user["educations"].String(), ", ") {
-		educations = append(educations, &model.EducationEntry{ID: edu})
+	if user["educations"] != nil {
+		for _, edu := range strings.Split(user["educations"].String(), ", ") {
+			educations = append(educations, &model.EducationEntry{ID: edu})
+		}
 	}
 	userObj.Education = educations
 

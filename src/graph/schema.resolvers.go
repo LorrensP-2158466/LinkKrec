@@ -168,23 +168,23 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		Select([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).
 		GroupConcat("skill", ", ", "skills", true).
 		GroupConcat("connectionName", ", ", "connections", true).
-		GroupConcat("educationEntryId", ", ", "educations", true).
-		GroupConcat("experienceEntryId", ", ", "experiences", true).
+		GroupConcat("educationEntry", ", ", "educations", true).
 		WhereSubject("user", "User").
 		Where("Id", "id").
 		Where("hasName", "name").
 		Where("hasEmail", "email").
 		Where("isEmployer", "isEmployer").
-		Where("hasLocation", "location").
 		Where("isLookingForOpportunities", "isLookingForOpportunities").
-		Optional("hasSkill", "skill").
-		Optional("hasConnection", "connection").
-		WhereExtraction("connection", "Id", "connectionName").
-		Optional("hasEducation", "educationEntry").
-		WhereExtraction("educationEntry", "Id", "educationEntryId").
-		Optional("hasExperience", "experienceEntry").
-		WhereExtraction("experienceEntry", "Id", "experienceEntryId").
-		Bind("isLookingForOpportunities", "lookingForOpportunities")
+		Bind("isLookingForOpportunities", "lookingForOpportunities").
+		NewOptional("user", "lr:hasLocation", "locationEntry").
+		AddOptionalTriple("locationEntry", "lr:Id", "location").
+		NewOptional("user", "lr:hasSkill", "escoSkill").
+		AddOptionalTriple("escoSkill", "skos:prefLabel", "skill").
+		NewOptional("user", "lr:hasConnection", "connection").
+		AddOptionalTriple("connection", "lr:Id", "connectionName").
+		NewOptional("user", "lr:hasEducation", "education").
+		AddOptionalTriple("education", "lr:Id", "educationEntry").
+		Filter("skill", []string{"\"en\""}, query_builder.EQ)
 	if name != nil {
 		q.Filter("name", []string{*name}, query_builder.EQ)
 	}
@@ -226,7 +226,6 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 func (r *queryResolver) GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error) {
 	q := query_builder.
 		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "education"}).
-		GroupConcat("experienceType", ", ", "experienceTypes", true).
 		GroupConcat("experienceDuration", ", ", "experienceDurations", true).
 		WhereSubject("vacancy", "Vacancy").
 		Where("Id", "id").
@@ -238,7 +237,6 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 		Where("vacancyEndDate", "endDate").
 		Where("vacancyStatus", "status").
 		Where("requiredEducation", "education").
-		Where("requiredExperienceType", "experienceType").
 		Where("requiredExperienceDuration", "experienceDuration").
 		WhereExtraction("postedBy", "Id", "postedById")
 	if title != nil {
@@ -279,44 +277,45 @@ func (r *queryResolver) GetVacancy(ctx context.Context, id string) (*model.Vacan
 
 // GetEmployers is the resolver for the getEmployers field.
 func (r *queryResolver) GetEmployers(ctx context.Context, name *string, location *string) ([]*model.Employer, error) {
-	q := query_builder.
-		QueryBuilder().Select([]string{"id", "name", "email", "location"}).
-		GroupConcat("vacancyId", ", ", "vacancies", true).
-		GroupConcat("employeeId", ", ", "employees", true).
-		WhereSubject("employer", "Employer").
-		Where("Id", "id").
-		Where("employerName", "name").
-		Where("employerEmail", "email").
-		Where("employerLocation", "location").
-		Where("hasVacancy", "vacancy").
-		Where("hasEmployee", "employee").
-		OptionalSubject("vacancy", "Vacancy").
-		Optional("Id", "vacancyId").
-		OptionalSubject("employee", "User").
-		Optional("Id", "employeeId")
-	if name != nil {
-		q.Filter("name", []string{*name}, query_builder.EQ)
-	}
-	if location != nil {
-		q.Filter("location", []string{*location}, query_builder.EQ)
-	}
-	qs := q.GroupBy([]string{"id", "name", "email", "location"}).Build()
+	// q := query_builder.
+	// 	QueryBuilder().Select([]string{"id", "name", "email", "location"}).
+	// 	GroupConcat("vacancyId", ", ", "vacancies", true).
+	// 	GroupConcat("employeeId", ", ", "employees", true).
+	// 	WhereSubject("employer", "Employer").
+	// 	Where("Id", "id").
+	// 	Where("employerName", "name").
+	// 	Where("employerEmail", "email").
+	// 	Where("employerLocation", "location").
+	// 	Where("hasVacancy", "vacancy").
+	// 	Where("hasEmployee", "employee").
+	// 	NewOptional("vacancy", "Vacancy").
+	// 	Optional("Id", "vacancyId").
+	// 	OptionalSubject("employee", "User").
+	// 	Optional("Id", "employeeId")
+	// if name != nil {
+	// 	q.Filter("name", []string{*name}, query_builder.EQ)
+	// }
+	// if location != nil {
+	// 	q.Filter("location", []string{*location}, query_builder.EQ)
+	// }
+	// qs := q.GroupBy([]string{"id", "name", "email", "location"}).Build()
 
-	res, err := r.Repo.Query(qs)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
+	// res, err := r.Repo.Query(qs)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return nil, err
+	// }
 
-	employers := make([]*model.Employer, 0)
-	for _, employer := range res.Solutions() {
-		obj, err := util.MapRdfEmployerToGQL(employer)
-		if err != nil {
-			return nil, err
-		}
-		employers = append(employers, obj)
-	}
-	return employers, nil
+	// employers := make([]*model.Employer, 0)
+	// for _, employer := range res.Solutions() {
+	// 	obj, err := util.MapRdfEmployerToGQL(employer)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	employers = append(employers, obj)
+	// }
+	// return employers, nil
+	return nil, nil
 }
 
 // GetEmployer is the resolver for the getEmployer field.

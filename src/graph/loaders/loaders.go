@@ -17,11 +17,12 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		ids = append(ids, s)
 	}
 	filter := strings.Join(ids, " || ")
-	// zijn de optionals echt nodig hier?
+
 	q := fmt.Sprintf(`
 		PREFIX lr: <http://linkrec.example.org/schema#>
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
 		SELECT ?name ?id ?email ?isEmployer ?location ?lookingForOpportunities
 			(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
@@ -34,9 +35,12 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 				lr:hasEmail ?email ;
 				lr:isEmployer ?isEmployer ;
 				lr:isLookingForOpportunities ?isLookingForOpportunities ;
-				lr:hasSkill ?skill .
 		BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
 
+		OPTIONAL {
+			?user lr:hasSkill ?escoSkill .
+			?escoSkill skos:prefLabel ?skill .
+		}
 		OPTIONAL {
 			?user lr:hasConnection ?connection .
 			?connection lr:Id ?connectionName .
@@ -51,6 +55,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		}
 
 		FILTER(%s)
+		FILTER(LANG(?skill) = "en")
 		}
 		GROUP BY ?name ?id ?email ?isEmployer ?location ?lookingForOpportunities
 	`, filter)
