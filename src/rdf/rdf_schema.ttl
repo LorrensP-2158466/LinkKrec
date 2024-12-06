@@ -6,6 +6,7 @@ PREFIX vcard: <http://www.w3.org/2006/vcard/ns#>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
+PREFIX esco: <http://data.europa.eu/esco/model#>
 
 # User (represents a person or employer on LinkRec)
 lr:User a rdfs:Class .
@@ -23,22 +24,47 @@ lr:isEmployer a rdf:Property ;
     rdfs:range schema:Boolean .
 lr:hasLocation a rdf:Property ;
     rdfs:domain lr:User ;
-    rdfs:range schema:Text .
+    rdfs:range lr:Location .
 lr:hasConnection a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range lr:User .
 lr:hasEducation a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range lr:EducationEntry .
-lr:hasExperience a rdf:Property ;
-    rdfs:domain lr:User ;
-    rdfs:range lr:ExperienceEntry .
 lr:hasSkill a rdf:Property ;
     rdfs:domain lr:User ;
-    rdfs:range schema:Text .
+    rdfs:range esco:Skill .
 lr:isLookingForOpportunities a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range schema:Boolean .
+lr:isProfileComplete a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range schema:Boolean .
+
+lr:Location a rdfs:Class .
+lr:Id a rdf:Property ;
+    rdfs:domain lr:Location ;
+    rdfs:range schema:Text .
+lr:inCountry a rdf:Property ;
+    rdfs:domain lr:Location ;
+    rdfs:range schema:Text .
+lr:inCity a rdf:Property ;
+    rdfs:domain lr:Location ;
+    rdfs:range schema:Text .
+lr:inStreet a rdf:Property ;
+    rdfs:domain lr:Location ;
+    rdfs:range schema:Text .
+lr:houseNumber a rdf:Property ;
+    rdfs:domain lr:Location ;
+    rdfs:range schema:Text .
+lr:longitude a rdf:Property ;
+    rdfs:domain lr:Location ;
+    rdfs:range xsd:double .
+lr:latitude a rdf:Property ;
+    rdfs:domain lr:Location ;
+    rdfs:range xsd:double .
+
+
 
 # Employer (represents a company or employer)
 lr:Employer a rdfs:Class .
@@ -74,7 +100,7 @@ lr:vacancyDescription a rdf:Property ;
     rdfs:range schema:Text .
 lr:vacancyLocation a rdf:Property ;
     rdfs:domain lr:Vacancy ;
-    rdfs:range schema:Text .
+    rdfs:range  lr:Location.
 lr:postedBy a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range lr:Employer .
@@ -87,15 +113,19 @@ lr:vacancyEndDate a rdf:Property ;
 lr:vacancyStatus a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range schema:Text .
-lr:requiredEducation a rdf:Property ;
+lr:requiredDegreeType a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range lr:DegreeType .
-lr:requiredExperienceType a rdf:Property ;
+lr:requiredDegreeField a rdf:Property ;
     rdfs:domain lr:Vacancy ;
-    rdfs:range lr:ExperienceType .
+    rdfs:range lr:DegreeField .
+lr:requiredSkill a rdf:Property;
+    rdfs:domain lr:Vacancy;
+    rdfs:range esco:Skill .
 lr:requiredExperienceDuration a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range schema:Number .
+
 
 # Education Entry
 lr:EducationEntry a rdfs:Class .
@@ -137,31 +167,122 @@ lr:experienceEndDate a rdf:Property ;
     rdfs:range schema:Date .
 
 # DegreeType (degree qualifications for users and vacancies)
-lr:DegreeType a rdfs:Class .
-lr:None a lr:DegreeType .
-lr:ProfBachelor a lr:DegreeType .
-lr:AcBachelor a lr:DegreeType .
-lr:Master a lr:DegreeType .
-lr:PhD a lr:DegreeType .
+lr:DegreeType rdfs:subClassOf rdfs:Class .
+lr:None rdfs:subClassOf lr:DegreeType .
+lr:ProfBachelor rdfs:subClassOf lr:DegreeType .
+lr:AcBachelor rdfs:subClassOf lr:DegreeType .
+lr:Master rdfs:subClassOf lr:DegreeType .
+lr:PhD rdfs:subClassOf lr:DegreeType .
 
 # DegreeField (degree fields for users and vacancies)
 lr:DegreeField a rdfs:Class .
-lr:None a lr:DegreeField .
-lr:ComputerScience a lr:DegreeField .
-lr:Engineering a lr:DegreeField .   
-lr:Business a lr:DegreeField .
-lr:Mathematics a lr:DegreeField .
-lr:Physics a lr:DegreeField .
-lr:Chemistry a lr:DegreeField .
-lr:Medicine a lr:DegreeField .
-lr:Law a lr:DegreeField .
-lr:SocialScience a lr:DegreeField .
-lr:Humanities a lr:DegreeField .
-lr:Art a lr:DegreeField .
-lr:Music a lr:DegreeField .
-lr:Sport a lr:DegreeField .
-lr:Education a lr:DegreeField .
-lr:Psychology a lr:DegreeField .
+lr:NoDegree rdfs:subClassOf lr:DegreeField .
+lr:ComputerScience rdfs:subClassOf lr:DegreeField .
+lr:Engineering  rdfs:subClassOf lr:DegreeField .   
+lr:Business  rdfs:subClassOf lr:DegreeField .
+lr:Mathematics rdfs:subClassOf lr:DegreeField .
+lr:Physics rdfs:subClassOf lr:DegreeField .
+lr:Chemistry rdfs:subClassOf lr:DegreeField .
+lr:Medicine rdfs:subClassOf lr:DegreeField .
+lr:Law rdfs:subClassOf lr:DegreeField .
+lr:SocialScience rdfs:subClassOf lr:DegreeField .
+lr:Humanities rdfs:subClassOf lr:DegreeField .
+lr:Art rdfs:subClassOf lr:DegreeField .
+lr:Music rdfs:subClassOf lr:DegreeField .
+lr:Sport rdfs:subClassOf lr:DegreeField .
+lr:Education rdfs:subClassOf lr:DegreeField .
+lr:Psychology rdfs:subClassOf lr:DegreeField .
+
+# Computer Science subclasses
+lr:SoftwareEngineering rdfs:subClassOf lr:ComputerScience .
+lr:ArtificialIntelligence rdfs:subClassOf lr:ComputerScience .
+lr:CyberSecurity rdfs:subClassOf lr:ComputerScience .
+lr:DataScience rdfs:subClassOf lr:ComputerScience .
+
+# Engineering subclasses
+lr:MechanicalEngineering rdfs:subClassOf lr:Engineering .
+lr:ElectricalEngineering rdfs:subClassOf lr:Engineering .
+lr:CivilEngineering rdfs:subClassOf lr:Engineering .
+lr:ChemicalEngineering rdfs:subClassOf lr:Engineering .
+
+# Business subclasses
+lr:Marketing rdfs:subClassOf lr:Business .
+lr:Finance rdfs:subClassOf lr:Business .
+lr:Management rdfs:subClassOf lr:Business .
+lr:Entrepreneurship rdfs:subClassOf lr:Business .
+
+# Mathematics subclasses
+lr:PureMathematics rdfs:subClassOf lr:Mathematics .
+lr:AppliedMathematics rdfs:subClassOf lr:Mathematics .
+lr:Statistics rdfs:subClassOf lr:Mathematics .
+lr:MathematicalModeling rdfs:subClassOf lr:Mathematics .
+
+# Physics subclasses
+lr:TheoreticalPhysics rdfs:subClassOf lr:Physics .
+lr:QuantumPhysics rdfs:subClassOf lr:Physics .
+lr:AstrophysicsAndAstronomy rdfs:subClassOf lr:Physics .
+lr:NuclearPhysics rdfs:subClassOf lr:Physics .
+
+# Chemistry subclasses
+lr:OrganicChemistry rdfs:subClassOf lr:Chemistry .
+lr:InorganicChemistry rdfs:subClassOf lr:Chemistry .
+lr:PhysicalChemistry rdfs:subClassOf lr:Chemistry .
+lr:BiochemistryAndMolecularBiology rdfs:subClassOf lr:Chemistry .
+
+# Medicine subclasses
+lr:GeneralMedicine rdfs:subClassOf lr:Medicine .
+lr:Surgery rdfs:subClassOf lr:Medicine .
+lr:Pediatrics rdfs:subClassOf lr:Medicine .
+lr:Psychiatry rdfs:subClassOf lr:Medicine .
+
+# Law subclasses
+lr:CorporateLaw rdfs:subClassOf lr:Law .
+lr:CriminalLaw rdfs:subClassOf lr:Law .
+lr:InternationalLaw rdfs:subClassOf lr:Law .
+lr:ConstitutionalLaw rdfs:subClassOf lr:Law .
+
+# Social Science subclasses
+lr:Sociology rdfs:subClassOf lr:SocialScience .
+lr:PoliticalScience rdfs:subClassOf lr:SocialScience .
+lr:Economics rdfs:subClassOf lr:SocialScience .
+lr:Anthropology rdfs:subClassOf lr:SocialScience .
+
+# Humanities subclasses
+lr:Literature rdfs:subClassOf lr:Humanities .
+lr:Philosophy rdfs:subClassOf lr:Humanities .
+lr:History rdfs:subClassOf lr:Humanities .
+lr:Linguistics rdfs:subClassOf lr:Humanities .
+
+# Art subclasses
+lr:Painting rdfs:subClassOf lr:Art .
+lr:Sculpture rdfs:subClassOf lr:Art .
+lr:GraphicDesign rdfs:subClassOf lr:Art .
+lr:Photography rdfs:subClassOf lr:Art .
+
+# Music subclasses
+lr:Composition rdfs:subClassOf lr:Music .
+lr:Performance rdfs:subClassOf lr:Music .
+lr:MusicTheory rdfs:subClassOf lr:Music .
+lr:Conducting rdfs:subClassOf lr:Music .
+
+# Sport subclasses
+lr:SportsScience rdfs:subClassOf lr:Sport .
+lr:SportsManagement rdfs:subClassOf lr:Sport .
+lr:PhysicalEducation rdfs:subClassOf lr:Sport .
+lr:SportsTherapy rdfs:subClassOf lr:Sport .
+
+# Education subclasses
+lr:ElementaryEducation rdfs:subClassOf lr:Education .
+lr:SecondaryEducation rdfs:subClassOf lr:Education .
+lr:SpecialEducation rdfs:subClassOf lr:Education .
+lr:EducationalLeadership rdfs:subClassOf lr:Education .
+
+# Psychology subclasses
+lr:ClinicalPsychology rdfs:subClassOf lr:Psychology .
+lr:CognitivePsychology rdfs:subClassOf lr:Psychology .
+lr:DevelopmentalPsychology rdfs:subClassOf lr:Psychology .
+lr:IndustrialPsychology rdfs:subClassOf lr:Psychology .
+
 
 # ExperienceType (job fields for experiences and vacancies)
 lr:ExperienceType a rdfs:Class .
@@ -208,6 +329,5 @@ lr:connectedToUser a rdf:Property ;
 lr:requestStatus a rdf:Property ;
     rdfs:domain lr:ConnectionRequest ;
     rdfs:range schema:Boolean .
-
 
 
