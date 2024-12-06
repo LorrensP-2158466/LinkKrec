@@ -220,18 +220,19 @@ func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-		SELECT ?id ?institution ?info ?degree ?field
+		SELECT ?id ?institution ?info 
+			(STRAFTER(STR(?degField), "#") AS ?field) 
+			(STRAFTER(STR(?degType), "#") AS ?degree)
 		WHERE {
 			?education a lr:EducationEntry ;
 			lr:Id ?id ;
 			lr:institutionName ?institution ;
 			lr:institutionInfo ?info ;
-			lr:degreeType ?degree ;
-			lr:degreeField ?field .
+			lr:degreeType ?degType ;
+			lr:degreeField ?degField .
 
 		FILTER(%s)
 		}
-		GROUP BY ?id ?institution ?info ?degree ?field
 	`, filter)
 	res, err := u.Repo.Query(q)
 	if err != nil {

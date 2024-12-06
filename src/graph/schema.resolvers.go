@@ -14,6 +14,7 @@ import (
 	"strconv"
 
 	"github.com/google/uuid"
+	"github.com/knakk/rdf"
 )
 
 // FromUser is the resolver for the fromUser field.
@@ -370,7 +371,6 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 		WhereExtraction("connectedTo", "Id", "connectedToUserId")
 	if userID != "" {
 		quotedUserID := fmt.Sprintf("\"%s\"", userID)
-		//q.Filter("fromUserId", []string{quotedUserID}, query_builder.EQ)
 		q.Filter("connectedToUserId", []string{quotedUserID}, query_builder.EQ)
 	}
 	if status != nil && userID != "" {
@@ -400,14 +400,21 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 // MatchVacancyToUsers is the resolver for the matchVacancyToUsers field.
 func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID string) ([]*model.User, error) {
 	q := fmt.Sprintf(`
-SELECT ?userId ?userName ?userEmail ?userDegreeField ?userDegreeType ?userSkill ?distanceInKm
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX lr: <http://linkrec.example.org/schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
+
+SELECT ?userId ?distanceInKm
 WHERE {
   # constants
   VALUES (?pi ?earthRadius ) { 
-  ( 3.1415926535 6378.137)
+  ( 3.1415926535 6378.137 )
   }
-
-  ?vacancy lr:Id ?%s ;
+  
+  ?vacancy lr:Id "%s" ;
     lr:requiredSkill ?requiredSkill ;
     lr:vacancyLocation ?vacancyLoc ;
     lr:requiredDegreeType ?requiredDegreeType;
@@ -449,14 +456,17 @@ WHERE {
 }
 	`, vacancyID)
 
+	// TODO: distance
+
 	res, _ := r.Repo.Query(q)
-	users := make([]*model.User, 0)
-	for _, user := range res.Solutions() {
-		obj, err := util.MapRdfUserToGQL(user)
-		if err != nil {
-			return nil, err
-		}
-		users = append(users, obj)
+
+	userIds := res.Bindings()["userId"]
+	var users = make([]*model.User, 0)
+	if userIds != nil {
+		ids := util.Map(userIds, func(u rdf.Term) string {
+			return u.String()
+		})
+		users, _ = loaders.GetUsers(ctx, ids)
 	}
 	return users, nil
 }
@@ -536,18 +546,3 @@ type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type vacancyResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *userResolver) Experience(ctx context.Context, obj *model.User) ([]*model.ExperienceEntry, error) {
-	ids := util.Map(obj.Experience, func(e *model.ExperienceEntry) string {
-		return e.ID
-	})
-	return loaders.GetExperienceEntries(ctx, ids)
-}
-*/

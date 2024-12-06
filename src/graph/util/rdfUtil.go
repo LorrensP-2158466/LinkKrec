@@ -2,6 +2,7 @@ package util
 
 import (
 	"LinkKrec/graph/model"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -123,8 +124,8 @@ func MapRdfEducationEntryToGQL(educationEntry map[string]rdf.Term) (*model.Educa
 	if err != nil {
 		return nil, err
 	}
-
-	educationType := (educationEntry["degree"].String())
+	fmt.Println(educationEntry)
+	educationType := educationEntry["degree"].String()
 	var degree model.DegreeType
 	for _, d := range model.AllDegreeType {
 		if d.String() == educationType {
@@ -134,7 +135,7 @@ func MapRdfEducationEntryToGQL(educationEntry map[string]rdf.Term) (*model.Educa
 	}
 	educationEntryObj.Degree = degree
 
-	educationField := (educationEntry["field"].String())
+	educationField := educationEntry["field"].String()
 	var field model.DegreeField
 	for _, f := range model.AllDegreeField {
 		if f.String() == educationField {

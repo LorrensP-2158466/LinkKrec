@@ -113,7 +113,7 @@ lr:Vacancy1 a lr:Vacancy ;
     lr:vacancyTitle "Software Engineer" ;
     lr:vacancyDescription "Develop software applications" ;
     lr:postedBy lr:Employer1 ;
-    lr:vacancyLocation "San Francisco" ;
+    lr:vacancyLocation lr:Location2 ;
     lr:requiredDegreeType lr:ProfBachelor ;
     lr:requiredDegreeField lr:SoftwareEngineering ;
     lr:requiredExperienceType "IT" ;
