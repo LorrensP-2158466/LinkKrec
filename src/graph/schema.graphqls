@@ -168,13 +168,15 @@ type Vacancy {
     id: ID!
     title: String!
     description: String!
-    requiredEducation: DegreeType!
-    requiredExperienceDurations: [Int!]! # in years, per experience in order
     location: String!
     postedBy: Company!
     startDate: String
     endDate: String
     status: Boolean
+    requiredDegreeType: DegreeType
+    requiredDegreeField: DegreeField
+    requiredExperienceDuration: Int 
+    requiredSkills: [String]
 }
 
 # A connection request from a user to a user
@@ -228,7 +230,12 @@ input ExperienceEntryInput {
 input CreateVacancyInput {
     title: String!
     description: String!
-    location: String
-    startDate: String
-    endDate: String
+    location: String!
+    startDate: String!
+    endDate: String!
+    status: Boolean!
+    requiredDegreeType: DegreeType!
+    requiredDegreeField: DegreeField!
+    requiredExperienceDuration: Int!
+    requiredSkills: [String]
 }

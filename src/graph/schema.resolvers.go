@@ -103,7 +103,52 @@ func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID str
 
 // CreateVacancy is the resolver for the createVacancy field.
 func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, input model.CreateVacancyInput) (*model.Vacancy, error) {
-	panic(fmt.Errorf("not implemented: CreateVacancy - createVacancy"))
+	vacancyID := uuid.New().String()
+
+	/*var skillQueries = ""
+	if input.RequiredSkills != nil {
+		vacancySkills := util.Map(input.RequiredSkills, func(s *string) string {
+			return fmt.Sprintf("\"%s\"", *s)
+		})
+		skillQueries := []string{}
+		for i, skill := range vacancySkills {
+			vacancySkills[i] = fmt.Sprintf("lr:requiredSkill esco_skill:%s", skill)
+			skillQueries = append(skillQueries, fmt.Sprintf(";\nlr:requiredSkill %s", skill))
+		}
+	}*/
+
+	q := fmt.Sprintf(`
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+		INSERT DATA {
+		  lr:vacancy%s a lr:Vacancy ;
+		      lr:Id "%s" ;
+		      lr:vacancyTitle "%s" ;
+			  lr:vacancyDescription "%s" ;
+			  lr:vacancyLocation "%s" ;
+			  lr:postedBy lr:Company%s ;
+			  lr:vacancyStartDate "%s"^^xsd:date ;
+			  lr:vacancyEndDate "%s"^^xsd:date ;
+			  lr:vacancyStatus %t;
+		      lr:requiredDegreeType lr:%s ;
+			  lr:requiredDegreeField lr:%s ;
+			  lr:requiredExperienceDuration %d .
+		}
+
+		
+		`, vacancyID, vacancyID, input.Title, input.Description, input.Location, companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType, input.RequiredDegreeField, input.RequiredExperienceDuration)
+
+	fmt.Println(q)
+	err := r.UpdateRepo.Update(q)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the query was successful, return the updated user
+	return loaders.GetVacancy(ctx, vacancyID)
 }
 
 // UpdateVacancy is the resolver for the updateVacancy field.
@@ -162,7 +207,7 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, er
 }
 
 // GetUsers is the resolver for the getUsers field.
-func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
+func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
 	q := query_builder.
 		QueryBuilder().
 		Select([]string{"id", "name", "email", "location", "lookingForOpportunities"}).
@@ -300,11 +345,11 @@ func (r *queryResolver) GetCompanies(ctx context.Context, name *string, location
 	}
 	qs := q.GroupBy([]string{"id", "name", "email", "location"}).Build()
 
-	// res, err := r.Repo.Query(qs)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	return nil, err
-	// }
+	res, err := r.Repo.Query(qs)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
 
 	companies := make([]*model.Company, 0)
 	for _, company := range res.Solutions() {
@@ -543,18 +588,3 @@ type queryResolver struct{ *Resolver }
 type subscriptionResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
 type vacancyResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *userResolver) Experience(ctx context.Context, obj *model.User) ([]*model.ExperienceEntry, error) {
-	ids := util.Map(obj.Experience, func(e *model.ExperienceEntry) string {
-		return e.ID
-	})
-	return loaders.GetExperienceEntries(ctx, ids)
-}
-*/

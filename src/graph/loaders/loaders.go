@@ -24,7 +24,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
-		SELECT ?name ?id ?email ?isEmployer ?location ?lookingForOpportunities
+		SELECT ?id ?name ?email ?isEmployer ?location ?lookingForOpportunities
 			(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
 			(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections)
 			(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
@@ -63,7 +63,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		FILTER(%s)
 		FILTER(LANG(?skill) = "en")
 		}
-		GROUP BY ?name ?id ?email ?isEmployer ?location ?lookingForOpportunities
+		GROUP BY ?id ?name ?email ?isEmployer ?location ?lookingForOpportunities
 	`, filter)
 	res, err := u.Repo.Query(q)
 	if err != nil {
@@ -108,8 +108,7 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-		SELECT ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?education 
-			(GROUP_CONCAT(DISTINCT ?experienceDuration; separator=", ") AS ?experienceDurations)
+		SELECT ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration
 		WHERE {
 			?vacancy a lr:Vacancy ;
 			lr:Id ?id ;
@@ -120,13 +119,14 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 			lr:vacancyStartDate ?startDate ;
 			lr:vacancyEndDate ?endDate ;
 			lr:vacancyStatus ?status ;
-			lr:requiredEducation ?education ;
+			lr:requiredDegreeType ?degreeType ;
+   			lr:requiredDegreeField ?degreeField ;
 			lr:requiredExperienceDuration ?experienceDuration .
 			?postedBy lr:Id ?postedById .
 
-		FILTER(%s)
+			FILTER(%s)
 		}
-		GROUP BY ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?education
+
 	`, filter)
 	res, err := u.Repo.Query(q)
 	if err != nil {

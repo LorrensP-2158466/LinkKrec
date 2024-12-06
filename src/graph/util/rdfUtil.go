@@ -101,24 +101,31 @@ func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
 
 	vacancyObj.PostedBy = &model.Company{ID: vacancy["postedById"].String()}
 
-	education := (vacancy["education"].String())
-	var degree model.DegreeType
+	degreeType := vacancy["degreeType"].String()
+	var degreeTypeObj model.DegreeType
 	for _, d := range model.AllDegreeType {
-		if d.String() == education {
-			degree = d
+		if d.String() == degreeType {
+			degreeTypeObj = d
 			break
 		}
 	}
-	vacancyObj.RequiredEducation = degree
+	vacancyObj.RequiredDegreeType = &degreeTypeObj
 
-	experienceDuration := vacancy["experienceDurations"].String()
-	experienceDurations := strings.Split(experienceDuration, ", ")
-	var durations []int
-	for _, d := range experienceDurations {
-		duration, _ := strconv.Atoi(d)
-		durations = append(durations, duration)
+	degreeField := vacancy["degreeField"].String()
+	var degreeFieldObj model.DegreeField
+	for _, d := range model.AllDegreeField {
+		if d.String() == degreeField {
+			degreeFieldObj = d
+			break
+		}
 	}
-	vacancyObj.RequiredExperienceDurations = durations
+	vacancyObj.RequiredDegreeField = &degreeFieldObj
+
+	experienceDuration, err := strconv.Atoi(vacancy["experienceDuration"].String())
+	if err != nil {
+		return nil, err
+	}
+	vacancyObj.RequiredExperienceDuration = &experienceDuration
 
 	return &vacancyObj, nil
 }
