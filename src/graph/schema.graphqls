@@ -34,7 +34,9 @@ type Query {
     # Fetch connection requests sent to a user, with optional filtering by status
     getConnectionRequests(userId: ID!, status: Boolean): [ConnectionRequest]
 
-    matchVacancyToUsers(vacancyId: ID!): [User]
+    matchVacancyToUsers(vacancyId: ID!, maxDist: Float!): [User]
+
+    matchUserToVacancy(userId: ID!, maxDist: Float!): [Vacancy]
 }
 
 type Mutation {

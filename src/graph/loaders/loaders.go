@@ -116,9 +116,10 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 			lr:vacancyStatus ?status ;
 			lr:requiredEducation ?education ;
 			lr:requiredExperienceDuration ?experienceDuration .
+			
 			?postedBy lr:Id ?postedById .
 
-		FILTER(%s)
+			FILTER(%s)
 		}
 		GROUP BY ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?education
 	`, filter)
@@ -262,60 +263,6 @@ func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []
 	}
 	return educationEntries, errs
 }
-
-// func (u *DataBase) getExperienceEntries(ctx context.Context, experienceEntryIDs []string) ([]*model.ExperienceEntry, []error) {
-// 	var ids []string
-// 	for _, id := range experienceEntryIDs {
-// 		s := fmt.Sprintf("?id = \"%s\"", id)
-// 		ids = append(ids, s)
-// 	}
-// 	filter := strings.Join(ids, " || ")
-// 	q := fmt.Sprintf(`
-// 		PREFIX lr: <http://linkrec.example.org/schema#>
-// 		PREFIX schema: <http://schema.org/>
-// 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-
-// 		SELECT ?id ?title ?description ?startDate ?endDate ?experienceType
-// 		WHERE {
-// 			?experience a lr:ExperienceEntry ;
-// 			lr:Id ?id ;
-// 			lr:experienceTitle ?title ;
-// 			lr:experienceDescription ?description ;
-// 			lr:experienceType ?experienceType ;
-// 			lr:experienceStartDate ?startDate ;
-// 			lr:experienceEndDate ?endDate .
-
-// 		FILTER(%s)
-// 		}
-// 	`, filter)
-// 	res, err := u.Repo.Query(q)
-// 	if err != nil {
-// 		return nil, []error{err}
-// 	}
-
-// 	experienceEntries := make([]*model.ExperienceEntry, len(experienceEntryIDs))
-// 	errs := make([]error, len(experienceEntryIDs))
-
-// 	var foundExperienceEntries = make(map[string]*model.ExperienceEntry)
-// 	for _, m := range res.Solutions() {
-// 		experienceEntry, err := util.MapRdfExperienceEntryToGQL(m)
-// 		if err != nil {
-// 			return nil, []error{err}
-// 		}
-// 		foundExperienceEntries[experienceEntry.ID] = experienceEntry
-// 	}
-// 	// fill return array with empty objects so the lengths match
-// 	for i, id := range experienceEntryIDs {
-// 		if experienceEntry, found := foundExperienceEntries[id]; found {
-// 			experienceEntries[i] = experienceEntry
-// 			errs[i] = nil
-// 		} else {
-// 			experienceEntries[i] = &model.ExperienceEntry{ID: id}
-// 			errs[i] = fmt.Errorf("experienceEntry not found for ID: %s", id)
-// 		}
-// 	}
-// 	return experienceEntries, errs
-// }
 
 func (u *DataBase) getConnectionRequests(ctx context.Context, connectionRequestIDs []string) ([]*model.ConnectionRequest, []error) {
 	var ids []string

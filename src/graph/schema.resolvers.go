@@ -398,7 +398,7 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 }
 
 // MatchVacancyToUsers is the resolver for the matchVacancyToUsers field.
-func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID string) ([]*model.User, error) {
+func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID string, maxDist float64) ([]*model.User, error) {
 	q := fmt.Sprintf(`
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX lr: <http://linkrec.example.org/schema#>
@@ -410,9 +410,7 @@ PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
 SELECT ?userId ?distanceInKm
 WHERE {
   # constants
-  VALUES (?pi ?earthRadius ) { 
-  ( 3.1415926535 6378.137 )
-  }
+  VALUES (?pi ?earthRadius ) { ( 3.1415926535 6378.137 ) }
   
   ?vacancy lr:Id "%s" ;
     lr:requiredSkill ?requiredSkill ;
@@ -420,11 +418,9 @@ WHERE {
     lr:requiredDegreeType ?requiredDegreeType;
     lr:requiredDegreeField ?requiredDegreeField .
   
-  # Use property path for location coordinates
   ?vacancyLoc lr:longitude ?long2 ;
     lr:latitude ?lat2 .
     
-  # Combine user properties with FILTER early
   ?user lr:Id ?userId ;
     lr:hasEmail ?userEmail ;
     lr:hasName ?userName ;
@@ -440,23 +436,21 @@ WHERE {
     
   ?education lr:degreeType ?userDegreeType;
     lr:degreeField ?userDegreeField.
-    
-  # Move subclass relationships after main pattern matching
+
   ?userDegreeType rdfs:subClassOf* ?requiredDegreeType .
   ?userDegreeField rdfs:subClassOf* ?requiredDegreeField .
   
-  # Simplified distance calculation
+  # haversine
   BIND(?earthRadius * 2 * lfn:sin-1(lfn:sqrt(
     lfn:pow(lfn:sin((?lat2 - ?lat1) * ?pi / 360), 2) +
     lfn:cos(?lat1 * ?pi / 180) * lfn:cos(?lat2 * ?pi / 180) *
     lfn:pow(lfn:sin((?long2 - ?long1) * ?pi / 360), 2)
   )) AS ?distanceInKm)
   
-  FILTER(?distanceInKm <= 30)
+  FILTER(?distanceInKm <= %f)
 }
-	`, vacancyID)
-
-	// TODO: distance
+	`, vacancyID, maxDist)
+	fmt.Println(q)
 
 	res, _ := r.Repo.Query(q)
 
@@ -469,6 +463,69 @@ WHERE {
 		users, _ = loaders.GetUsers(ctx, ids)
 	}
 	return users, nil
+}
+
+// MatchUserToVacancy is the resolver for the matchUserToVacancy field.
+func (r *queryResolver) MatchUserToVacancy(ctx context.Context, userID string, maxDist float64) ([]*model.Vacancy, error) {
+	q := fmt.Sprintf(`
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX lr: <http://linkrec.example.org/schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
+
+SELECT ?vacancyId ?matchedSkill ?distanceInKm WHERE { 
+    # constants 
+    VALUES (?pi ?earthRadius) { 
+        ( 3.1415926535 6378.137 ) 
+    } 
+    
+    ?user lr:Id "%s" ; 
+        lr:hasLocation ?userLoc ; 
+        lr:hasSkill ?userSkill ; 
+        lr:hasEducation ?education . 
+    
+    ?userLoc lr:longitude ?long1 ; 
+             lr:latitude ?lat1 . 
+    
+    ?education lr:degreeType ?userDegreeType ; 
+               lr:degreeField ?userDegreeField . 
+    
+    # Vacancy matching 
+    ?vacancy lr:Id ?vacancyId ; 
+		lr:requiredSkill ?userSkill ; 
+		lr:vacancyLocation ?vacancyLoc ; 
+		lr:requiredDegreeType ?requiredDegreeType ; 
+		lr:requiredDegreeField ?requiredDegreeField . 
+    
+    ?vacancyLoc lr:longitude ?long2 ; 
+                lr:latitude ?lat2 . 
+    
+    ?requiredDegreeType rdfs:subClassOf* ?userDegreeType . 
+    ?requiredDegreeField rdfs:subClassOf* ?userDegreeField . 
+    
+    BIND(?earthRadius * 2 * lfn:sin-1(lfn:sqrt( 
+        lfn:pow(lfn:sin((?lat2 - ?lat1) * ?pi / 360), 2) + 
+        lfn:cos(?lat1 * ?pi / 180) * lfn:cos(?lat2 * ?pi / 180) * 
+        lfn:pow(lfn:sin((?long2 - ?long1) * ?pi / 360), 2) 
+    )) AS ?distanceInKm) 
+    
+    FILTER(?distanceInKm <= %f) 
+}
+	`, userID, maxDist)
+
+	res, _ := r.Repo.Query(q)
+
+	vacancyIds := res.Bindings()["vacancyId"]
+	var vacancies = make([]*model.Vacancy, 0)
+	if vacancyIds != nil {
+		ids := util.Map(vacancyIds, func(u rdf.Term) string {
+			return u.String()
+		})
+		vacancies, _ = loaders.GetVacancies(ctx, ids)
+	}
+	return vacancies, nil
 }
 
 // NewConnectionRequest is the resolver for the newConnectionRequest field.
