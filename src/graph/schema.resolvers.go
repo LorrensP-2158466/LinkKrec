@@ -13,6 +13,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -93,12 +95,64 @@ func (r *mutationResolver) AddConnectionRequest(ctx context.Context, fromUserID 
 
 // SetConnectionRequestStatusFalse is the resolver for the setConnectionRequestStatusFalse field.
 func (r *mutationResolver) SetConnectionRequestStatusFalse(ctx context.Context, id string) (*model.ConnectionRequest, error) {
-	panic(fmt.Errorf("not implemented: SetConnectionRequestStatusFalse - setConnectionRequestStatusFalse"))
+	q := fmt.Sprintf(`
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX lr: <http://linkrec.example.org/schema#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+        DELETE {
+            ?connectionRequest lr:status ?status .
+        }
+        INSERT {
+            ?connectionRequest lr:status false .
+        }
+        WHERE {
+            ?connectionRequest a lr:ConnectionRequest ;
+                               lr:Id "%s" ;
+                               lr:status ?status .
+        }
+    `, id)
+
+	err := r.UpdateRepo.Update(q)
+	if err != nil {
+		return nil, err
+	}
+
+	return loaders.GetConnectionRequest(ctx, id)
 }
 
 // NotifyProfileVisit is the resolver for the notifyProfileVisit field.
 func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID string, visitedUserID string) (*model.Notification, error) {
-	panic(fmt.Errorf("not implemented: NotifyProfileVisit - notifyProfileVisit"))
+	notificationID := uuid.New().String()
+
+	visitedByUser, err := loaders.GetUser(ctx, visitorID)
+	if err != nil {
+		return nil, err
+	}
+
+	q := fmt.Sprintf(`
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+		INSERT DATA {
+		  lr:notification%s a lr:Notification ;
+		      lr:Id "%s" ;
+		      lr:notificationTitle "Profile Visit" ;
+		      lr:notificationMessage "Your profile has been visited by %s" ;
+		      lr:forUser lr:User%s ;
+		      lr:notificationCreatedAt "%s"^^xsd:dateTime .
+		}
+	`, notificationID, notificationID, visitorID, visitedByUser.Name, time.Now())
+
+	updErr := r.UpdateRepo.Update(q)
+	if updErr != nil {
+		return nil, updErr
+	}
+
+	return loaders.GetNotification(ctx, notificationID)
 }
 
 // CreateVacancy is the resolver for the createVacancy field.

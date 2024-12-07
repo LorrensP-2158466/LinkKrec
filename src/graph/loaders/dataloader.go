@@ -28,6 +28,7 @@ type Loaders struct {
 	EducationEntryLoader    *dataloadgen.Loader[string, *model.EducationEntry]
 	ExperienceEntryLoader   *dataloadgen.Loader[string, *model.ExperienceEntry]
 	ConnectionRequestLoader *dataloadgen.Loader[string, *model.ConnectionRequest]
+	NotificationLoader      *dataloadgen.Loader[string, *model.Notification]
 }
 
 // NewLoaders instantiates data loaders for the middleware
@@ -41,6 +42,7 @@ func NewLoaders(conn *sparql.Repo) *Loaders {
 		EducationEntryLoader: dataloadgen.NewLoader(ur.getEducationEntries, dataloadgen.WithWait(time.Millisecond)),
 		// ExperienceEntryLoader:   dataloadgen.NewLoader(ur.getExperienceEntries, dataloadgen.WithWait(time.Millisecond)),
 		ConnectionRequestLoader: dataloadgen.NewLoader(ur.getConnectionRequests, dataloadgen.WithWait(time.Millisecond)),
+		NotificationLoader:      dataloadgen.NewLoader(ur.getNotifications, dataloadgen.WithWait(time.Millisecond)),
 	}
 }
 
@@ -120,4 +122,14 @@ func GetConnectionRequest(ctx context.Context, connectionRequestID string) (*mod
 func getConnectionRequests(ctx context.Context, connectionRequestIDs []string) ([]*model.ConnectionRequest, error) {
 	loaders := For(ctx)
 	return loaders.ConnectionRequestLoader.LoadAll(ctx, connectionRequestIDs)
+}
+
+func GetNotification(ctx context.Context, notificationID string) (*model.Notification, error) {
+	loaders := For(ctx)
+	return loaders.NotificationLoader.Load(ctx, notificationID)
+}
+
+func GetNotifications(ctx context.Context, notificationIDs []string) ([]*model.Notification, error) {
+	loaders := For(ctx)
+	return loaders.NotificationLoader.LoadAll(ctx, notificationIDs)
 }

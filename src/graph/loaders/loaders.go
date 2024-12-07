@@ -378,3 +378,57 @@ func (u *DataBase) getConnectionRequests(ctx context.Context, connectionRequestI
 	}
 	return connectionRequests, errs
 }
+
+func (u *DataBase) getNotifications(ctx context.Context, notificationIDs []string) ([]*model.Notification, []error) {
+	var ids []string
+	for _, id := range notificationIDs {
+		s := fmt.Sprintf("?id = \"%s\"", id)
+		ids = append(ids, s)
+	}
+	filter := strings.Join(ids, " || ")
+	q := fmt.Sprintf(`
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX schema: <http://schema.org/>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+		SELECT ?id ?title ?message ?userId ?createdAt
+		WHERE {
+			?notification a lr:Notification ;
+			lr:Id ?id ;
+			lr:notifcationTitle ?title ;
+			lr:notificationMessage ?message ;
+			lr:forUser ?user ;
+			notificationCreatedAt ?createdAt ;
+			?user lr:Id ?userId .
+
+		FILTER(%s)
+		}
+	`, filter)
+	res, err := u.Repo.Query(q)
+	if err != nil {
+		return nil, []error{err}
+	}
+
+	notifications := make([]*model.Notification, len(notificationIDs))
+	errs := make([]error, len(notificationIDs))
+
+	var foundNotifications = make(map[string]*model.Notification)
+	for _, m := range res.Solutions() {
+		notification, err := util.MapRdfNotificationToGQL(m)
+		if err != nil {
+			return nil, []error{err}
+		}
+		foundNotifications[notification.ID] = notification
+	}
+	// fill return array with empty objects so the lengths match
+	for i, id := range notificationIDs {
+		if notification, found := foundNotifications[id]; found {
+			notifications[i] = notification
+			errs[i] = nil
+		} else {
+			notifications[i] = &model.Notification{ID: id}
+			errs[i] = fmt.Errorf("notification not found for ID: %s", id)
+		}
+	}
+	return notifications, errs
+}
