@@ -3,6 +3,7 @@
 package model
 
 import (
+	"LinkKrec/graph/scalar"
 	"fmt"
 	"io"
 	"strconv"
@@ -47,14 +48,20 @@ type CreateVacancyInput struct {
 type EducationEntry struct {
 	ID          string      `json:"id"`
 	Institution string      `json:"institution"`
-	Info        string      `json:"info"`
+	ExtraInfo   *string     `json:"extra_info,omitempty"`
+	From        scalar.Date `json:"from"`
+	Till        scalar.Date `json:"till"`
 	Degree      DegreeType  `json:"degree"`
 	Field       DegreeField `json:"field"`
 }
 
 type EducationEntryInput struct {
-	Institution string `json:"institution"`
-	Degree      string `json:"degree"`
+	Institution string      `json:"institution"`
+	ExtraInfo   *string     `json:"extra_info,omitempty"`
+	From        scalar.Date `json:"from"`
+	Till        scalar.Date `json:"till"`
+	Degree      DegreeType  `json:"degree"`
+	Field       DegreeField `json:"field"`
 }
 
 type ExperienceEntry struct {
@@ -98,23 +105,27 @@ type Query struct {
 type RegisterUserInput struct {
 	Name          string              `json:"name"`
 	Email         string              `json:"email"`
+<<<<<<< HEAD
 	Password      string              `json:"password"`
 	ProfileUpdate *UpdateProfileInput `json:"profileUpdate"`
+=======
+	IsEmployer    bool                `json:"isEmployer"`
+	ProfileUpdate *UpdateProfileInput `json:"profileUpdate,omitempty"`
+>>>>>>> origin/auth
 }
 
 type Subscription struct {
 }
 
 type UpdateProfileInput struct {
-	Education                 []*EducationEntryInput `json:"education,omitempty"`
-	Skills                    []*string              `json:"skills,omitempty"`
-	IsLookingForOpportunities *bool                  `json:"isLookingForOpportunities,omitempty"`
-}
-
-type UpdateUserInput struct {
-	Name     *string `json:"name,omitempty"`
-	Email    *string `json:"email,omitempty"`
-	Location *string `json:"location,omitempty"`
+	Education                 []*EducationEntryInput  `json:"education,omitempty"`
+	Experience                []*ExperienceEntryInput `json:"experience,omitempty"`
+	Skills                    []string                `json:"skills,omitempty"`
+	IsLookingForOpportunities bool                    `json:"isLookingForOpportunities"`
+	Country                   string                  `json:"country"`
+	City                      string                  `json:"city"`
+	Streetname                string                  `json:"streetname"`
+	Housenumber               string                  `json:"housenumber"`
 }
 
 type UpdateVacancyInput struct {
@@ -134,6 +145,7 @@ type User struct {
 	ID                      string            `json:"id"`
 	Name                    string            `json:"name"`
 	Email                   string            `json:"email"`
+<<<<<<< HEAD
 	Location                *Location         `json:"location,omitempty"`
 	Connections             []*User           `json:"connections,omitempty"`
 	Education               []*EducationEntry `json:"education,omitempty"`
@@ -141,6 +153,13 @@ type User struct {
 	LookingForOpportunities *bool             `json:"lookingForOpportunities,omitempty"`
 	IsProfileComplete       *bool             `json:"isProfileComplete,omitempty"`
 	Companies               []*Company        `json:"companies,omitempty"`
+=======
+	Location                *string           `json:"location,omitempty"`
+	Connections             []*User           `json:"connections,omitempty"`
+	Education               []*EducationEntry `json:"education,omitempty"`
+	Skills                  []string          `json:"skills,omitempty"`
+	LookingForOpportunities bool              `json:"lookingForOpportunities"`
+>>>>>>> origin/auth
 }
 
 type Vacancy struct {
@@ -161,32 +180,164 @@ type Vacancy struct {
 type DegreeField string
 
 const (
-	DegreeFieldComputerScience DegreeField = "ComputerScience"
-	DegreeFieldEngineering     DegreeField = "Engineering"
-	DegreeFieldBusiness        DegreeField = "Business"
-	DegreeFieldEconomics       DegreeField = "Economics"
-	DegreeFieldMarketing       DegreeField = "Marketing"
-	DegreeFieldFinance         DegreeField = "Finance"
-	DegreeFieldMedicine        DegreeField = "Medicine"
-	DegreeFieldLaw             DegreeField = "Law"
-	DegreeFieldPsychology      DegreeField = "Psychology"
+	DegreeFieldComputerScience                 DegreeField = "ComputerScience"
+	DegreeFieldSoftwareEngineering             DegreeField = "SoftwareEngineering"
+	DegreeFieldArtificialIntelligence          DegreeField = "ArtificialIntelligence"
+	DegreeFieldCyberSecurity                   DegreeField = "CyberSecurity"
+	DegreeFieldDataScience                     DegreeField = "DataScience"
+	DegreeFieldEngineering                     DegreeField = "Engineering"
+	DegreeFieldMechanicalEngineering           DegreeField = "MechanicalEngineering"
+	DegreeFieldElectricalEngineering           DegreeField = "ElectricalEngineering"
+	DegreeFieldCivilEngineering                DegreeField = "CivilEngineering"
+	DegreeFieldChemicalEngineering             DegreeField = "ChemicalEngineering"
+	DegreeFieldBusiness                        DegreeField = "Business"
+	DegreeFieldMarketing                       DegreeField = "Marketing"
+	DegreeFieldFinance                         DegreeField = "Finance"
+	DegreeFieldManagement                      DegreeField = "Management"
+	DegreeFieldEntrepreneurship                DegreeField = "Entrepreneurship"
+	DegreeFieldMathematics                     DegreeField = "Mathematics"
+	DegreeFieldPureMathematics                 DegreeField = "PureMathematics"
+	DegreeFieldAppliedMathematics              DegreeField = "AppliedMathematics"
+	DegreeFieldStatistics                      DegreeField = "Statistics"
+	DegreeFieldMathematicalModeling            DegreeField = "MathematicalModeling"
+	DegreeFieldPhysics                         DegreeField = "Physics"
+	DegreeFieldTheoreticalPhysics              DegreeField = "TheoreticalPhysics"
+	DegreeFieldQuantumPhysics                  DegreeField = "QuantumPhysics"
+	DegreeFieldAstrophysicsAndAstronomy        DegreeField = "AstrophysicsAndAstronomy"
+	DegreeFieldNuclearPhysics                  DegreeField = "NuclearPhysics"
+	DegreeFieldChemistry                       DegreeField = "Chemistry"
+	DegreeFieldOrganicChemistry                DegreeField = "OrganicChemistry"
+	DegreeFieldInorganicChemistry              DegreeField = "InorganicChemistry"
+	DegreeFieldPhysicalChemistry               DegreeField = "PhysicalChemistry"
+	DegreeFieldBiochemistryAndMolecularBiology DegreeField = "BiochemistryAndMolecularBiology"
+	DegreeFieldMedicine                        DegreeField = "Medicine"
+	DegreeFieldGeneralMedicine                 DegreeField = "GeneralMedicine"
+	DegreeFieldSurgery                         DegreeField = "Surgery"
+	DegreeFieldPediatrics                      DegreeField = "Pediatrics"
+	DegreeFieldPsychiatry                      DegreeField = "Psychiatry"
+	DegreeFieldLaw                             DegreeField = "Law"
+	DegreeFieldCorporateLaw                    DegreeField = "CorporateLaw"
+	DegreeFieldCriminalLaw                     DegreeField = "CriminalLaw"
+	DegreeFieldInternationalLaw                DegreeField = "InternationalLaw"
+	DegreeFieldConstitutionalLaw               DegreeField = "ConstitutionalLaw"
+	DegreeFieldSocialScience                   DegreeField = "SocialScience"
+	DegreeFieldSociology                       DegreeField = "Sociology"
+	DegreeFieldPoliticalScience                DegreeField = "PoliticalScience"
+	DegreeFieldEconomics                       DegreeField = "Economics"
+	DegreeFieldAnthropology                    DegreeField = "Anthropology"
+	DegreeFieldHumanities                      DegreeField = "Humanities"
+	DegreeFieldLiterature                      DegreeField = "Literature"
+	DegreeFieldPhilosophy                      DegreeField = "Philosophy"
+	DegreeFieldHistory                         DegreeField = "History"
+	DegreeFieldLinguistics                     DegreeField = "Linguistics"
+	DegreeFieldArt                             DegreeField = "Art"
+	DegreeFieldPainting                        DegreeField = "Painting"
+	DegreeFieldSculpture                       DegreeField = "Sculpture"
+	DegreeFieldGraphicDesign                   DegreeField = "GraphicDesign"
+	DegreeFieldPhotography                     DegreeField = "Photography"
+	DegreeFieldMusic                           DegreeField = "Music"
+	DegreeFieldComposition                     DegreeField = "Composition"
+	DegreeFieldPerformance                     DegreeField = "Performance"
+	DegreeFieldMusicTheory                     DegreeField = "MusicTheory"
+	DegreeFieldConducting                      DegreeField = "Conducting"
+	DegreeFieldSport                           DegreeField = "Sport"
+	DegreeFieldSportsScience                   DegreeField = "SportsScience"
+	DegreeFieldSportsManagement                DegreeField = "SportsManagement"
+	DegreeFieldPhysicalEducation               DegreeField = "PhysicalEducation"
+	DegreeFieldSportsTherapy                   DegreeField = "SportsTherapy"
+	DegreeFieldEducation                       DegreeField = "Education"
+	DegreeFieldElementaryEducation             DegreeField = "ElementaryEducation"
+	DegreeFieldSecondaryEducation              DegreeField = "SecondaryEducation"
+	DegreeFieldSpecialEducation                DegreeField = "SpecialEducation"
+	DegreeFieldEducationalLeadership           DegreeField = "EducationalLeadership"
+	DegreeFieldPsychology                      DegreeField = "Psychology"
+	DegreeFieldClinicalPsychology              DegreeField = "ClinicalPsychology"
+	DegreeFieldCognitivePsychology             DegreeField = "CognitivePsychology"
+	DegreeFieldDevelopmentalPsychology         DegreeField = "DevelopmentalPsychology"
+	DegreeFieldIndustrialPsychology            DegreeField = "IndustrialPsychology"
 )
 
 var AllDegreeField = []DegreeField{
 	DegreeFieldComputerScience,
+	DegreeFieldSoftwareEngineering,
+	DegreeFieldArtificialIntelligence,
+	DegreeFieldCyberSecurity,
+	DegreeFieldDataScience,
 	DegreeFieldEngineering,
+	DegreeFieldMechanicalEngineering,
+	DegreeFieldElectricalEngineering,
+	DegreeFieldCivilEngineering,
+	DegreeFieldChemicalEngineering,
 	DegreeFieldBusiness,
-	DegreeFieldEconomics,
 	DegreeFieldMarketing,
 	DegreeFieldFinance,
+	DegreeFieldManagement,
+	DegreeFieldEntrepreneurship,
+	DegreeFieldMathematics,
+	DegreeFieldPureMathematics,
+	DegreeFieldAppliedMathematics,
+	DegreeFieldStatistics,
+	DegreeFieldMathematicalModeling,
+	DegreeFieldPhysics,
+	DegreeFieldTheoreticalPhysics,
+	DegreeFieldQuantumPhysics,
+	DegreeFieldAstrophysicsAndAstronomy,
+	DegreeFieldNuclearPhysics,
+	DegreeFieldChemistry,
+	DegreeFieldOrganicChemistry,
+	DegreeFieldInorganicChemistry,
+	DegreeFieldPhysicalChemistry,
+	DegreeFieldBiochemistryAndMolecularBiology,
 	DegreeFieldMedicine,
+	DegreeFieldGeneralMedicine,
+	DegreeFieldSurgery,
+	DegreeFieldPediatrics,
+	DegreeFieldPsychiatry,
 	DegreeFieldLaw,
+	DegreeFieldCorporateLaw,
+	DegreeFieldCriminalLaw,
+	DegreeFieldInternationalLaw,
+	DegreeFieldConstitutionalLaw,
+	DegreeFieldSocialScience,
+	DegreeFieldSociology,
+	DegreeFieldPoliticalScience,
+	DegreeFieldEconomics,
+	DegreeFieldAnthropology,
+	DegreeFieldHumanities,
+	DegreeFieldLiterature,
+	DegreeFieldPhilosophy,
+	DegreeFieldHistory,
+	DegreeFieldLinguistics,
+	DegreeFieldArt,
+	DegreeFieldPainting,
+	DegreeFieldSculpture,
+	DegreeFieldGraphicDesign,
+	DegreeFieldPhotography,
+	DegreeFieldMusic,
+	DegreeFieldComposition,
+	DegreeFieldPerformance,
+	DegreeFieldMusicTheory,
+	DegreeFieldConducting,
+	DegreeFieldSport,
+	DegreeFieldSportsScience,
+	DegreeFieldSportsManagement,
+	DegreeFieldPhysicalEducation,
+	DegreeFieldSportsTherapy,
+	DegreeFieldEducation,
+	DegreeFieldElementaryEducation,
+	DegreeFieldSecondaryEducation,
+	DegreeFieldSpecialEducation,
+	DegreeFieldEducationalLeadership,
 	DegreeFieldPsychology,
+	DegreeFieldClinicalPsychology,
+	DegreeFieldCognitivePsychology,
+	DegreeFieldDevelopmentalPsychology,
+	DegreeFieldIndustrialPsychology,
 }
 
 func (e DegreeField) IsValid() bool {
 	switch e {
-	case DegreeFieldComputerScience, DegreeFieldEngineering, DegreeFieldBusiness, DegreeFieldEconomics, DegreeFieldMarketing, DegreeFieldFinance, DegreeFieldMedicine, DegreeFieldLaw, DegreeFieldPsychology:
+	case DegreeFieldComputerScience, DegreeFieldSoftwareEngineering, DegreeFieldArtificialIntelligence, DegreeFieldCyberSecurity, DegreeFieldDataScience, DegreeFieldEngineering, DegreeFieldMechanicalEngineering, DegreeFieldElectricalEngineering, DegreeFieldCivilEngineering, DegreeFieldChemicalEngineering, DegreeFieldBusiness, DegreeFieldMarketing, DegreeFieldFinance, DegreeFieldManagement, DegreeFieldEntrepreneurship, DegreeFieldMathematics, DegreeFieldPureMathematics, DegreeFieldAppliedMathematics, DegreeFieldStatistics, DegreeFieldMathematicalModeling, DegreeFieldPhysics, DegreeFieldTheoreticalPhysics, DegreeFieldQuantumPhysics, DegreeFieldAstrophysicsAndAstronomy, DegreeFieldNuclearPhysics, DegreeFieldChemistry, DegreeFieldOrganicChemistry, DegreeFieldInorganicChemistry, DegreeFieldPhysicalChemistry, DegreeFieldBiochemistryAndMolecularBiology, DegreeFieldMedicine, DegreeFieldGeneralMedicine, DegreeFieldSurgery, DegreeFieldPediatrics, DegreeFieldPsychiatry, DegreeFieldLaw, DegreeFieldCorporateLaw, DegreeFieldCriminalLaw, DegreeFieldInternationalLaw, DegreeFieldConstitutionalLaw, DegreeFieldSocialScience, DegreeFieldSociology, DegreeFieldPoliticalScience, DegreeFieldEconomics, DegreeFieldAnthropology, DegreeFieldHumanities, DegreeFieldLiterature, DegreeFieldPhilosophy, DegreeFieldHistory, DegreeFieldLinguistics, DegreeFieldArt, DegreeFieldPainting, DegreeFieldSculpture, DegreeFieldGraphicDesign, DegreeFieldPhotography, DegreeFieldMusic, DegreeFieldComposition, DegreeFieldPerformance, DegreeFieldMusicTheory, DegreeFieldConducting, DegreeFieldSport, DegreeFieldSportsScience, DegreeFieldSportsManagement, DegreeFieldPhysicalEducation, DegreeFieldSportsTherapy, DegreeFieldEducation, DegreeFieldElementaryEducation, DegreeFieldSecondaryEducation, DegreeFieldSpecialEducation, DegreeFieldEducationalLeadership, DegreeFieldPsychology, DegreeFieldClinicalPsychology, DegreeFieldCognitivePsychology, DegreeFieldDevelopmentalPsychology, DegreeFieldIndustrialPsychology:
 		return true
 	}
 	return false

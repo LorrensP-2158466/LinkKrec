@@ -23,6 +23,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
 		SELECT ?id ?name ?email ?locationId ?lookingForOpportunities
 			(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
@@ -30,36 +31,32 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 			(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
 			(GROUP_CONCAT(DISTINCT ?companyId; separator=", ") AS ?companies)
 		WHERE {
-			?user a lr:User ;
-					lr:Id ?id ;
-					lr:hasName ?name ;
-					lr:hasEmail ?email ;
-					lr:isLookingForOpportunities ?isLookingForOpportunities ;
-			BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
+		?user a lr:User ;
+				lr:Id ?id ;
+				foaf:name ?name ;
+				foaf:mbox ?email ;
+				lr:isLookingForOpportunities ?isLookingForOpportunities ;
+		BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
 
-			OPTIONAL {
-				?user lr:hasSkill ?escoSkill .
-				?escoSkill skos:prefLabel ?skill .
-				FILTER(LANG(?skill) = "en")
-			}
-			OPTIONAL {
-				?user lr:hasConnection ?connection .
-				?connection lr:Id ?connectionName .
-			}
-			OPTIONAL {
-				?user lr:hasEducation ?education .
-				?education lr:Id ?educationEntry .
-			}
-			OPTIONAL {
-				?user lr:hasLocation ?location .
-				?location lr:Id ?locationId .
-			}
-			OPTIONAL {
-				?user a lr:User ;
-				lr:hasCompany ?company .
-				?company lr:Id ?companyId .
-			}
-			FILTER(%s)
+		OPTIONAL {
+			?user lr:hasSkill ?escoSkill .
+			?escoSkill skos:prefLabel ?skill .
+			FILTER(LANG(?skill) = "en")
+		}
+		OPTIONAL {
+			?user lr:hasConnection ?connection .
+			?connection lr:Id ?connectionName .
+		}
+		OPTIONAL {
+			?user lr:hasEducation ?education .
+			?education lr:Id ?educationEntry .
+		}
+		OPTIONAL {
+			?user lr:hasLocation ?location .
+			?location lr:Id ?locationEntry .
+		}
+
+		FILTER(%s)
 		}
 		GROUP BY ?id ?name ?email ?locationId ?lookingForOpportunities
 	`, filter)
@@ -241,11 +238,11 @@ func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []
 			(STRAFTER(STR(?degType), "#") AS ?degree)
 		WHERE {
 			?education a lr:EducationEntry ;
-			lr:Id ?id ;
-			lr:institutionName ?institution ;
-			lr:institutionInfo ?info ;
-			lr:degreeType ?degType ;
-			lr:degreeField ?degField .
+				lr:Id ?id ;
+				lr:institutionName ?institution ;
+				lr:extraInfo ?info ;
+				lr:degreeType ?degType ;
+				lr:degreeField ?degField .
 
 		FILTER(%s)
 		}

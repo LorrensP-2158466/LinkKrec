@@ -1,6 +1,9 @@
 package graph
 
-import "github.com/knakk/sparql"
+import (
+	"github.com/gorilla/sessions"
+	"github.com/knakk/sparql"
+)
 
 // This file will not be regenerated automatically.
 //
@@ -9,4 +12,5 @@ import "github.com/knakk/sparql"
 type Resolver struct {
 	Repo       *sparql.Repo
 	UpdateRepo *sparql.Repo
+	Store      *sessions.CookieStore
 }
