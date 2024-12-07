@@ -24,6 +24,13 @@ type ConnectionRequest struct {
 	Status          bool   `json:"status"`
 }
 
+type CreateLocationInput struct {
+	Country     string `json:"country"`
+	City        string `json:"city"`
+	Street      string `json:"street"`
+	HouseNumber string `json:"houseNumber"`
+}
+
 type CreateVacancyInput struct {
 	Title                      string      `json:"title"`
 	Description                string      `json:"description"`
@@ -64,6 +71,14 @@ type ExperienceEntryInput struct {
 	Description *string `json:"description,omitempty"`
 	StartDate   *string `json:"startDate,omitempty"`
 	EndDate     *string `json:"endDate,omitempty"`
+}
+
+type Location struct {
+	ID          string `json:"id"`
+	Country     string `json:"country"`
+	City        string `json:"city"`
+	Street      string `json:"street"`
+	HouseNumber string `json:"houseNumber"`
 }
 
 type Mutation struct {
@@ -121,9 +136,9 @@ type Vacancy struct {
 	Description                string       `json:"description"`
 	Location                   string       `json:"location"`
 	PostedBy                   *Company     `json:"postedBy"`
-	StartDate                  *string      `json:"startDate,omitempty"`
-	EndDate                    *string      `json:"endDate,omitempty"`
-	Status                     *bool        `json:"status,omitempty"`
+	StartDate                  string       `json:"startDate"`
+	EndDate                    string       `json:"endDate"`
+	Status                     bool         `json:"status"`
 	RequiredDegreeType         *DegreeType  `json:"requiredDegreeType,omitempty"`
 	RequiredDegreeField        *DegreeField `json:"requiredDegreeField,omitempty"`
 	RequiredExperienceDuration *int         `json:"requiredExperienceDuration,omitempty"`

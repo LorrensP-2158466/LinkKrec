@@ -38,7 +38,7 @@ type Query {
 
     matchVacancyToUsers(vacancyId: ID!, maxDist: Float!): [User]
 
-    matchUserToVacancy(userId: ID!, maxDist: Float!): [Vacancy]
+    matchUserToVacancies(userId: ID!, maxDist: Float!): [Vacancy]
 }
 
 type Mutation {
@@ -91,12 +91,12 @@ type User {
     name: String!
     email: String!
     location: String
-       connections: [User]
+    connections: [User]
     education: [EducationEntry]
     skills: [String]
     lookingForOpportunities: Boolean
     isProfileComplete: Boolean
- companies: [Company]
+    companies: [Company]
 }
 
 # A company/person who wants to recruit Users
@@ -172,9 +172,9 @@ type Vacancy {
     description: String!
     location: String!
     postedBy: Company!
-    startDate: String
-    endDate: String
-    status: Boolean
+    startDate: String!
+    endDate: String!
+    status: Boolean!
     requiredDegreeType: DegreeType
     requiredDegreeField: DegreeField
     requiredExperienceDuration: Int 

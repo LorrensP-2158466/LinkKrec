@@ -26,7 +26,6 @@ type Loaders struct {
 	VacancyLoader           *dataloadgen.Loader[string, *model.Vacancy]
 	CompanyLoader           *dataloadgen.Loader[string, *model.Company]
 	EducationEntryLoader    *dataloadgen.Loader[string, *model.EducationEntry]
-	ExperienceEntryLoader   *dataloadgen.Loader[string, *model.ExperienceEntry]
 	ConnectionRequestLoader *dataloadgen.Loader[string, *model.ConnectionRequest]
 }
 
@@ -35,11 +34,10 @@ func NewLoaders(conn *sparql.Repo) *Loaders {
 	// define the data loader
 	ur := &DataBase{Repo: conn}
 	return &Loaders{
-		UserLoader:           dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
-		VacancyLoader:        dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
-		CompanyLoader:        dataloadgen.NewLoader(ur.getCompanies, dataloadgen.WithWait(time.Millisecond)),
-		EducationEntryLoader: dataloadgen.NewLoader(ur.getEducationEntries, dataloadgen.WithWait(time.Millisecond)),
-		// ExperienceEntryLoader:   dataloadgen.NewLoader(ur.getExperienceEntries, dataloadgen.WithWait(time.Millisecond)),
+		UserLoader:              dataloadgen.NewLoader(ur.getUsers, dataloadgen.WithWait(time.Millisecond)),
+		VacancyLoader:           dataloadgen.NewLoader(ur.getVacancies, dataloadgen.WithWait(time.Millisecond)),
+		CompanyLoader:           dataloadgen.NewLoader(ur.getCompanies, dataloadgen.WithWait(time.Millisecond)),
+		EducationEntryLoader:    dataloadgen.NewLoader(ur.getEducationEntries, dataloadgen.WithWait(time.Millisecond)),
 		ConnectionRequestLoader: dataloadgen.NewLoader(ur.getConnectionRequests, dataloadgen.WithWait(time.Millisecond)),
 	}
 }
@@ -100,16 +98,6 @@ func GetEducationEntry(ctx context.Context, educationEntryID string) (*model.Edu
 func GetEducationEntries(ctx context.Context, educationEntryIDs []string) ([]*model.EducationEntry, error) {
 	loaders := For(ctx)
 	return loaders.EducationEntryLoader.LoadAll(ctx, educationEntryIDs)
-}
-
-func GetExperienceEntry(ctx context.Context, experienceEntryID string) (*model.ExperienceEntry, error) {
-	loaders := For(ctx)
-	return loaders.ExperienceEntryLoader.Load(ctx, experienceEntryID)
-}
-
-func GetExperienceEntries(ctx context.Context, experienceEntryIDs []string) ([]*model.ExperienceEntry, error) {
-	loaders := For(ctx)
-	return loaders.ExperienceEntryLoader.LoadAll(ctx, experienceEntryIDs)
 }
 
 func GetConnectionRequest(ctx context.Context, connectionRequestID string) (*model.ConnectionRequest, error) {

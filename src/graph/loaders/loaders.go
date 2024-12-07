@@ -24,7 +24,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
-		SELECT ?id ?name ?email ?isEmployer ?location ?lookingForOpportunities
+		SELECT ?id ?name ?email ?location ?lookingForOpportunities
 			(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
 			(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections)
 			(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
@@ -34,7 +34,6 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 				lr:Id ?id ;
 				lr:hasName ?name ;
 				lr:hasEmail ?email ;
-				lr:isEmployer ?isEmployer ;
 				lr:isLookingForOpportunities ?isLookingForOpportunities ;
 		BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
 
@@ -63,7 +62,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		FILTER(%s)
 		FILTER(LANG(?skill) = "en")
 		}
-		GROUP BY ?id ?name ?email ?isEmployer ?location ?lookingForOpportunities
+		GROUP BY ?id ?name ?email ?location ?lookingForOpportunities
 	`, filter)
 	res, err := u.Repo.Query(q)
 	if err != nil {
@@ -94,8 +93,6 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 	return users, errs
 }
 
-// getVacancies implements a batch function that can retrieve many vacancies by ID,
-// for use in a dataloader
 func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*model.Vacancy, []error) {
 	var ids []string
 	for _, id := range vacancyIDs {
@@ -108,30 +105,42 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		PREFIX esco_skill: <http://data.europa.eu/esco/Skill>
+		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
 		SELECT ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration (GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
 		WHERE {
 			?vacancy a lr:Vacancy ;
-			lr:Id ?id ;
-			lr:vacancyTitle ?title ;
-			lr:vacancyDescription ?description ;
-			lr:vacancyLocation ?location ;
-			lr:postedBy ?postedBy ;
-			lr:vacancyStartDate ?startDate ;
-			lr:vacancyEndDate ?endDate ;
-			lr:vacancyStatus ?status ;
-			lr:requiredDegreeType ?degreeType ;
-			lr:requiredDegreeField ?degreeField ;
-			lr:requiredExperienceDuration ?experienceDuration ;
-			lr:requiredSkill ?skill .
-			?postedBy lr:Id ?postedById .
+				lr:Id ?id ;
+				lr:vacancyTitle ?title ;
+				lr:vacancyDescription ?description ;
+				lr:vacancyLocation ?location ;
+				lr:postedBy ?postedBy ;
+				lr:vacancyStartDate ?startDate ;
+				lr:vacancyEndDate ?endDate ;
+				lr:vacancyStatus ?status .
+				?postedBy lr:Id ?postedById .
 
+			OPTIONAL { 
+				?vacancy lr:requiredSkill ?skill .
+				?skill skos:prefLabel ?skillLabel .
+				FILTER(LANG(?skillLabel) = "en")
+			}
+			OPTIONAL { 
+				?vacancy lr:requiredDegreeType ?degreeType .
+			}
+			OPTIONAL { 
+				?vacancy lr:requiredDegreeField ?degreeField .
+			}
+			OPTIONAL { 
+				?vacancy lr:requiredExperienceDuration ?experienceDuration .
+			}
 			FILTER(%s)
 		}
 		GROUP BY ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration
 
 	`, filter)
 	res, err := u.Repo.Query(q)
+
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -147,7 +156,7 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 		}
 		foundVacancies[vacancy.ID] = vacancy
 	}
-	// fill return array with empty objects so the lengths match
+
 	for i, id := range vacancyIDs {
 		if vacancy, found := foundVacancies[id]; found {
 			vacancies[i] = vacancy
