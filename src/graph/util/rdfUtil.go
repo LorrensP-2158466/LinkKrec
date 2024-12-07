@@ -14,6 +14,12 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 		return nil, err
 	}
 
+	if user["locationId"] != nil {
+		userObj.Location = &model.Location{ID: user["locationId"].String()}
+	} else {
+		userObj.Location = nil
+	}
+
 	var connections = make([]*model.User, 0)
 	if user["connections"] != nil {
 		for _, con := range strings.Split(user["connections"].String(), ", ") {
@@ -37,6 +43,7 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 		}
 	}
 	userObj.Companies = companies
+
 	return &userObj, nil
 }
 
@@ -46,32 +53,27 @@ func MapRdfCompanyToGQL(company map[string]rdf.Term) (*model.Company, error) {
 		return nil, err
 	}
 
-	if company["location"] != nil {
-		var location = company["location"].String()
-		companyObj.Location = &location
+	if company["locationId"] != nil {
+		companyObj.Location = &model.Location{ID: company["locationId"].String()}
 	} else {
 		companyObj.Location = nil
 	}
 
+	var vacancies = make([]*model.Vacancy, 0)
 	if company["vacancies"] != nil {
-		var vacancies = make([]*model.Vacancy, 0)
 		for _, vac := range strings.Split(company["vacancies"].String(), ", ") {
 			vacancies = append(vacancies, &model.Vacancy{ID: vac})
 		}
-		companyObj.Vacancies = vacancies
-	} else {
-		companyObj.Vacancies = nil
 	}
+	companyObj.Vacancies = vacancies
 
+	var employees = make([]*model.User, 0)
 	if company["employees"] != nil {
-		var employees = make([]*model.User, 0)
 		for _, emp := range strings.Split(company["employees"].String(), ", ") {
 			employees = append(employees, &model.User{ID: emp})
 		}
-		companyObj.Employees = employees
-	} else {
-		companyObj.Employees = nil
 	}
+	companyObj.Employees = employees
 
 	return &companyObj, nil
 }
@@ -142,8 +144,17 @@ func MapRdfConnectionRequestToGQL(connectionRequest map[string]rdf.Term) (*model
 		return nil, err
 	}
 
-	connectionRequestObj.FromUser = &model.User{ID: connectionRequest["fromUserId"].String()}
-	connectionRequestObj.ConnectedToUser = &model.User{ID: connectionRequest["connectedToUserId"].String()}
+	if connectionRequest["fromUserId"] != nil {
+		connectionRequestObj.FromUser = &model.User{ID: connectionRequest["fromUserId"].String()}
+	} else {
+		connectionRequestObj.FromUser = nil
+	}
+
+	if connectionRequest["connectedToUserId"] != nil {
+		connectionRequestObj.ConnectedToUser = &model.User{ID: connectionRequest["connectedToUserId"].String()}
+	} else {
+		connectionRequestObj.ConnectedToUser = nil
+	}
 
 	return &connectionRequestObj, nil
 }
@@ -153,25 +164,66 @@ func MapRdfEducationEntryToGQL(educationEntry map[string]rdf.Term) (*model.Educa
 	if err != nil {
 		return nil, err
 	}
-	educationType := educationEntry["degree"].String()
-	var degree model.DegreeType
-	for _, d := range model.AllDegreeType {
-		if d.String() == educationType {
-			degree = d
-			break
-		}
-	}
-	educationEntryObj.Degree = degree
 
-	educationField := educationEntry["field"].String()
-	var field model.DegreeField
-	for _, f := range model.AllDegreeField {
-		if f.String() == educationField {
-			field = f
-			break
+	if educationEntry["degree"] != nil {
+		educationType := (educationEntry["degree"].String())
+		var degree model.DegreeType
+		for _, d := range model.AllDegreeType {
+			if d.String() == educationType {
+				degree = d
+				break
+			}
 		}
+		educationEntryObj.Degree = degree
 	}
-	educationEntryObj.Field = field
+
+	if educationEntry["field"] != nil {
+		educationField := (educationEntry["field"].String())
+		var field model.DegreeField
+		for _, f := range model.AllDegreeField {
+			if f.String() == educationField {
+				field = f
+				break
+			}
+		}
+		educationEntryObj.Field = field
+	}
 
 	return &educationEntryObj, nil
 }
+
+func MapRdfLocationToGQL(location map[string]rdf.Term) (*model.Location, error) {
+	locationObj, err := MapPrimitiveBindingsToStruct[model.Location](location)
+	if err != nil {
+		return nil, err
+	}
+
+	return &locationObj, nil
+}
+
+// func MapRdfExperienceEntryToGQL(experienceEntry map[string]rdf.Term) (*model.ExperienceEntry, error) {
+// 	fmt.Println("experienceEntry: ", experienceEntry)
+// 	experienceEntryObj, err := MapPrimitiveBindingsToStruct[model.ExperienceEntry](experienceEntry)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	fmt.Println("primitive experienceEntryObj: ", experienceEntryObj)
+
+// 	experienceType := (experienceEntry["experienceType"].String())
+// 	var experience model.ExperienceType
+// 	for _, e := range model.AllExperienceType {
+// 		if e.String() == experienceType {
+// 			experience = e
+// 			break
+// 		}
+// 	}
+// 	experienceEntryObj.ExperienceType = experience
+
+// 	startDate := experienceEntry["startDate"].String()
+// 	experienceEntryObj.StartDate = &startDate
+
+// 	endDate := experienceEntry["endDate"].String()
+// 	experienceEntryObj.EndDate = &endDate
+
+// 	return &experienceEntryObj, nil
+// }

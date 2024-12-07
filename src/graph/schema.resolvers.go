@@ -12,10 +12,16 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/knakk/rdf"
 )
+
+// Location is the resolver for the location field.
+func (r *companyResolver) Location(ctx context.Context, obj *model.Company) (*model.Location, error) {
+	return loaders.GetLocation(ctx, obj.Location.ID)
+}
 
 // Vacancies is the resolver for the vacancies field.
 func (r *companyResolver) Vacancies(ctx context.Context, obj *model.Company) ([]*model.Vacancy, error) {
@@ -94,12 +100,64 @@ func (r *mutationResolver) AddConnectionRequest(ctx context.Context, fromUserID 
 
 // SetConnectionRequestStatusFalse is the resolver for the setConnectionRequestStatusFalse field.
 func (r *mutationResolver) SetConnectionRequestStatusFalse(ctx context.Context, id string) (*model.ConnectionRequest, error) {
-	panic(fmt.Errorf("not implemented: SetConnectionRequestStatusFalse - setConnectionRequestStatusFalse"))
+	q := fmt.Sprintf(`
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX lr: <http://linkrec.example.org/schema#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+        DELETE {
+            ?connectionRequest lr:status ?status .
+        }
+        INSERT {
+            ?connectionRequest lr:status false .
+        }
+        WHERE {
+            ?connectionRequest a lr:ConnectionRequest ;
+                               lr:Id "%s" ;
+                               lr:status ?status .
+        }
+    `, id)
+
+	err := r.UpdateRepo.Update(q)
+	if err != nil {
+		return nil, err
+	}
+
+	return loaders.GetConnectionRequest(ctx, id)
 }
 
 // NotifyProfileVisit is the resolver for the notifyProfileVisit field.
 func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID string, visitedUserID string) (*model.Notification, error) {
-	panic(fmt.Errorf("not implemented: NotifyProfileVisit - notifyProfileVisit"))
+	notificationID := uuid.New().String()
+
+	visitedByUser, err := loaders.GetUser(ctx, visitorID)
+	if err != nil {
+		return nil, err
+	}
+
+	q := fmt.Sprintf(`
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+		INSERT DATA {
+		  lr:notification%s a lr:Notification ;
+		      lr:Id "%s" ;
+		      lr:notificationTitle "Profile Visit" ;
+		      lr:notificationMessage "Your profile has been visited by %s" ;
+		      lr:forUser lr:User%s ;
+		      lr:notificationCreatedAt "%s"^^xsd:dateTime .
+		}
+	`, notificationID, notificationID, visitorID, visitedByUser.Name, time.Now())
+
+	updErr := r.UpdateRepo.Update(q)
+	if updErr != nil {
+		return nil, updErr
+	}
+
+	return loaders.GetNotification(ctx, notificationID)
 }
 
 // CreateVacancy is the resolver for the createVacancy field.
@@ -160,7 +218,35 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 
 // DeleteVacancy is the resolver for the deleteVacancy field.
 func (r *mutationResolver) DeleteVacancy(ctx context.Context, id string) (*bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteVacancy - deleteVacancy"))
+	q := fmt.Sprintf(`
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+		
+		DELETE {
+          ?vacancy ?p ?o .
+          ?location ?lp ?lo .
+        }
+        WHERE {
+          ?vacancy a lr:Vacancy ;
+                   lr:Id "%s" ;
+                   ?p ?o .
+          OPTIONAL {
+            ?vacancy lr:vacancyLocation ?location .
+            ?location ?lp ?lo .
+          }
+        }
+	`, id)
+
+	err := r.UpdateRepo.Update(q)
+	if err != nil {
+		succes := false
+		return &succes, err
+	}
+
+	success := true
+	return &success, nil
 }
 
 // UpdateUserLookingForOpportunities is the resolver for the updateUserLookingForOpportunities field.
@@ -212,7 +298,7 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, er
 func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
 	q := query_builder.
 		QueryBuilder().
-		Select([]string{"id", "name", "email", "location", "lookingForOpportunities"}).
+		Select([]string{"id", "name", "email", "locationId", "lookingForOpportunities"}).
 		GroupConcat("skill", ", ", "skills", true).
 		GroupConcat("connectionName", ", ", "connections", true).
 		GroupConcat("educationEntry", ", ", "educations", true).
@@ -221,11 +307,10 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		Where("Id", "id").
 		Where("hasName", "name").
 		Where("hasEmail", "email").
-		Where("hasLocation", "location").
 		Where("isLookingForOpportunities", "isLookingForOpportunities").
 		Bind("isLookingForOpportunities", "lookingForOpportunities").
-		NewOptional("user", "lr:hasLocation", "locationEntry").
-		AddOptionalTriple("locationEntry", "lr:Id", "location").
+		NewOptional("user", "lr:hasLocation", "location").
+		AddOptionalTriple("location", "lr:Id", "locationId").
 		NewOptional("user", "lr:hasSkill", "escoSkill").
 		AddOptionalTriple("escoSkill", "skos:prefLabel", "skill").
 		NewOptional("user", "lr:hasConnection", "connection").
@@ -250,7 +335,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 	if lookingForOpportunities != nil {
 		q.Filter("isLookingForOpportunities", []string{strconv.FormatBool(*lookingForOpportunities)}, query_builder.EQ)
 	}
-	qs := q.GroupBy([]string{"id", "name", "email", "location", "lookingForOpportunities"}).Build()
+	qs := q.GroupBy([]string{"id", "name", "email", "locationId", "lookingForOpportunities"}).Build()
 
 	res, err := r.Repo.Query(qs)
 	if err != nil {
@@ -328,16 +413,15 @@ func (r *queryResolver) GetVacancy(ctx context.Context, id string) (*model.Vacan
 // GetCompanies is the resolver for the getCompanies field.
 func (r *queryResolver) GetCompanies(ctx context.Context, name *string, location *string) ([]*model.Company, error) {
 	q := query_builder.
-		QueryBuilder().Select([]string{"id", "name", "email", "location"}).
+		QueryBuilder().Select([]string{"id", "name", "email", "locationId"}).
 		GroupConcat("vacancyId", ", ", "vacancies", true).
 		GroupConcat("employeeId", ", ", "employees", true).
 		WhereSubject("company", "Company").
 		Where("Id", "id").
 		Where("companyName", "name").
 		Where("companyEmail", "email").
-		Where("companyLocation", "location").
-		Where("hasVacancy", "vacancy").
-		Where("hasEmployee", "employee").
+		NewOptional("company", "lr:companyLocation", "location").
+		AddOptionalTriple("location", "lr:Id", "locationId").
 		NewOptional("company", "lr:hasVacancy", "vacancy").
 		AddOptionalTriple("vacancy", "lr:Id", "vacancyId").
 		NewOptional("company", "lr:hasEmployee", "employee").
@@ -348,7 +432,7 @@ func (r *queryResolver) GetCompanies(ctx context.Context, name *string, location
 	if location != nil {
 		q.Filter("location", []string{*location}, query_builder.EQ)
 	}
-	qs := q.GroupBy([]string{"id", "name", "email", "location"}).Build()
+	qs := q.GroupBy([]string{"id", "name", "email", "locationId"}).Build()
 
 	res, err := r.Repo.Query(qs)
 	if err != nil {
@@ -381,7 +465,7 @@ func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]
 		Where("notificationTitle", "title").
 		Where("notificationMessage", "message").
 		Where("forUser", "forUser").
-		Where("notificationCreatedAt", "createdAt").
+		NewOptional("notification", "lr:notificationCreatedAt", "createdAt").
 		WhereExtraction("forUser", "Id", "forUserId")
 	if userID != "" {
 		quotedUserID := fmt.Sprintf("\"%s\"", userID)
@@ -389,6 +473,7 @@ func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]
 	}
 	qs := q.GroupBy([]string{"id", "title", "message", "forUserId", "createdAt"}).Build()
 
+	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
@@ -594,6 +679,11 @@ func (r *subscriptionResolver) NewMatchingVacancy(ctx context.Context, userID st
 // NewNotification is the resolver for the newNotification field.
 func (r *subscriptionResolver) NewNotification(ctx context.Context, forUserID string) (<-chan *model.Notification, error) {
 	panic(fmt.Errorf("not implemented: NewNotification - newNotification"))
+}
+
+// Location is the resolver for the location field.
+func (r *userResolver) Location(ctx context.Context, obj *model.User) (*model.Location, error) {
+	return loaders.GetLocation(ctx, obj.Location.ID)
 }
 
 // Connections is the resolver for the connections field.

@@ -90,7 +90,7 @@ type User {
     id: ID!
     name: String!
     email: String!
-    location: String
+    location: Location
     connections: [User]
     education: [EducationEntry]
     skills: [String]
@@ -104,7 +104,7 @@ type Company{
  id: ID!,
  name: String!,
  email: String!,
- location: String,
+ location: Location,
  vacancies: [Vacancy!]!,
  employees: [User!]!,
 }

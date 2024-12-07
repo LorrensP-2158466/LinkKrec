@@ -12,7 +12,7 @@ type Company struct {
 	ID        string     `json:"id"`
 	Name      string     `json:"name"`
 	Email     string     `json:"email"`
-	Location  *string    `json:"location,omitempty"`
+	Location  *Location  `json:"location,omitempty"`
 	Vacancies []*Vacancy `json:"vacancies"`
 	Employees []*User    `json:"employees"`
 }
@@ -121,7 +121,7 @@ type User struct {
 	ID                      string            `json:"id"`
 	Name                    string            `json:"name"`
 	Email                   string            `json:"email"`
-	Location                *string           `json:"location,omitempty"`
+	Location                *Location         `json:"location,omitempty"`
 	Connections             []*User           `json:"connections,omitempty"`
 	Education               []*EducationEntry `json:"education,omitempty"`
 	Skills                  []*string         `json:"skills,omitempty"`
