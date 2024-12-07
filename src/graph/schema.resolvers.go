@@ -210,8 +210,86 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 }
 
 // UpdateVacancy is the resolver for the updateVacancy field.
-func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input model.CreateVacancyInput) (*model.Vacancy, error) {
-	panic(fmt.Errorf("not implemented: UpdateVacancy - updateVacancy"))
+func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input model.UpdateVacancyInput) (*model.Vacancy, error) {
+	var deleteParts, insertParts string
+
+	// Conditionally add fields to the DELETE/INSERT sections
+	if input.Title != nil {
+		deleteParts += "?vacancy lr:vacancyTitle ?oldTitle .\n"
+		insertParts += fmt.Sprintf("?vacancy lr:vacancyTitle \"%s\" .\n", *input.Title)
+	}
+	if input.Description != nil {
+		deleteParts += "?vacancy lr:vacancyDescription ?oldDescription .\n"
+		insertParts += fmt.Sprintf("?vacancy lr:vacancyDescription \"%s\" .\n", *input.Description)
+	}
+	if input.Location != nil {
+		deleteParts += "?vacancy lr:vacancyLocation ?oldLocation .\n"
+		insertParts += fmt.Sprintf("?vacancy lr:vacancyLocation \"%s\" .\n", *input.Location)
+	}
+	if input.StartDate != nil {
+		deleteParts += "?vacancy lr:vacancyStartDate ?oldStartDate .\n"
+		insertParts += fmt.Sprintf("?vacancy lr:vacancyStartDate \"%s\"^^xsd:date .\n", *input.StartDate)
+	}
+	if input.EndDate != nil {
+		deleteParts += "?vacancy lr:vacancyEndDate ?oldEndDate .\n"
+		insertParts += fmt.Sprintf("?vacancy lr:vacancyEndDate \"%s\"^^xsd:date .\n", *input.EndDate)
+	}
+	if input.RequiredDegreeType != nil {
+		deleteParts += "?vacancy lr:requiredDegreeType ?oldDegreeType .\n"
+		insertParts += fmt.Sprintf("?vacancy lr:requiredDegreeType lr:%s .\n", *input.RequiredDegreeType)
+	}
+	if input.RequiredDegreeField != nil {
+		deleteParts += "?vacancy lr:requiredDegreeField ?oldDegreeField .\n"
+		insertParts += fmt.Sprintf("?vacancy lr:requiredDegreeField lr:%s .\n", *input.RequiredDegreeField)
+	}
+	if input.RequiredExperienceDuration != nil {
+		deleteParts += "?vacancy lr:requiredExperienceDuration ?oldExperience .\n"
+		insertParts += fmt.Sprintf("?vacancy lr:requiredExperienceDuration %d .\n", *input.RequiredExperienceDuration)
+	}
+	// check if the status is provided
+	if input.Status != nil {
+		deleteParts += "?vacancy lr:vacancyStatus ?oldStatus .\n"
+		insertParts += fmt.Sprintf("?vacancy lr:vacancyStatus %t .\n", *input.Status)
+	}
+	if len(input.RequiredSkills) != 0 {
+		deleteParts += "?vacancy lr:requiredSkill ?oldSkill .\n"
+		for _, skill := range input.RequiredSkills {
+			insertParts += fmt.Sprintf("?vacancy lr:requiredSkill esco_skill:%s .\n", *skill)
+		}
+	}
+
+	// If no fields are provided, return an error
+	if deleteParts == "" && insertParts == "" {
+		return nil, fmt.Errorf("no fields provided for update")
+	}
+
+	// Construct the full SPARQL query
+	q := fmt.Sprintf(`
+        PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX lr: <http://linkrec.example.org/schema#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+        DELETE {
+            %s
+        }
+        INSERT {
+            %s
+        }
+        WHERE {
+            ?vacancy a lr:Vacancy ;
+                     lr:Id "%s" .
+            %s
+        }
+    `, deleteParts, insertParts, id, deleteParts)
+	fmt.Println(q)
+
+	err := r.UpdateRepo.Update(q)
+	if err != nil {
+		return nil, err
+	}
+
+	return loaders.GetVacancy(ctx, id)
 }
 
 // DeleteVacancy is the resolver for the deleteVacancy field.
