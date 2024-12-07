@@ -334,7 +334,6 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		q.Filter("isLookingForOpportunities", []string{strconv.FormatBool(*lookingForOpportunities)}, query_builder.EQ)
 	}
 	qs := q.GroupBy([]string{"id", "name", "email", "locationId", "lookingForOpportunities"}).Build()
-
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
@@ -471,7 +470,6 @@ func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]
 	}
 	qs := q.GroupBy([]string{"id", "title", "message", "forUserId", "createdAt"}).Build()
 
-	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)

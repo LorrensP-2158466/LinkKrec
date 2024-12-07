@@ -2,7 +2,6 @@ package util
 
 import (
 	"LinkKrec/graph/model"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -11,12 +10,10 @@ import (
 
 func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 	userObj, err := MapPrimitiveBindingsToStruct[model.User](user)
-	fmt.Println(userObj, err)
 
 	if err != nil {
 		return nil, err
 	}
-
 	if user["locationId"] != nil {
 		userObj.Location = &model.Location{ID: user["locationId"].String()}
 	} else {
@@ -200,33 +197,5 @@ func MapRdfLocationToGQL(location map[string]rdf.Term) (*model.Location, error) 
 	if err != nil {
 		return nil, err
 	}
-
 	return &locationObj, nil
 }
-
-// func MapRdfExperienceEntryToGQL(experienceEntry map[string]rdf.Term) (*model.ExperienceEntry, error) {
-// 	fmt.Println("experienceEntry: ", experienceEntry)
-// 	experienceEntryObj, err := MapPrimitiveBindingsToStruct[model.ExperienceEntry](experienceEntry)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	fmt.Println("primitive experienceEntryObj: ", experienceEntryObj)
-
-// 	experienceType := (experienceEntry["experienceType"].String())
-// 	var experience model.ExperienceType
-// 	for _, e := range model.AllExperienceType {
-// 		if e.String() == experienceType {
-// 			experience = e
-// 			break
-// 		}
-// 	}
-// 	experienceEntryObj.ExperienceType = experience
-
-// 	startDate := experienceEntry["startDate"].String()
-// 	experienceEntryObj.StartDate = &startDate
-
-// 	endDate := experienceEntry["endDate"].String()
-// 	experienceEntryObj.EndDate = &endDate
-
-// 	return &experienceEntryObj, nil
-// }

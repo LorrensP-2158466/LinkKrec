@@ -24,7 +24,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
-		SELECT ?id ?name ?email ?location ?lookingForOpportunities
+		SELECT ?id ?name ?email ?locationId ?lookingForOpportunities
 			(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
 			(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections)
 			(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
@@ -52,7 +52,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 			}
 			OPTIONAL {
 				?user lr:hasLocation ?location .
-				?location lr:Id ?locationEntry .
+				?location lr:Id ?locationId .
 			}
 			OPTIONAL {
 				?user a lr:User ;
@@ -61,13 +61,12 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 			}
 			FILTER(%s)
 		}
-		GROUP BY ?id ?name ?email ?location ?lookingForOpportunities
+		GROUP BY ?id ?name ?email ?locationId ?lookingForOpportunities
 	`, filter)
 	res, err := u.Repo.Query(q)
 	if err != nil {
 		return nil, []error{err}
 	}
-
 	users := make([]*model.User, len(userIDs))
 	errs := make([]error, len(userIDs))
 
@@ -389,6 +388,7 @@ func (u *DataBase) getNotifications(ctx context.Context, notificationIDs []strin
 }
 
 func (u *DataBase) getLocations(ctx context.Context, locationIDs []string) ([]*model.Location, []error) {
+	print("qsfqsgqimjoji")
 	var ids []string
 	for _, id := range locationIDs {
 		s := fmt.Sprintf("?id = \"%s\"", id)
@@ -401,17 +401,17 @@ func (u *DataBase) getLocations(ctx context.Context, locationIDs []string) ([]*m
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 		SELECT ?id ?country ?city ?street ?houseNumber ?longitude ?latitude
-		WHERE {
-			?location a lr:Location ;
-			lr:Id ?id ;
-			lr:inCountry ?country ;
-			lr:inCity ?city ;
-			lr:inStreet ?street ;
-			lr:houseNumber ?houseNumber ;
-			lr:longitude ?longitude ;
-			lr:latitude ?latitude .
+			WHERE {
+				?location a lr:Location ;
+				lr:Id ?id ;
+				lr:inCountry ?country ;
+				lr:inCity ?city ;
+				lr:inStreet ?street ;
+				lr:houseNumber ?houseNumber ;
+				lr:longitude ?longitude ;
+				lr:latitude ?latitude .
 
-		FILTER(%s)
+			FILTER(%s)
 		}
 	`, filter)
 	res, err := u.Repo.Query(q)
