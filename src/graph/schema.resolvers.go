@@ -179,7 +179,7 @@ func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context
             ?user lr:isLookingForOpportunities ?currentValue .
         }
         INSERT {
-            ?user lr:isLookingForOpportunities "%s"^^xsd:boolean .
+            ?user lr:isLookingForOpportunities "%s" .
         }
         WHERE {
             ?user a lr:User ;
