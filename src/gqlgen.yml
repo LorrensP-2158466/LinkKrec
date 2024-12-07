@@ -97,6 +97,8 @@ models:
       - github.com/99designs/gqlgen/graphql.Int32
   User:
     fields:
+      location:
+        resolver: true
       connections:
         resolver: true
       education:
@@ -107,6 +109,8 @@ models:
         resolver: true
   Company:
     fields:
+      location:
+        resolver: true
       vacancies:
         resolver: true
       employees:

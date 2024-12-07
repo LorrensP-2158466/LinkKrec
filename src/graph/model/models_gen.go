@@ -12,7 +12,7 @@ type Company struct {
 	ID        string     `json:"id"`
 	Name      string     `json:"name"`
 	Email     string     `json:"email"`
-	Location  *string    `json:"location,omitempty"`
+	Location  *Location  `json:"location,omitempty"`
 	Vacancies []*Vacancy `json:"vacancies"`
 	Employees []*User    `json:"employees"`
 }
@@ -22,6 +22,13 @@ type ConnectionRequest struct {
 	FromUser        *User  `json:"fromUser"`
 	ConnectedToUser *User  `json:"connectedToUser"`
 	Status          bool   `json:"status"`
+}
+
+type CreateLocationInput struct {
+	Country     string `json:"country"`
+	City        string `json:"city"`
+	Street      string `json:"street"`
+	HouseNumber string `json:"houseNumber"`
 }
 
 type CreateVacancyInput struct {
@@ -66,6 +73,14 @@ type ExperienceEntryInput struct {
 	EndDate     *string `json:"endDate,omitempty"`
 }
 
+type Location struct {
+	ID          string `json:"id"`
+	Country     string `json:"country"`
+	City        string `json:"city"`
+	Street      string `json:"street"`
+	HouseNumber string `json:"houseNumber"`
+}
+
 type Mutation struct {
 }
 
@@ -106,7 +121,7 @@ type User struct {
 	ID                      string            `json:"id"`
 	Name                    string            `json:"name"`
 	Email                   string            `json:"email"`
-	Location                *string           `json:"location,omitempty"`
+	Location                *Location         `json:"location,omitempty"`
 	Connections             []*User           `json:"connections,omitempty"`
 	Education               []*EducationEntry `json:"education,omitempty"`
 	Skills                  []*string         `json:"skills,omitempty"`

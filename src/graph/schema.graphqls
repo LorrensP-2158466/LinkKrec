@@ -88,13 +88,13 @@ type User {
     id: ID!
     name: String!
     email: String!
-    location: String
-       connections: [User]
+    location: Location
+    connections: [User]
     education: [EducationEntry]
     skills: [String]
     lookingForOpportunities: Boolean
     isProfileComplete: Boolean
- companies: [Company]
+    companies: [Company]
 }
 
 # A company/person who wants to recruit Users
@@ -102,7 +102,7 @@ type Company{
  id: ID!,
  name: String!,
  email: String!,
- location: String,
+ location: Location,
  vacancies: [Vacancy!]!,
  employees: [User!]!,
 }

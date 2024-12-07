@@ -29,6 +29,7 @@ type Loaders struct {
 	ExperienceEntryLoader   *dataloadgen.Loader[string, *model.ExperienceEntry]
 	ConnectionRequestLoader *dataloadgen.Loader[string, *model.ConnectionRequest]
 	NotificationLoader      *dataloadgen.Loader[string, *model.Notification]
+	LocationLoader          *dataloadgen.Loader[string, *model.Location]
 }
 
 // NewLoaders instantiates data loaders for the middleware
@@ -43,6 +44,7 @@ func NewLoaders(conn *sparql.Repo) *Loaders {
 		// ExperienceEntryLoader:   dataloadgen.NewLoader(ur.getExperienceEntries, dataloadgen.WithWait(time.Millisecond)),
 		ConnectionRequestLoader: dataloadgen.NewLoader(ur.getConnectionRequests, dataloadgen.WithWait(time.Millisecond)),
 		NotificationLoader:      dataloadgen.NewLoader(ur.getNotifications, dataloadgen.WithWait(time.Millisecond)),
+		LocationLoader:          dataloadgen.NewLoader(ur.getLocations, dataloadgen.WithWait(time.Millisecond)),
 	}
 }
 
@@ -132,4 +134,14 @@ func GetNotification(ctx context.Context, notificationID string) (*model.Notific
 func GetNotifications(ctx context.Context, notificationIDs []string) ([]*model.Notification, error) {
 	loaders := For(ctx)
 	return loaders.NotificationLoader.LoadAll(ctx, notificationIDs)
+}
+
+func GetLocations(ctx context.Context, locationIDs []string) ([]*model.Location, error) {
+	loaders := For(ctx)
+	return loaders.LocationLoader.LoadAll(ctx, locationIDs)
+}
+
+func GetLocation(ctx context.Context, locationID string) (*model.Location, error) {
+	loaders := For(ctx)
+	return loaders.LocationLoader.Load(ctx, locationID)
 }
