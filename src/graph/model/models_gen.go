@@ -41,7 +41,7 @@ type CreateVacancyInput struct {
 	RequiredDegreeType         DegreeType  `json:"requiredDegreeType"`
 	RequiredDegreeField        DegreeField `json:"requiredDegreeField"`
 	RequiredExperienceDuration int         `json:"requiredExperienceDuration"`
-	RequiredSkills             []*string   `json:"requiredSkills,omitempty"`
+	RequiredSkills             []*string   `json:"requiredSkills"`
 }
 
 type EducationEntry struct {
@@ -115,6 +115,19 @@ type UpdateUserInput struct {
 	Name     *string `json:"name,omitempty"`
 	Email    *string `json:"email,omitempty"`
 	Location *string `json:"location,omitempty"`
+}
+
+type UpdateVacancyInput struct {
+	Title                      *string      `json:"title,omitempty"`
+	Description                *string      `json:"description,omitempty"`
+	Location                   *string      `json:"location,omitempty"`
+	StartDate                  *string      `json:"startDate,omitempty"`
+	EndDate                    *string      `json:"endDate,omitempty"`
+	Status                     *bool        `json:"status,omitempty"`
+	RequiredDegreeType         *DegreeType  `json:"requiredDegreeType,omitempty"`
+	RequiredDegreeField        *DegreeField `json:"requiredDegreeField,omitempty"`
+	RequiredExperienceDuration *int         `json:"requiredExperienceDuration,omitempty"`
+	RequiredSkills             []*string    `json:"requiredSkills,omitempty"`
 }
 
 type User struct {

@@ -105,7 +105,7 @@ type ComplexityRoot struct {
 		UpdateUser                        func(childComplexity int, id string, input model.UpdateUserInput) int
 		UpdateUserLookingForOpportunities func(childComplexity int, userID string, looking bool) int
 		UpdateUserProfile                 func(childComplexity int, id string, input model.UpdateProfileInput) int
-		UpdateVacancy                     func(childComplexity int, id string, input model.CreateVacancyInput) int
+		UpdateVacancy                     func(childComplexity int, id string, input model.UpdateVacancyInput) int
 	}
 
 	Notification struct {
@@ -181,7 +181,7 @@ type MutationResolver interface {
 	SetConnectionRequestStatusFalse(ctx context.Context, id string) (*model.ConnectionRequest, error)
 	NotifyProfileVisit(ctx context.Context, visitorID string, visitedUserID string) (*model.Notification, error)
 	CreateVacancy(ctx context.Context, companyID string, input model.CreateVacancyInput) (*model.Vacancy, error)
-	UpdateVacancy(ctx context.Context, id string, input model.CreateVacancyInput) (*model.Vacancy, error)
+	UpdateVacancy(ctx context.Context, id string, input model.UpdateVacancyInput) (*model.Vacancy, error)
 	DeleteVacancy(ctx context.Context, id string) (*bool, error)
 	UpdateUserLookingForOpportunities(ctx context.Context, userID string, looking bool) (*model.User, error)
 }
@@ -535,7 +535,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateVacancy(childComplexity, args["id"].(string), args["input"].(model.CreateVacancyInput)), true
+		return e.complexity.Mutation.UpdateVacancy(childComplexity, args["id"].(string), args["input"].(model.UpdateVacancyInput)), true
 
 	case "Notification.createdAt":
 		if e.complexity.Notification.CreatedAt == nil {
@@ -897,6 +897,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputRegisterUserInput,
 		ec.unmarshalInputUpdateProfileInput,
 		ec.unmarshalInputUpdateUserInput,
+		ec.unmarshalInputUpdateVacancyInput,
 	)
 	first := true
 
@@ -1376,13 +1377,13 @@ func (ec *executionContext) field_Mutation_updateVacancy_argsID(
 func (ec *executionContext) field_Mutation_updateVacancy_argsInput(
 	ctx context.Context,
 	rawArgs map[string]interface{},
-) (model.CreateVacancyInput, error) {
+) (model.UpdateVacancyInput, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 	if tmp, ok := rawArgs["input"]; ok {
-		return ec.unmarshalNCreateVacancyInput2LinkKrecᚋgraphᚋmodelᚐCreateVacancyInput(ctx, tmp)
+		return ec.unmarshalNUpdateVacancyInput2LinkKrecᚋgraphᚋmodelᚐUpdateVacancyInput(ctx, tmp)
 	}
 
-	var zeroVal model.CreateVacancyInput
+	var zeroVal model.UpdateVacancyInput
 	return zeroVal, nil
 }
 
@@ -3644,7 +3645,7 @@ func (ec *executionContext) _Mutation_updateVacancy(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateVacancy(rctx, fc.Args["id"].(string), fc.Args["input"].(model.CreateVacancyInput))
+		return ec.resolvers.Mutation().UpdateVacancy(rctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateVacancyInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8060,7 +8061,7 @@ func (ec *executionContext) unmarshalInputCreateVacancyInput(ctx context.Context
 			it.RequiredExperienceDuration = data
 		case "requiredSkills":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredSkills"))
-			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
+			data, err := ec.unmarshalNString2ᚕᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8277,6 +8278,96 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 				return it, err
 			}
 			it.Location = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateVacancyInput(ctx context.Context, obj interface{}) (model.UpdateVacancyInput, error) {
+	var it model.UpdateVacancyInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"title", "description", "location", "startDate", "endDate", "status", "requiredDegreeType", "requiredDegreeField", "requiredExperienceDuration", "requiredSkills"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "location":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Location = data
+		case "startDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDate"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StartDate = data
+		case "endDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endDate"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EndDate = data
+		case "status":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			data, err := ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Status = data
+		case "requiredDegreeType":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredDegreeType"))
+			data, err := ec.unmarshalODegreeType2ᚖLinkKrecᚋgraphᚋmodelᚐDegreeType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequiredDegreeType = data
+		case "requiredDegreeField":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredDegreeField"))
+			data, err := ec.unmarshalODegreeField2ᚖLinkKrecᚋgraphᚋmodelᚐDegreeField(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequiredDegreeField = data
+		case "requiredExperienceDuration":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredExperienceDuration"))
+			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequiredExperienceDuration = data
+		case "requiredSkills":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredSkills"))
+			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequiredSkills = data
 		}
 	}
 
@@ -9881,6 +9972,32 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNString2ᚕᚖstring(ctx context.Context, v interface{}) ([]*string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOString2ᚖstring(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕᚖstring(ctx context.Context, sel ast.SelectionSet, v []*string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalOString2ᚖstring(ctx, sel, v[i])
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNUpdateProfileInput2LinkKrecᚋgraphᚋmodelᚐUpdateProfileInput(ctx context.Context, v interface{}) (model.UpdateProfileInput, error) {
 	res, err := ec.unmarshalInputUpdateProfileInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -9893,6 +10010,11 @@ func (ec *executionContext) unmarshalNUpdateProfileInput2ᚖLinkKrecᚋgraphᚋm
 
 func (ec *executionContext) unmarshalNUpdateUserInput2LinkKrecᚋgraphᚋmodelᚐUpdateUserInput(ctx context.Context, v interface{}) (model.UpdateUserInput, error) {
 	res, err := ec.unmarshalInputUpdateUserInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateVacancyInput2LinkKrecᚋgraphᚋmodelᚐUpdateVacancyInput(ctx context.Context, v interface{}) (model.UpdateVacancyInput, error) {
+	res, err := ec.unmarshalInputUpdateVacancyInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

@@ -62,7 +62,7 @@ type Mutation {
  createVacancy(companyId: ID!, input: CreateVacancyInput!): Vacancy
 
  # Update job vacancy details (companies only)
- updateVacancy(id: ID!, input: CreateVacancyInput!): Vacancy
+ updateVacancy(id: ID!, input: UpdateVacancyInput!): Vacancy
 
  # Delete a job vacancy (companies only)
  deleteVacancy(id: ID!): Boolean
@@ -246,6 +246,19 @@ input CreateVacancyInput {
     requiredDegreeType: DegreeType!
     requiredDegreeField: DegreeField!
     requiredExperienceDuration: Int!
+    requiredSkills: [String]!
+}
+
+input UpdateVacancyInput {
+    title: String
+    description: String
+    location: String
+    startDate: String
+    endDate: String
+    status: Boolean
+    requiredDegreeType: DegreeType
+    requiredDegreeField: DegreeField
+    requiredExperienceDuration: Int
     requiredSkills: [String]
 }
 
