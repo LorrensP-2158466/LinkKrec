@@ -933,11 +933,6 @@ func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]
 	return notifications, nil
 }
 
-// GetPotentialCandiatesForVacancy is the resolver for the getPotentialCandiatesForVacancy field.
-func (r *queryResolver) GetPotentialCandiatesForVacancy(ctx context.Context, id string, distanceInKm int) ([]*model.User, error) {
-	panic(fmt.Errorf("not implemented: GetPotentialCandiatesForVacancy - getPotentialCandiatesForVacancy"))
-}
-
 // GetConnectionRequests is the resolver for the getConnectionRequests field.
 func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*model.ConnectionRequest, error) {
 	q := query_builder.

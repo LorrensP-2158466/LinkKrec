@@ -42,12 +42,6 @@ type Query {
     # Fetch all notifications for a user, with optional filtering by read status or timeframe
     getNotifications(userId: ID!): [Notification]
 
-    # Based on Vacancy, find potential candidates  for this vacancy in a desired distance from the job position
-    getPotentialCandiatesForVacancy(
-    id: ID!,
-    distanceInKm: Int!
-    ): [User]!
-
     # Fetch connection requests sent to a user, with optional filtering by status
     getConnectionRequests(userId: ID!, status: Boolean): [ConnectionRequest]
 
