@@ -19,7 +19,6 @@ run/
 src/run
 
 src/rdf/esco-v1.2.0.ttl
-run/
 
 # IDE
 .idea/
