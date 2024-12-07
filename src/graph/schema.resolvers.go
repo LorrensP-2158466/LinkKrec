@@ -16,12 +16,12 @@ import (
 	"log"
 	"strconv"
 	"time"
-	"time"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/knakk/rdf"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 // Location is the resolver for the location field.

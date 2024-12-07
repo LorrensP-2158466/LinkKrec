@@ -105,13 +105,8 @@ type Query struct {
 type RegisterUserInput struct {
 	Name          string              `json:"name"`
 	Email         string              `json:"email"`
-<<<<<<< HEAD
-	Password      string              `json:"password"`
-	ProfileUpdate *UpdateProfileInput `json:"profileUpdate"`
-=======
 	IsEmployer    bool                `json:"isEmployer"`
 	ProfileUpdate *UpdateProfileInput `json:"profileUpdate,omitempty"`
->>>>>>> origin/auth
 }
 
 type Subscription struct {
@@ -145,21 +140,13 @@ type User struct {
 	ID                      string            `json:"id"`
 	Name                    string            `json:"name"`
 	Email                   string            `json:"email"`
-<<<<<<< HEAD
-	Location                *Location         `json:"location,omitempty"`
-	Connections             []*User           `json:"connections,omitempty"`
-	Education               []*EducationEntry `json:"education,omitempty"`
-	Skills                  []*string         `json:"skills,omitempty"`
-	LookingForOpportunities *bool             `json:"lookingForOpportunities,omitempty"`
-	IsProfileComplete       *bool             `json:"isProfileComplete,omitempty"`
-	Companies               []*Company        `json:"companies,omitempty"`
-=======
-	Location                *string           `json:"location,omitempty"`
+	Location                *Location         `json:"location"`
 	Connections             []*User           `json:"connections,omitempty"`
 	Education               []*EducationEntry `json:"education,omitempty"`
 	Skills                  []string          `json:"skills,omitempty"`
 	LookingForOpportunities bool              `json:"lookingForOpportunities"`
->>>>>>> origin/auth
+	IsProfileComplete       *bool             `json:"isProfileComplete,omitempty"`
+	Companies               []*Company        `json:"companies,omitempty"`
 }
 
 type Vacancy struct {
