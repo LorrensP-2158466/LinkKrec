@@ -196,6 +196,15 @@ type Notification {
     createdAt: String
 }
 
+# a location
+type Location {
+    id: ID!
+    country: String!
+    city: String!
+    street: String!
+    houseNumber: String!
+}
+
 input RegisterUserInput {
  name: String!
  email: String!
@@ -238,4 +247,11 @@ input CreateVacancyInput {
     requiredDegreeField: DegreeField!
     requiredExperienceDuration: Int!
     requiredSkills: [String]
+}
+
+input CreateLocationInput {
+    country: String!
+    city: String!
+    street: String!
+    houseNumber: String!
 }

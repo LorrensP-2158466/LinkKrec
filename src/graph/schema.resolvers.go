@@ -105,17 +105,19 @@ func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID str
 func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, input model.CreateVacancyInput) (*model.Vacancy, error) {
 	vacancyID := uuid.New().String()
 
-	/*var skillQueries = ""
+	// TO DO: add location shit so it isn't a string but an object made with gisco.
+	// Address is in input.Location
+
+	var skillQueries string
 	if input.RequiredSkills != nil {
-		vacancySkills := util.Map(input.RequiredSkills, func(s *string) string {
-			return fmt.Sprintf("\"%s\"", *s)
-		})
-		skillQueries := []string{}
-		for i, skill := range vacancySkills {
-			vacancySkills[i] = fmt.Sprintf("lr:requiredSkill esco_skill:%s", skill)
-			skillQueries = append(skillQueries, fmt.Sprintf(";\nlr:requiredSkill %s", skill))
+		skillQueries = ""
+		for _, skill := range input.RequiredSkills {
+			skillQueries += fmt.Sprintf(" ;\nlr:requiredSkill esco_skill:%s", *skill)
 		}
-	}*/
+		skillQueries += " .\n"
+	} else {
+		skillQueries = ".\n"
+	}
 
 	q := fmt.Sprintf(`
 		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -135,11 +137,11 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 			  lr:vacancyStatus %t;
 		      lr:requiredDegreeType lr:%s ;
 			  lr:requiredDegreeField lr:%s ;
-			  lr:requiredExperienceDuration %d .
+			  lr:requiredExperienceDuration %d %s
 		}
 
 		
-		`, vacancyID, vacancyID, input.Title, input.Description, input.Location, companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType, input.RequiredDegreeField, input.RequiredExperienceDuration)
+		`, vacancyID, vacancyID, input.Title, input.Description, input.Location, companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType, input.RequiredDegreeField, input.RequiredExperienceDuration, skillQueries)
 
 	fmt.Println(q)
 	err := r.UpdateRepo.Update(q)
@@ -270,8 +272,8 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 // GetVacancies is the resolver for the getVacancies field.
 func (r *queryResolver) GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error) {
 	q := query_builder.
-		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "education"}).
-		GroupConcat("experienceDuration", ", ", "experienceDurations", true).
+		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField", "experienceDuration"}).
+		GroupConcat("skill", ", ", "skills", true).
 		WhereSubject("vacancy", "Vacancy").
 		Where("Id", "id").
 		Where("vacancyTitle", "title").
@@ -281,8 +283,10 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 		Where("vacancyStartDate", "startDate").
 		Where("vacancyEndDate", "endDate").
 		Where("vacancyStatus", "status").
-		Where("requiredEducation", "education").
+		Where("requiredDegreeType", "degreeType").
+		Where("requiredDegreeField", "degreeField").
 		Where("requiredExperienceDuration", "experienceDuration").
+		Where("requiredSkill", "skill").
 		WhereExtraction("postedBy", "Id", "postedById")
 	if title != nil {
 		q.Filter("name", []string{*title}, query_builder.EQ)
@@ -296,8 +300,9 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 	if status != nil {
 		q.Filter("status", []string{strconv.FormatBool(*status)}, query_builder.EQ)
 	}
-	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "education"}).Build()
+	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField", "experienceDuration"}).Build()
 
+	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)

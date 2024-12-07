@@ -107,8 +107,9 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 		PREFIX lr: <http://linkrec.example.org/schema#>
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX esco_skill: <http://data.europa.eu/esco/Skill>
 
-		SELECT ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration
+		SELECT ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration (GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
 		WHERE {
 			?vacancy a lr:Vacancy ;
 			lr:Id ?id ;
@@ -120,12 +121,14 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 			lr:vacancyEndDate ?endDate ;
 			lr:vacancyStatus ?status ;
 			lr:requiredDegreeType ?degreeType ;
-   			lr:requiredDegreeField ?degreeField ;
-			lr:requiredExperienceDuration ?experienceDuration .
+			lr:requiredDegreeField ?degreeField ;
+			lr:requiredExperienceDuration ?experienceDuration ;
+			lr:requiredSkill ?skill .
 			?postedBy lr:Id ?postedById .
 
 			FILTER(%s)
 		}
+		GROUP BY ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration
 
 	`, filter)
 	res, err := u.Repo.Query(q)
