@@ -485,15 +485,11 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 
 	vacancyID := uuid.New().String()
 
-	var skillQueries string
-	if input.RequiredSkills != nil {
-		skillQueries = ""
-		for _, skill := range input.RequiredSkills {
-			skillQueries += fmt.Sprintf("\nlr:requiredSkill esco_skill:%s ;", *skill)
-		}
-	} else {
-		skillQueries = ".\n"
+	var skillQueries = ""
+	for _, skill := range input.RequiredSkills {
+		skillQueries += fmt.Sprintf(" ;\nlr:requiredSkill esco_skill:%s", *skill)
 	}
+	skillQueries += " .\n"
 
 	q := fmt.Sprintf(`
 		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -515,8 +511,7 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 				lr:vacancyStatus %t;
 				lr:requiredDegreeType lr:%s ;
 				lr:requiredDegreeField lr:%s ;
-				lr:requiredExperienceDuration %d ;
-				%s
+				lr:requiredExperienceDuration %d %s
 		}
 		`, vacancyID, vacancyID, input.Title, input.Description, locationId, companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType, input.RequiredDegreeField, input.RequiredExperienceDuration, skillQueries)
 	fmt.Println(q)
