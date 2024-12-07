@@ -160,7 +160,35 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 
 // DeleteVacancy is the resolver for the deleteVacancy field.
 func (r *mutationResolver) DeleteVacancy(ctx context.Context, id string) (*bool, error) {
-	panic(fmt.Errorf("not implemented: DeleteVacancy - deleteVacancy"))
+	q := fmt.Sprintf(`
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+		
+		DELETE {
+          ?vacancy ?p ?o .
+          ?location ?lp ?lo .
+        }
+        WHERE {
+          ?vacancy a lr:Vacancy ;
+                   lr:Id "%s" ;
+                   ?p ?o .
+          OPTIONAL {
+            ?vacancy lr:vacancyLocation ?location .
+            ?location ?lp ?lo .
+          }
+        }
+	`, id)
+
+	err := r.UpdateRepo.Update(q)
+	if err != nil {
+		succes := false
+		return &succes, err
+	}
+
+	success := true
+	return &success, nil
 }
 
 // UpdateUserLookingForOpportunities is the resolver for the updateUserLookingForOpportunities field.
