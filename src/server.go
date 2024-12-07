@@ -44,7 +44,7 @@ func GetQueryRepo(c *gin.Context) *sparql.Repo {
 func GetUpdateRepo(c *gin.Context) *sparql.Repo {
 	val, exists := c.Get(string(UpdateRepoKey))
 	if !exists {
-		panic("Something went horribly wrong with assigning the repo to the context")
+		panic("Something went horribly wrong with assigning the update repo to the context")
 	}
 	return val.(*sparql.Repo)
 }
@@ -123,6 +123,7 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*usersession.UserSessio
 	} else {
 		// user exists create session info and return
 		sessInfo, err := util.MapPrimitiveBindingsToStruct[usersession.UserSessionInfo](res.Solutions()[0])
+		fmt.Println(sessInfo)
 		if err != nil {
 			return nil, err
 		}
