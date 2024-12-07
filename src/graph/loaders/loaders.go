@@ -109,7 +109,7 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
-		SELECT ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration (GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
+		SELECT ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration (GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
 		WHERE {
 			?vacancy a lr:Vacancy ;
 				lr:Id ?id ;
@@ -121,6 +121,7 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 				lr:vacancyEndDate ?endDate ;
 				lr:vacancyStatus ?status .
 				?postedBy lr:Id ?postedById .
+				?location lr:Id ?locationId
 
 			OPTIONAL { 
 				?vacancy lr:requiredSkill ?skill .
@@ -138,7 +139,7 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 			}
 			FILTER(%s)
 		}
-		GROUP BY ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration
+		GROUP BY ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration
 
 	`, filter)
 	res, err := u.Repo.Query(q)
@@ -251,7 +252,7 @@ func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []
     			lr:endDate ?endDate ;
                 lr:degreeType ?degType ;
 				lr:degreeField ?degField .
-		FILTER(%s)
+			FILTER(%s)
 		}
 	`, filter)
 	res, err := u.Repo.Query(q)

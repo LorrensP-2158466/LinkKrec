@@ -452,18 +452,45 @@ func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID str
 
 // CreateVacancy is the resolver for the createVacancy field.
 func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, input model.CreateVacancyInput) (*model.Vacancy, error) {
-	vacancyID := uuid.New().String()
+	coordinates := gisco.CoordinatesFromAddress(input.Location.Country, input.Location.City, &input.Location.Street, &input.Location.HouseNumber)
+	if coordinates == nil {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Invalid address")
+	}
 
-	// TO DO: add location shit so it isn't a string but an object made with gisco.
-	// Address is in input.Location
+	locationId := uuid.New().String()
+
+	locationInsert := fmt.Sprintf(`
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+
+		INSERT DATA {
+			lr:Location%s a lr:Location ;
+				lr:Id "%s" ;
+				lr:inCountry "%s" ;
+				lr:inCity "%s" ;
+				lr:inStreet "%s" ;
+				lr:houseNumber "%s" ;
+				lr:longitude "%.6f" ;
+				lr:latitude "%.6f" .
+		}
+	`, locationId, locationId, input.Location.Country, input.Location.City, input.Location.Street, input.Location.HouseNumber, coordinates.Long, coordinates.Lat)
+
+	err := r.UpdateRepo.Update(locationInsert)
+	if err != nil {
+		return nil, err
+	}
+
+	vacancyID := uuid.New().String()
 
 	var skillQueries string
 	if input.RequiredSkills != nil {
 		skillQueries = ""
 		for _, skill := range input.RequiredSkills {
-			skillQueries += fmt.Sprintf(" ;\nlr:requiredSkill esco_skill:%s", *skill)
+			skillQueries += fmt.Sprintf("\nlr:requiredSkill esco_skill:%s ;", *skill)
 		}
-		skillQueries += " .\n"
 	} else {
 		skillQueries = ".\n"
 	}
@@ -473,24 +500,27 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		PREFIX lr: <http://linkrec.example.org/schema#>
 		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 
 		INSERT DATA {
-		  lr:vacancy%s a lr:Vacancy ;
-		      lr:Id "%s" ;
-		      lr:vacancyTitle "%s" ;
-			  lr:vacancyDescription "%s" ;
-			  lr:vacancyLocation "%s" ;
-			  lr:postedBy lr:Company%s ;
-			  lr:vacancyStartDate "%s"^^xsd:date ;
-			  lr:vacancyEndDate "%s"^^xsd:date ;
-			  lr:vacancyStatus %t;
-		      lr:requiredDegreeType lr:%s ;
-			  lr:requiredDegreeField lr:%s ;
-			  lr:requiredExperienceDuration %d %s
+			lr:vacancy%s a lr:Vacancy ;
+				lr:Id "%s" ;
+				lr:vacancyTitle "%s" ;
+				lr:vacancyDescription "%s" ;
+				lr:vacancyLocation lr:Location%s ;
+				lr:postedBy lr:Company%s ;
+				lr:vacancyStartDate "%s"^^xsd:date ;
+				lr:vacancyEndDate "%s"^^xsd:date ;
+				lr:vacancyStatus %t;
+				lr:requiredDegreeType lr:%s ;
+				lr:requiredDegreeField lr:%s ;
+				lr:requiredExperienceDuration %d ;
+				%s
 		}
-		`, vacancyID, vacancyID, input.Title, input.Description, input.Location, companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType, input.RequiredDegreeField, input.RequiredExperienceDuration, skillQueries)
-
-	err := r.UpdateRepo.Update(q)
+		`, vacancyID, vacancyID, input.Title, input.Description, locationId, companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType, input.RequiredDegreeField, input.RequiredExperienceDuration, skillQueries)
+	fmt.Println(q)
+	err = r.UpdateRepo.Update(q)
 	if err != nil {
 		return nil, err
 	}
@@ -941,6 +971,7 @@ func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID strin
 		
 			?vacancy lr:Id "%s" ;
 				lr:vacancyLocation ?vacancyLoc ;
+				lr:vacancyStatus true ;
 				OPTIONAL { ?vacancy lr:requiredSkill ?requiredSkill }
 				OPTIONAL { ?vacancy lr:requiredDegreeType ?requiredDegreeType }
 				OPTIONAL { ?vacancy lr:requiredDegreeField ?requiredDegreeField }
@@ -1020,6 +1051,7 @@ func (r *queryResolver) MatchUserToVacancies(ctx context.Context, userID string,
 			# Vacancy matching
 			?vacancy lr:Id ?vacancyId ;
 				lr:vacancyLocation ?vacancyLoc ;
+				lr:vacancyStatus true ;
 			OPTIONAL { ?vacancy lr:requiredSkill ?userSkill }
 			OPTIONAL { ?vacancy lr:requiredDegreeType ?requiredDegreeType }
 			OPTIONAL { ?vacancy lr:requiredDegreeField ?requiredDegreeField }
@@ -1099,6 +1131,11 @@ func (r *userResolver) Companies(ctx context.Context, obj *model.User) ([]*model
 		return c.ID
 	})
 	return loaders.GetCompanies(ctx, ids)
+}
+
+// Location is the resolver for the location field.
+func (r *vacancyResolver) Location(ctx context.Context, obj *model.Vacancy) (*model.Location, error) {
+	return loaders.GetLocation(ctx, obj.Location.ID)
 }
 
 // PostedBy is the resolver for the postedBy field.

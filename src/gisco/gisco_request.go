@@ -93,7 +93,6 @@ type GiscoResponse struct {
 }
 
 func CoordinatesFromAddress(country string, city string, road *string, housenumber *string) *Coordinates {
-
 	params := url.Values{}
 	params.Add("coutnry", europeanCountryCodes[strings.ToLower(country)])
 	params.Add("city", city)

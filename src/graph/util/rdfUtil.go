@@ -111,6 +111,11 @@ func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
 	}
 	vacancyObj.RequiredDegreeField = &degreeFieldObj
 
+	LocObj := model.Location{
+		ID: vacancy["locationId"].String(),
+	}
+	vacancyObj.Location = &LocObj
+
 	experienceDuration, err := strconv.Atoi(vacancy["experienceDuration"].String())
 	if err != nil {
 		return nil, err
