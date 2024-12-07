@@ -732,18 +732,6 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 	if lookingForOpportunities != nil {
 		oppt_filter = fmt.Sprintf("FILTER(?isLookingForOpportunities = %v)", *lookingForOpportunities)
 	}
-	if isEmployer != nil {
-		q.Filter("isEmployer", []string{strconv.FormatBool(*isEmployer)}, query_builder.EQ)
-	}
-	if len(skills) > 0 {
-		convSkills := util.Map(skills, func(s *string) string {
-			return fmt.Sprintf("\"%s\"", *s)
-		})
-		q.Filter("skill", convSkills, query_builder.IN)
-	}
-	if lookingForOpportunities != nil {
-		oppt_filter = fmt.Sprintf("FILTER(?isLookingForOpportunities = %v)", *lookingForOpportunities)
-	}
 
 	qs := fmt.Sprintf(`
 	PREFIX lr: <http://linkrec.example.org/schema#>
