@@ -109,6 +109,11 @@ type RegisterUserInput struct {
 	ProfileUpdate *UpdateProfileInput `json:"profileUpdate,omitempty"`
 }
 
+type Skill struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+}
+
 type Subscription struct {
 }
 
@@ -143,7 +148,7 @@ type User struct {
 	Location                *Location         `json:"location"`
 	Connections             []*User           `json:"connections,omitempty"`
 	Education               []*EducationEntry `json:"education,omitempty"`
-	Skills                  []string          `json:"skills,omitempty"`
+	Skills                  []*Skill          `json:"skills,omitempty"`
 	LookingForOpportunities bool              `json:"lookingForOpportunities"`
 	IsProfileComplete       *bool             `json:"isProfileComplete,omitempty"`
 	Companies               []*Company        `json:"companies,omitempty"`
@@ -161,7 +166,7 @@ type Vacancy struct {
 	RequiredDegreeType         *DegreeType  `json:"requiredDegreeType,omitempty"`
 	RequiredDegreeField        *DegreeField `json:"requiredDegreeField,omitempty"`
 	RequiredExperienceDuration *int         `json:"requiredExperienceDuration,omitempty"`
-	RequiredSkills             []*string    `json:"requiredSkills,omitempty"`
+	RequiredSkills             []*Skill     `json:"requiredSkills,omitempty"`
 }
 
 type DegreeField string

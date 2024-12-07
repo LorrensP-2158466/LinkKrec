@@ -104,7 +104,7 @@ type User {
     location: Location!
     connections: [User!]
     education: [EducationEntry!]
-    skills: [String!]
+    skills: [Skill!]
     lookingForOpportunities: Boolean!
     isProfileComplete: Boolean
     companies: [Company]
@@ -285,7 +285,7 @@ type Vacancy {
     requiredDegreeType: DegreeType
     requiredDegreeField: DegreeField
     requiredExperienceDuration: Int 
-    requiredSkills: [String]
+    requiredSkills: [Skill!]
 }
 
 # A connection request from a user to a user
@@ -314,6 +314,13 @@ type Location {
     houseNumber: String!
 }
 
+# so we have access to the label and the id of the skill (esco...)
+# TODO: for future, add different label languages supported by esco
+type Skill{
+    id: String!,
+    label: String!
+}
+
 input RegisterUserInput {
  name: String!
  email: String!
@@ -325,6 +332,7 @@ input RegisterUserInput {
 input UpdateProfileInput {
  education: [EducationEntryInput!]
  experience: [ExperienceEntryInput!]
+ # ids of skills, not labels
  skills: [String!]
  isLookingForOpportunities: Boolean!
  country: String!
@@ -359,7 +367,7 @@ input CreateVacancyInput {
     requiredDegreeType: DegreeType!
     requiredDegreeField: DegreeField!
     requiredExperienceDuration: Int!
-    requiredSkills: [String]!
+    requiredSkills: [String]! # ids
 }
 
 input UpdateVacancyInput {

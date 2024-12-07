@@ -81,7 +81,7 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*usersession.UserSessio
 
 		SELECT 
 			?id ?email ?name ?ProfileCompleted
-			GROUP_CONCAT(DISTINCT ?companyId; seperator", ") AS ?companyIds)
+			(GROUP_CONCAT(DISTINCT ?companyId; separator=", ") AS ?companyIds)
 		WHERE{
 			?user a lr:User;
 				lr:Id ?id ;

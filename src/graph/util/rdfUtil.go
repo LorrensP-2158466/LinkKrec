@@ -43,6 +43,15 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 		}
 	}
 	userObj.Companies = companies
+
+	var skills = make([]*model.Skill, 0)
+	if user["skillIdsAndLabels"] != nil {
+		for _, skillIdAndLabel := range strings.Split(user["skillIdsAndLabels"].String(), ", ") {
+			splitted := strings.SplitN(skillIdAndLabel, "|", 2)
+			skills = append(skills, &model.Skill{ID: splitted[0], Label: splitted[1]})
+		}
+	}
+	userObj.Skills = skills
 	return &userObj, nil
 }
 

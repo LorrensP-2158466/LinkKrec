@@ -705,9 +705,9 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 	PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 	
 	SELECT ?id ?name ?email ?locationId ?lookingForOpportunities 
-		(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills) 
 		(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections) 
 		(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
+		(GROUP_CONCAT(CONCAT(STRAFTER(STR(?escoSkill), STR(esco_skill:)), "|", ?skill); separator=",") as ?skillIdsAndLabels)
 	WHERE {
 		?user a lr:User ;
 		lr:Id ?id ;
@@ -750,6 +750,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		if err != nil {
 			return nil, err
 		}
+
 		users = append(users, obj)
 	}
 	return users, nil
