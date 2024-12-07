@@ -931,6 +931,8 @@ func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID strin
 		PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 
 		SELECT DISTINCT ?userId ?distanceInKm
 		WHERE {
@@ -943,15 +945,13 @@ func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID strin
 				OPTIONAL { ?vacancy lr:requiredDegreeType ?requiredDegreeType }
 				OPTIONAL { ?vacancy lr:requiredDegreeField ?requiredDegreeField }
 
-
-			
 			?vacancyLoc lr:longitude ?long2 ;
 				lr:latitude ?lat2 .
 				
 			?user lr:Id ?userId ;
-				lr:hasEmail ?userEmail ;
-				lr:hasName ?userName ;
-				lr:hasLocation ?userLoc;
+				foaf:mbox ?userEmail ;
+				foaf:name ?userName ;
+				foaf:based_near ?userLoc;
 				lr:hasSkill ?requiredSkill;  # Direct match instead of FILTER
 				lr:hasEducation ?education ;
 				lr:isProfileComplete true ;
@@ -972,13 +972,12 @@ func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID strin
 				lfn:cos(?lat1 * ?pi / 180) * lfn:cos(?lat2 * ?pi / 180) *
 				lfn:pow(lfn:sin((?long2 - ?long1) * ?pi / 360), 2)
 			)) AS ?distanceInKm)
-		
+
 			FILTER(?distanceInKm <= %f)
 		}
 	`, vacancyID, maxDist)
 
 	res, _ := r.Repo.Query(q)
-
 	userIds := res.Bindings()["userId"]
 	var users = make([]*model.User, 0)
 	if userIds != nil {
@@ -999,6 +998,7 @@ func (r *queryResolver) MatchUserToVacancies(ctx context.Context, userID string,
 		PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
 		SELECT DISTINCT ?vacancyId ?matchedSkill ?distanceInKm WHERE {
 			# constants
@@ -1007,7 +1007,7 @@ func (r *queryResolver) MatchUserToVacancies(ctx context.Context, userID string,
 			}
 
 			?user lr:Id "%s" ;
-				lr:hasLocation ?userLoc ;
+				foaf:based_near ?userLoc ;
 				lr:hasSkill ?userSkill ;
 				lr:hasEducation ?education .
 
@@ -1041,7 +1041,6 @@ func (r *queryResolver) MatchUserToVacancies(ctx context.Context, userID string,
 	`, userID, maxDist)
 
 	res, _ := r.Repo.Query(q)
-
 	vacancyIds := res.Bindings()["vacancyId"]
 	var vacancies = make([]*model.Vacancy, 0)
 	if vacancyIds != nil {
