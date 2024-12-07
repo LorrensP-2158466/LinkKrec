@@ -14,6 +14,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"slices"
 	"strconv"
 	"time"
 
@@ -452,6 +453,10 @@ func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID str
 
 // CreateVacancy is the resolver for the createVacancy field.
 func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, input model.CreateVacancyInput) (*model.Vacancy, error) {
+	usersess := usersession.For(ctx)
+	if !slices.Contains(usersess.CompanyIds, companyID) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't create vacancy for other company")
+	}
 	vacancyID := uuid.New().String()
 
 	// TO DO: add location shit so it isn't a string but an object made with gisco.
@@ -501,6 +506,10 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 
 // UpdateVacancy is the resolver for the updateVacancy field.
 func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input model.UpdateVacancyInput) (*model.Vacancy, error) {
+	usersess := usersession.For(ctx)
+	if !slices.Contains(usersess.CompanyIds, id) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't create vacancy for other company")
+	}
 	var deleteParts, insertParts string
 
 	// Conditionally add fields to the DELETE/INSERT sections
@@ -584,6 +593,10 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 
 // DeleteVacancy is the resolver for the deleteVacancy field.
 func (r *mutationResolver) DeleteVacancy(ctx context.Context, id string) (*bool, error) {
+	usersess := usersession.For(ctx)
+	if !slices.Contains(usersess.CompanyIds, id) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't create vacancy for other company")
+	}
 	q := fmt.Sprintf(`
 		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>

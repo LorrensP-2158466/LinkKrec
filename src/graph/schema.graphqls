@@ -71,14 +71,14 @@ type Mutation {
     # Notify a user when someone visits their profile
     notifyProfileVisit(visitorId: ID!, visitedUserId: ID!): Notification
 
- # Create a job vacancy (companies only)
- createVacancy(companyId: ID!, input: CreateVacancyInput!): Vacancy
+    # Create a job vacancy (companies only)
+    createVacancy(companyId: ID!, input: CreateVacancyInput!): Vacancy
 
- # Update job vacancy details (companies only)
- updateVacancy(id: ID!, input: UpdateVacancyInput!): Vacancy
+    # Update job vacancy details (companies only)
+    updateVacancy(id: ID!, input: UpdateVacancyInput!): Vacancy
 
- # Delete a job vacancy (companies only)
- deleteVacancy(id: ID!): Boolean
+    # Delete a job vacancy (companies only)
+    deleteVacancy(id: ID!): Boolean
 
     # Set user looking for job opportunities
     updateUserLookingForOpportunities(userId: ID!, looking: Boolean!): User

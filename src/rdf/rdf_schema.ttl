@@ -36,6 +36,9 @@ lr:isLookingForOpportunities a rdf:Property ;
 lr:isProfileComplete a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range schema:Boolean .
+lr:hasCompany a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range lr:Company .
 
 lr:Location a rdfs:Class .
 lr:Id a rdf:Property ;
