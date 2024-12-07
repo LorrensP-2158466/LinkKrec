@@ -2,14 +2,13 @@ type Query {
     # Fetch a specific user by ID
     getUser(id: ID!): User
 
-    # Fetch users by filtering on various fields
-    getUsers(
-        name: String
-        location: String
-        isEmployer: Boolean
-        skills: [String]
-        lookingForOpportunities: Boolean
-    ): [User]
+ # Fetch users by filtering on various fields
+ getUsers(
+   name: String,
+   location: String,
+   skills: [String],
+   lookingForOpportunities: Boolean,
+ ): [User]
 
     # Fetch all job vacancies with optional filtering
     getVacancies(
@@ -22,11 +21,14 @@ type Query {
     # Fetch a specific job vacancy by ID
     getVacancy(id: ID!): Vacancy
 
-    # Fetch employers with optional filtering
-    getEmployers(name: String, location: String): [Employer]
+# Fetch companies with optional filtering
+ getCompanies(
+   name: String,
+   location: String,
+ ): [Company]
 
-    # Fetch specific employer by ID, with details about their vacancies and employees
-    getEmployer(id: ID!): Employer
+ # Fetch specific company by ID, with details about their vacancies and employees
+ getCompany(id: ID!): Company
 
     # Fetch all notifications for a user, with optional filtering by read status or timeframe
     getNotifications(userId: ID!): [Notification]
@@ -58,14 +60,14 @@ type Mutation {
     # Notify a user when someone visits their profile
     notifyProfileVisit(visitorId: ID!, visitedUserId: ID!): Notification
 
-    # Create a job vacancy (employer only)
-    createVacancy(employerId: ID!, input: CreateVacancyInput!): Vacancy
+ # Create a job vacancy (companies only)
+ createVacancy(companyId: ID!, input: CreateVacancyInput!): Vacancy
 
-    # Update job vacancy details (employer only)
-    updateVacancy(id: ID!, input: CreateVacancyInput!): Vacancy
+ # Update job vacancy details (companies only)
+ updateVacancy(id: ID!, input: CreateVacancyInput!): Vacancy
 
-    # Delete a job vacancy (employer only)
-    deleteVacancy(id: ID!): Boolean
+ # Delete a job vacancy (companies only)
+ deleteVacancy(id: ID!): Boolean
 
     # Set user looking for job opportunities
     updateUserLookingForOpportunities(userId: ID!, looking: Boolean!): User
@@ -89,22 +91,22 @@ type User {
     name: String!
     email: String!
     location: String
-    isEmployer: Boolean
-    connections: [User]
+       connections: [User]
     education: [EducationEntry]
     skills: [String]
     lookingForOpportunities: Boolean
     isProfileComplete: Boolean
+ companies: [Company]
 }
 
 # A company/person who wants to recruit Users
-type Employer {
-    id: ID!
-    name: String!
-    email: String!
-    location: String
-    vacancies: [Vacancy!]!
-    employees: [User!]!
+type Company{
+ id: ID!,
+ name: String!,
+ email: String!,
+ location: String,
+ vacancies: [Vacancy!]!,
+ employees: [User!]!,
 }
 
 # A Degree obtained from an institution, used for matching candidates
@@ -168,13 +170,15 @@ type Vacancy {
     id: ID!
     title: String!
     description: String!
-    requiredEducation: DegreeType!
-    requiredExperienceDurations: [Int!]! # in years, per experience in order
     location: String!
-    postedBy: Employer!
+    postedBy: Company!
     startDate: String
     endDate: String
     status: Boolean
+    requiredDegreeType: DegreeType
+    requiredDegreeField: DegreeField
+    requiredExperienceDuration: Int 
+    requiredSkills: [String]
 }
 
 # A connection request from a user to a user
@@ -194,12 +198,20 @@ type Notification {
     createdAt: String
 }
 
+# a location
+type Location {
+    id: ID!
+    country: String!
+    city: String!
+    street: String!
+    houseNumber: String!
+}
+
 input RegisterUserInput {
-    name: String!
-    email: String!
-    password: String!
-    isEmployer: Boolean
-    profileUpdate: UpdateProfileInput!
+ name: String!
+ email: String!
+ password: String!
+ profileUpdate: UpdateProfileInput!
 }
 
 input UpdateUserInput {
@@ -229,7 +241,19 @@ input ExperienceEntryInput {
 input CreateVacancyInput {
     title: String!
     description: String!
-    location: String
-    startDate: String
-    endDate: String
+    location: String!
+    startDate: String!
+    endDate: String!
+    status: Boolean!
+    requiredDegreeType: DegreeType!
+    requiredDegreeField: DegreeField!
+    requiredExperienceDuration: Int!
+    requiredSkills: [String]
+}
+
+input CreateLocationInput {
+    country: String!
+    city: String!
+    street: String!
+    houseNumber: String!
 }
