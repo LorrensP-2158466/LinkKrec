@@ -43,7 +43,6 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 		}
 	}
 	userObj.Companies = companies
-
 	return &userObj, nil
 }
 

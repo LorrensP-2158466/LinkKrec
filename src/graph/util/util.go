@@ -43,6 +43,13 @@ func MapPrimitiveBindingsToStruct[T any](bindings map[string]rdf.Term) (T, error
 			} else if field.Type.Kind() == reflect.Bool {
 				v, _ := strconv.ParseBool(bindingVal.String())
 				structValue.Field(i).Set(reflect.ValueOf(v))
+			} else if field.Type.Kind() == reflect.Slice && field.Type.Elem().Kind() == reflect.String {
+				var sliceValues []string
+				for _, v := range strings.Split(bindingVal.String(), ", ") {
+					sliceValues = append(sliceValues, v)
+				}
+				structValue.Field(i).Set(reflect.ValueOf(sliceValues))
+
 			}
 		}
 	}

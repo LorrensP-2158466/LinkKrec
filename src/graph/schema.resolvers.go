@@ -58,57 +58,6 @@ func (r *connectionRequestResolver) ConnectedToUser(ctx context.Context, obj *mo
 // RegisterUser is the resolver for the registerUser field.
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.RegisterUserInput) (*model.User, error) {
 	panic("RegisterUser is deprecated and not supported in any way, please go through /auth/`provider`")
-	insert := fmt.Sprintf(`
-		%s
-		INSERT {
-		    ?newUser a lr:User ;
-		        foaf:name?name ;
-		        foaf:mbox ?email ;
-		        lr:isProfileComplete false .
-		}
-		WHERE {
-		    {
-		        SELECT (COUNT(?existingUser) + 1 AS ?userCount)
-		        WHERE {
-		            ?existingUser a lr:User .
-		        }
-		    }
-		    BIND(IRI(CONCAT(STR(lr:), "User", STR(?userCount))) AS ?newUser)
-		    BIND("%s" AS ?name)
-		    BIND("%s" AS ?email)
-		    BIND(false AS ?isEmployer)
-		}
-		`, query_builder.PREFIXES, input.Name, input.Email)
-
-	_, err := r.Repo.Query(insert)
-
-	if err != nil {
-		log.Println("Error registering user {}", err)
-		return nil, err
-	}
-	query := fmt.Sprintf(`
-			%s
-			SELECT ?name ?email ?isEmployer
-			WHERE {
-			    ?user a lr:User ;
-			        lr:hasName ?name ;
-			        lr:hasEmail "john@example.com" ;
-			        lr:isEmployer ?isEmployer .
-			}
-			LIMIT 1
-		`, query_builder.PREFIXES)
-
-	res, err := r.Repo.Query(query)
-
-	if len(res.Solutions()) > 1 {
-		panic("For some reason registering a user returned ")
-	}
-	for _, user := range res.Solutions() {
-		// only 1 user
-		return util.MapRdfUserToGQL(user)
-	}
-
-	return nil, fmt.Errorf("Could Not Register User Because i am working on it my g")
 }
 
 // CompleteUserProfile is the resolver for the completeUserProfile field.
@@ -184,7 +133,7 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
 			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
 			PREFIX esco: <http://data.europa.eu/esco/model#>
-			PREFIX esco_skill: <http://data.europa.eu/esco/Skill>
+			PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 
 			DELETE {
 				?user a lr:User ;
@@ -315,7 +264,7 @@ func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, inp
 			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
 			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
 			PREFIX esco: <http://data.europa.eu/esco/model#>
-			PREFIX esco_skill: <http://data.europa.eu/esco/Skill>
+			PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 
 			DELETE {
 				?user a lr:User ;
@@ -734,14 +683,15 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 	}
 
 	qs := fmt.Sprintf(`
+	PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
 	PREFIX lr: <http://linkrec.example.org/schema#>
 	PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 	PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
 	PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 	PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-	PREFIX esco_skill : <http://data.europa.eu/esco/Skill>
-
-	SELECT ?id ?name ?email ?location ?lookingForOpportunities 
+	PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+	
+	SELECT ?id ?name ?email ?locationId ?lookingForOpportunities 
 		(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills) 
 		(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections) 
 		(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
@@ -752,8 +702,8 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		foaf:mbox ?email ;
 		lr:isLookingForOpportunities ?isLookingForOpportunities .
 		OPTIONAL {
-			?user lr:hasLocation ?locationEntry .
-			?locationEntry lr:Id ?location .
+			?user foaf:based_near ?locationEntry .
+			?locationEntry lr:Id ?locationId .
 		}
 		OPTIONAL {
 			?user lr:hasSkill ?escoSkill .
@@ -774,7 +724,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		%s
 
 	}
-	GROUP BY ?id ?name ?email ?location ?lookingForOpportunities`, name_filter, skill_filter, oppt_filter)
+	GROUP BY ?id ?name ?email ?locationId ?lookingForOpportunities`, name_filter, skill_filter, oppt_filter)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)

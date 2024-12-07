@@ -24,6 +24,8 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+		PREFIX esco: <http://data.europa.eu/esco/model#>
+		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 
 		SELECT ?id ?name ?email ?locationId ?lookingForOpportunities
 			(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
@@ -52,8 +54,8 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 			?education lr:Id ?educationEntry .
 		}
 		OPTIONAL {
-			?user lr:hasLocation ?location .
-			?location lr:Id ?locationEntry .
+			?user foaf:based_near ?location .
+			?location lr:Id ?locationId .
 		}
 
 		FILTER(%s)
@@ -405,8 +407,6 @@ func (u *DataBase) getLocations(ctx context.Context, locationIDs []string) ([]*m
 				lr:inCity ?city ;
 				lr:inStreet ?street ;
 				lr:houseNumber ?houseNumber ;
-				lr:longitude ?longitude ;
-				lr:latitude ?latitude .
 
 			FILTER(%s)
 		}
