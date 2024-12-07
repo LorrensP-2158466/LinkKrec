@@ -40,6 +40,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 			OPTIONAL {
 				?user lr:hasSkill ?escoSkill .
 				?escoSkill skos:prefLabel ?skill .
+				FILTER(LANG(?skill) = "en")
 			}
 			OPTIONAL {
 				?user lr:hasConnection ?connection .
