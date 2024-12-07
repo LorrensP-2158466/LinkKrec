@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 # Environment variables
 .env
@@ -18,10 +19,7 @@ run/
 src/run
 
 src/rdf/esco-v1.2.0.ttl
-run/databases/
-run/logs/
-run/backups/
-run/system_files/
+run/
 
 # IDE
 .idea/

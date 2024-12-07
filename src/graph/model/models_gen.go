@@ -95,7 +95,7 @@ type Subscription struct {
 type UpdateProfileInput struct {
 	Education                 []*EducationEntryInput  `json:"education,omitempty"`
 	Experience                []*ExperienceEntryInput `json:"experience,omitempty"`
-	Skills                    []*string               `json:"skills,omitempty"`
+	Skills                    []string                `json:"skills,omitempty"`
 	IsLookingForOpportunities bool                    `json:"isLookingForOpportunities"`
 	Country                   string                  `json:"country"`
 	City                      string                  `json:"city"`
@@ -103,36 +103,28 @@ type UpdateProfileInput struct {
 	Housenumber               string                  `json:"housenumber"`
 }
 
-type UpdateUserInput struct {
-	Name  *string `json:"name,omitempty"`
-	Email *string `json:"email,omitempty"`
-}
-
 type User struct {
-	ID                      string             `json:"id"`
-	Name                    string             `json:"name"`
-	Email                   string             `json:"email"`
-	Location                *string            `json:"location,omitempty"`
-	IsEmployer              *bool              `json:"isEmployer,omitempty"`
-	Connections             []*User            `json:"connections,omitempty"`
-	Education               []*EducationEntry  `json:"education,omitempty"`
-	Experience              []*ExperienceEntry `json:"experience,omitempty"`
-	Skills                  []*string          `json:"skills,omitempty"`
-	LookingForOpportunities *bool              `json:"lookingForOpportunities,omitempty"`
+	ID                      string            `json:"id"`
+	Name                    string            `json:"name"`
+	Email                   string            `json:"email"`
+	Location                *string           `json:"location,omitempty"`
+	Connections             []*User           `json:"connections,omitempty"`
+	Education               []*EducationEntry `json:"education,omitempty"`
+	Skills                  []string          `json:"skills,omitempty"`
+	LookingForOpportunities bool              `json:"lookingForOpportunities"`
 }
 
 type Vacancy struct {
-	ID                          string           `json:"id"`
-	Title                       string           `json:"title"`
-	Description                 string           `json:"description"`
-	RequiredEducation           DegreeType       `json:"requiredEducation"`
-	RequiredExperiences         []ExperienceType `json:"requiredExperiences"`
-	RequiredExperienceDurations []int            `json:"requiredExperienceDurations"`
-	Location                    string           `json:"location"`
-	PostedBy                    *Employer        `json:"postedBy"`
-	StartDate                   *string          `json:"startDate,omitempty"`
-	EndDate                     *string          `json:"endDate,omitempty"`
-	Status                      *bool            `json:"status,omitempty"`
+	ID                          string     `json:"id"`
+	Title                       string     `json:"title"`
+	Description                 string     `json:"description"`
+	RequiredEducation           DegreeType `json:"requiredEducation"`
+	RequiredExperienceDurations []int      `json:"requiredExperienceDurations"`
+	Location                    string     `json:"location"`
+	PostedBy                    *Employer  `json:"postedBy"`
+	StartDate                   *string    `json:"startDate,omitempty"`
+	EndDate                     *string    `json:"endDate,omitempty"`
+	Status                      *bool      `json:"status,omitempty"`
 }
 
 type DegreeField string

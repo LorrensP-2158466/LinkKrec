@@ -17,28 +17,31 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		ids = append(ids, s)
 	}
 	filter := strings.Join(ids, " || ")
-	// zijn de optionals echt nodig hier?
+
 	q := fmt.Sprintf(`
 		PREFIX lr: <http://linkrec.example.org/schema#>
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
 		SELECT ?name ?id ?email ?isEmployer ?location ?lookingForOpportunities
 			(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
 			(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections)
 			(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
-			(GROUP_CONCAT(DISTINCT ?experienceEntry; separator=", ") AS ?experiences)
 		WHERE {
 		?user a lr:User ;
 				lr:Id ?id ;
-				lr:hasName ?name ;
-				lr:hasEmail ?email ;
-				lr:isEmployer ?isEmployer ;
-				lr:hasLocation ?location ;
+				foaf:name ?name ;
+				foaf:mbox ?email ;
 				lr:isLookingForOpportunities ?isLookingForOpportunities ;
-				lr:hasSkill ?skill .
 		BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
 
+		OPTIONAL {
+			?user lr:hasSkill ?escoSkill .
+			?escoSkill skos:prefLabel ?skill .
+			FILTER(LANG(?skill) = "en")
+		}
 		OPTIONAL {
 			?user lr:hasConnection ?connection .
 			?connection lr:Id ?connectionName .
@@ -48,8 +51,8 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 			?education lr:Id ?educationEntry .
 		}
 		OPTIONAL {
-			?user lr:hasExperience ?experience .
-			?experience lr:Id ?experienceEntry .
+			?user lr:hasLocation ?location .
+			?location lr:Id ?locationEntry .
 		}
 
 		FILTER(%s)
@@ -60,8 +63,6 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 	if err != nil {
 		return nil, []error{err}
 	}
-
-	fmt.Println("res: ", res)
 
 	users := make([]*model.User, len(userIDs))
 	errs := make([]error, len(userIDs))
@@ -101,7 +102,8 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-		SELECT ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?education (GROUP_CONCAT(DISTINCT ?experienceType; separator=", ") AS ?experienceTypes) (GROUP_CONCAT(DISTINCT ?experienceDuration; separator=", ") AS ?experienceDurations)
+		SELECT ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?education 
+			(GROUP_CONCAT(DISTINCT ?experienceDuration; separator=", ") AS ?experienceDurations)
 		WHERE {
 			?vacancy a lr:Vacancy ;
 			lr:Id ?id ;
@@ -113,7 +115,6 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 			lr:vacancyEndDate ?endDate ;
 			lr:vacancyStatus ?status ;
 			lr:requiredEducation ?education ;
-			lr:requiredExperienceType ?experienceType ;
 			lr:requiredExperienceDuration ?experienceDuration .
 			?postedBy lr:Id ?postedById .
 
@@ -219,24 +220,24 @@ func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-		SELECT ?id ?institution ?info ?degree ?field
+		SELECT ?id ?institution ?info 
+			(STRAFTER(STR(?degField), "#") AS ?field) 
+			(STRAFTER(STR(?degType), "#") AS ?degree)
 		WHERE {
 			?education a lr:EducationEntry ;
-			lr:Id ?id ;
-			lr:institutionName ?institution ;
-			lr:institutionInfo ?info ;
-			lr:degreeType ?degree ;
-			lr:degreeField ?field .
+				lr:Id ?id ;
+				lr:institutionName ?institution ;
+				lr:extraInfo ?info ;
+				lr:degreeType ?degType ;
+				lr:degreeField ?degField .
 
 		FILTER(%s)
 		}
-		GROUP BY ?id ?institution ?info ?degree ?field
 	`, filter)
 	res, err := u.Repo.Query(q)
 	if err != nil {
 		return nil, []error{err}
 	}
-	fmt.Println("res: ", res)
 
 	educationEntries := make([]*model.EducationEntry, len(educationEntryIDs))
 	errs := make([]error, len(educationEntryIDs))
@@ -262,59 +263,59 @@ func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []
 	return educationEntries, errs
 }
 
-func (u *DataBase) getExperienceEntries(ctx context.Context, experienceEntryIDs []string) ([]*model.ExperienceEntry, []error) {
-	var ids []string
-	for _, id := range experienceEntryIDs {
-		s := fmt.Sprintf("?id = \"%s\"", id)
-		ids = append(ids, s)
-	}
-	filter := strings.Join(ids, " || ")
-	q := fmt.Sprintf(`
-		PREFIX lr: <http://linkrec.example.org/schema#>
-		PREFIX schema: <http://schema.org/>
-		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+// func (u *DataBase) getExperienceEntries(ctx context.Context, experienceEntryIDs []string) ([]*model.ExperienceEntry, []error) {
+// 	var ids []string
+// 	for _, id := range experienceEntryIDs {
+// 		s := fmt.Sprintf("?id = \"%s\"", id)
+// 		ids = append(ids, s)
+// 	}
+// 	filter := strings.Join(ids, " || ")
+// 	q := fmt.Sprintf(`
+// 		PREFIX lr: <http://linkrec.example.org/schema#>
+// 		PREFIX schema: <http://schema.org/>
+// 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-		SELECT ?id ?title ?description ?startDate ?endDate ?experienceType
-		WHERE {
-			?experience a lr:ExperienceEntry ;
-			lr:Id ?id ;
-			lr:experienceTitle ?title ;
-			lr:experienceDescription ?description ;
-			lr:experienceType ?experienceType ;
-			lr:experienceStartDate ?startDate ;
-			lr:experienceEndDate ?endDate .
+// 		SELECT ?id ?title ?description ?startDate ?endDate ?experienceType
+// 		WHERE {
+// 			?experience a lr:ExperienceEntry ;
+// 			lr:Id ?id ;
+// 			lr:experienceTitle ?title ;
+// 			lr:experienceDescription ?description ;
+// 			lr:experienceType ?experienceType ;
+// 			lr:experienceStartDate ?startDate ;
+// 			lr:experienceEndDate ?endDate .
 
-		FILTER(%s)
-		}
-	`, filter)
-	res, err := u.Repo.Query(q)
-	if err != nil {
-		return nil, []error{err}
-	}
+// 		FILTER(%s)
+// 		}
+// 	`, filter)
+// 	res, err := u.Repo.Query(q)
+// 	if err != nil {
+// 		return nil, []error{err}
+// 	}
 
-	experienceEntries := make([]*model.ExperienceEntry, len(experienceEntryIDs))
-	errs := make([]error, len(experienceEntryIDs))
+// 	experienceEntries := make([]*model.ExperienceEntry, len(experienceEntryIDs))
+// 	errs := make([]error, len(experienceEntryIDs))
 
-	var foundExperienceEntries = make(map[string]*model.ExperienceEntry)
-	for _, m := range res.Solutions() {
-		experienceEntry, err := util.MapRdfExperienceEntryToGQL(m)
-		if err != nil {
-			return nil, []error{err}
-		}
-		foundExperienceEntries[experienceEntry.ID] = experienceEntry
-	}
-	// fill return array with empty objects so the lengths match
-	for i, id := range experienceEntryIDs {
-		if experienceEntry, found := foundExperienceEntries[id]; found {
-			experienceEntries[i] = experienceEntry
-			errs[i] = nil
-		} else {
-			experienceEntries[i] = &model.ExperienceEntry{ID: id}
-			errs[i] = fmt.Errorf("experienceEntry not found for ID: %s", id)
-		}
-	}
-	return experienceEntries, errs
-}
+// 	var foundExperienceEntries = make(map[string]*model.ExperienceEntry)
+// 	for _, m := range res.Solutions() {
+// 		experienceEntry, err := util.MapRdfExperienceEntryToGQL(m)
+// 		if err != nil {
+// 			return nil, []error{err}
+// 		}
+// 		foundExperienceEntries[experienceEntry.ID] = experienceEntry
+// 	}
+// 	// fill return array with empty objects so the lengths match
+// 	for i, id := range experienceEntryIDs {
+// 		if experienceEntry, found := foundExperienceEntries[id]; found {
+// 			experienceEntries[i] = experienceEntry
+// 			errs[i] = nil
+// 		} else {
+// 			experienceEntries[i] = &model.ExperienceEntry{ID: id}
+// 			errs[i] = fmt.Errorf("experienceEntry not found for ID: %s", id)
+// 		}
+// 	}
+// 	return experienceEntries, errs
+// }
 
 func (u *DataBase) getConnectionRequests(ctx context.Context, connectionRequestIDs []string) ([]*model.ConnectionRequest, []error) {
 	var ids []string
@@ -323,7 +324,6 @@ func (u *DataBase) getConnectionRequests(ctx context.Context, connectionRequestI
 		ids = append(ids, s)
 	}
 	filter := strings.Join(ids, " || ")
-	fmt.Println("filter: ", filter)
 	q := fmt.Sprintf(`
 		PREFIX lr: <http://linkrec.example.org/schema#>
 		PREFIX schema: <http://schema.org/>
@@ -342,9 +342,7 @@ func (u *DataBase) getConnectionRequests(ctx context.Context, connectionRequestI
 		FILTER(%s)
 		}
 	`, filter)
-	fmt.Println("q: ", q)
 	res, err := u.Repo.Query(q)
-	fmt.Println("res: ", res)
 	if err != nil {
 		return nil, []error{err}
 	}

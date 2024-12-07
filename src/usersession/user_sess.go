@@ -12,8 +12,7 @@ const (
 
 type UserSessionInfo struct {
 	// convenience to quickly determine of this user has a completed account
-	IsComplete bool `json:"ProfileCompleted"`
-	IsUser     bool
+	IsComplete bool   `json:"ProfileCompleted"`
 	Email      string `json:"email"`
 	Id         string `json:"id"`
 	Cookie     string
@@ -21,9 +20,9 @@ type UserSessionInfo struct {
 }
 
 func init() {
-	gob.Register(UserSessionInfo{}) // Register the type for serialization
+	gob.Register(&UserSessionInfo{}) // Register the type for serialization
 }
 
-func For(ctx context.Context) UserSessionInfo {
-	return ctx.Value(SessionInfoKey).(UserSessionInfo)
+func For(ctx context.Context) *UserSessionInfo {
+	return ctx.Value(SessionInfoKey).(*UserSessionInfo)
 }

@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"github.com/gorilla/sessions"
 	"github.com/knakk/sparql"
 )
 
@@ -11,4 +12,5 @@ import (
 type Resolver struct {
 	Repo       *sparql.Repo
 	UpdateRepo *sparql.Repo
+	Store      *sessions.CookieStore
 }

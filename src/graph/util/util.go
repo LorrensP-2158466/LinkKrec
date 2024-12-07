@@ -40,6 +40,9 @@ func MapPrimitiveBindingsToStruct[T any](bindings map[string]rdf.Term) (T, error
 					*strPtr = bindingVal.String()
 					structValue.Field(i).Set(reflect.ValueOf(strPtr))
 				}
+			} else if field.Type.Kind() == reflect.Bool {
+				v, _ := strconv.ParseBool(bindingVal.String())
+				structValue.Field(i).Set(reflect.ValueOf(v))
 			}
 		}
 	}

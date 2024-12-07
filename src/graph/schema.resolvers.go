@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
@@ -50,13 +51,13 @@ func (r *employerResolver) Employees(ctx context.Context, obj *model.Employer) (
 
 // RegisterUser is the resolver for the registerUser field.
 func (r *mutationResolver) RegisterUser(ctx context.Context, input model.RegisterUserInput) (*model.User, error) {
+	panic("RegisterUser is deprecated and not supported in any way, please go through /auth/`provider`")
 	insert := fmt.Sprintf(`
 		%s
 		INSERT {
 		    ?newUser a lr:User ;
-		        lr:hasName ?name ;
-		        lr:hasEmail ?email ;
-		        lr:isEmployer ?isEmployer ;
+		        foaf:name?name ;
+		        foaf:mbox ?email ;
 		        lr:isProfileComplete false .
 		}
 		WHERE {
@@ -113,8 +114,9 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 	}
 
 	// first check if user already did this
+
 	if sess_info.IsComplete {
-		return loaders.GetUser(ctx, sess_info.Id)
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Account already completed, please use `UpdateUserProfile`")
 	}
 
 	coordinates := gisco.CoordinatesFromAddress(input.Country, input.City, &input.Streetname, &input.Housenumber)
@@ -126,9 +128,7 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 
 	hasSkills := ""
 	for _, skill := range input.Skills {
-		if skill != nil {
-			hasSkills += fmt.Sprintf("\nlr:hasSkill esco_skill:%s ;", *skill)
-		}
+		hasSkills += fmt.Sprintf("\nlr:hasSkill esco_skill:%s ;", skill)
 	}
 
 	insertEducation := `
@@ -162,7 +162,6 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 			extra_info = *edu.ExtraInfo
 		}
 		update := fmt.Sprintf(insertEducation, uuid, uuid, extra_info, edu.Institution, edu.Degree, edu.Field, start.Format(time.DateOnly), end.Format(time.DateOnly))
-		fmt.Println(update)
 		err := r.UpdateRepo.Update(update)
 		if err != nil {
 			return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't insert %s education because: %s", uuid, err)
@@ -174,6 +173,7 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 	updateUser := fmt.Sprintf(`
 			PREFIX lr: <http://linkrec.example.org/schema#> 
 			PREFIX schema: <http://schema.org/> 
+			PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
 			PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
 			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
 			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
@@ -188,7 +188,7 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 				?user a lr:User ;
 					%s
 					%s
-					lr:hasLocation lr:Location%s ;
+					foaf:based_near lr:Location%s ;
 					lr:isLookingForOpportunities %v ;
 					lr:isProfileComplete true  .
 			}
@@ -218,7 +218,6 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 		}
 		`, locationId, locationId, input.Country, input.City, input.Streetname, input.Housenumber, coordinates.Long, coordinates.Lat)
 
-	fmt.Println(updateUser)
 	err := r.UpdateRepo.Update(locationInsert)
 	if err != nil {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't insert location %s because: %s", locationId, err)
@@ -229,17 +228,175 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update user %s because: %s", sess_info.Id, err)
 	}
 
+	// remember...
+	g := ctx.Value("ginCtx").(*gin.Context)
+	session, _ := r.Store.Get(g.Request, "user-session")
+	session.Values[usersession.SessionInfoKey].(*usersession.UserSessionInfo).IsComplete = true
+	if err := session.Save(g.Request, g.Writer); err != nil {
+		// Log or handle session save error if needed
+		log.Printf("Error saving session: %v", err)
+	}
 	return loaders.GetUser(ctx, sess_info.Id)
-}
-
-// UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, id string, input model.UpdateUserInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
 }
 
 // UpdateUserProfile is the resolver for the updateUserProfile field.
 func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, input model.UpdateProfileInput) (*model.User, error) {
-	panic(fmt.Errorf("not implemented: UpdateUserProfile - updateUserProfile"))
+	sess_info := usersession.For(ctx)
+
+	if sess_info.Id != id {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update another users account\nYour Id is: %s", sess_info.Id)
+	}
+
+	// first check if user already did this
+
+	if !sess_info.IsComplete {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update incomplete profile, please use `CompleteUserProfile`")
+	}
+
+	coordinates := gisco.CoordinatesFromAddress(input.Country, input.City, &input.Streetname, &input.Housenumber)
+	if coordinates == nil {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Invalid address")
+	}
+
+	locationId := uuid.New().String()
+
+	hasSkills := ""
+	for _, skill := range input.Skills {
+		hasSkills += fmt.Sprintf("\nlr:hasSkill esco_skill:%s ;", skill)
+	}
+
+	insertEducation := `
+			PREFIX lr: <http://linkrec.example.org/schema#> 
+			PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
+			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
+
+			INSERT DATA {
+				lr:EducationEntry%s a lr:EducationEntry ;
+					lr:Id "%s" ;
+					lr:extraInfo "%s" ;
+					lr:institutionName "%s" ;
+					lr:degreeType lr:%s ;
+					lr:degreeField lr:%s ;
+					lr:startDate "%s"^^xsd:dateTime ;
+					lr:endDate "%s"^^xsd:dateTime  .
+			}
+		`
+	educationEntries := ""
+	for _, edu := range input.Education {
+		uuid := uuid.New().String()
+		start := time.Time(edu.From)
+		end := time.Time(edu.Till)
+		extra_info := ""
+		if edu.ExtraInfo != nil {
+			extra_info = *edu.ExtraInfo
+		}
+		update := fmt.Sprintf(insertEducation, uuid, uuid, extra_info, edu.Institution, edu.Degree, edu.Field, start.Format(time.DateOnly), end.Format(time.DateOnly))
+		fmt.Println(update)
+		err := r.UpdateRepo.Update(update)
+		if err != nil {
+			return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't insert %s education because: %s", uuid, err)
+		}
+		educationEntries += fmt.Sprintf("\nlr:hasEducation lr:EducationEntry%s ;", uuid)
+
+	}
+
+	updateUser := fmt.Sprintf(`
+			PREFIX lr: <http://linkrec.example.org/schema#> 
+			PREFIX schema: <http://schema.org/> 
+			PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+			PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
+			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
+			PREFIX esco: <http://data.europa.eu/esco/model#>
+			PREFIX esco_skill: <http://data.europa.eu/esco/Skill>
+
+			DELETE {
+				?user a lr:User ;
+					lr:hasSkill ?oldSkill;
+					lr:isLookingForOpportunities ?oldOpts ;
+					lr:hasEducation ?oldEdu .
+
+				?oldEdu ?eduP ?eduO .
+			}
+			INSERT{
+				?user a lr:User ;
+					%s
+					%s
+					lr:isLookingForOpportunities %v ;
+			}
+			WHERE {
+			  ?user a lr:User ;
+		          lr:Id "%s" ;
+				  lr:isLookingForOpportunities ?oldOpts ;
+
+			  OPTIONAL{	  	
+			  	  ?user a lr:User ;
+			          lr:hasSkill ?oldSkill .
+			  }
+
+		      OPTIONAL {
+			      ?user lr:hasEducation ?oldEdu .
+			      ?oldEdu ?eduP ?eduO .
+			  }
+			}
+
+		`, hasSkills, educationEntries, input.IsLookingForOpportunities, sess_info.Id)
+
+	// delete the old values and insert the new
+	locationInsert := fmt.Sprintf(`
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+
+		
+		DELETE{
+			?loc a lr:Location ;
+				lr:inCountry ?oldCountry ;
+				lr:inCity ?oldCity ;
+				lr:inStreet ?oldStreet ;
+				lr:houseNumber ?oldNumber ;
+				lr:longitude ?oldLong ;
+				lr:latitude ?oldLat .
+		}
+		INSERT {
+			?loc a lr:Location ;
+				lr:inCountry "%s" ;
+				lr:inCity "%s" ;
+				lr:inStreet "%s" ;
+				lr:houseNumber "%s" ;
+				lr:longitude "%.6f" ;
+				lr:latitude "%.6f" .
+		}
+		WHERE {
+			?user a lr:User ;
+				lr:Id "%s" ;
+				foaf:based_near ?loc .
+
+			?loc a lr:Location ;
+				lr:inCountry ?oldCountry ;
+				lr:inCity ?oldCity ;
+				lr:inStreet ?oldStreet ;
+				lr:houseNumber ?oldNumber ;
+				lr:longitude ?oldLong ;
+				lr:latitude ?oldLat .
+
+		}
+		`, input.Country, input.City, input.Streetname, input.Housenumber, coordinates.Long, coordinates.Lat, sess_info.Id)
+
+	err := r.UpdateRepo.Update(locationInsert)
+	if err != nil {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't insert location %s because: %s", locationId, err)
+	}
+
+	err = r.UpdateRepo.Update(updateUser)
+	fmt.Println(updateUser)
+	if err != nil {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update user %s because: %s", sess_info.Id, err)
+	}
+
+	return loaders.GetUser(ctx, sess_info.Id)
 }
 
 // AddConnectionRequest is the resolver for the addConnectionRequest field.
@@ -265,8 +422,6 @@ func (r *mutationResolver) AddConnectionRequest(ctx context.Context, fromUserID 
 		          lr:Id "%s" .
 		}
 		`, requestID, requestID, fromUserID, connectedToUserID)
-
-	fmt.Println(q)
 
 	err := r.UpdateRepo.Update(q)
 	if err != nil {
@@ -327,7 +482,6 @@ func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context
             lr:isLookingForOpportunities ?currentValue .
         }
     `, lookingStr, userID)
-	fmt.Println(q)
 
 	err := r.UpdateRepo.Update(q)
 	if err != nil {
@@ -350,58 +504,73 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, er
 }
 
 // GetUsers is the resolver for the getUsers field.
-func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []*string, lookingForOpportunities *bool) ([]*model.User, error) {
-	fmt.Println("GetUsers")
-	q := query_builder.
-		QueryBuilder().
-		Select([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).
-		GroupConcat("skill", ", ", "skills", true).
-		GroupConcat("connectionName", ", ", "connections", true).
-		GroupConcat("educationEntryId", ", ", "educations", true).
-		GroupConcat("experienceEntryId", ", ", "experiences", true).
-		WhereSubject("user", "User").
-		Where("Id", "id").
-		Where("hasName", "name").
-		Where("hasEmail", "email").
-		Where("isEmployer", "isEmployer").
-		Where("hasLocation", "location").
-		Where("isLookingForOpportunities", "isLookingForOpportunities").
-		Optional("hasSkill", "skill").
-		Optional("hasConnection", "connection").
-		WhereExtraction("connection", "Id", "connectionName").
-		Optional("hasEducation", "educationEntry").
-		WhereExtraction("educationEntry", "Id", "educationEntryId").
-		Optional("hasExperience", "experienceEntry").
-		WhereExtraction("experienceEntry", "Id", "experienceEntryId").
-		Bind("isLookingForOpportunities", "lookingForOpportunities")
-	if name != nil {
-		q.Filter("name", []string{*name}, query_builder.EQ)
+func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []string, lookingForOpportunities *bool) ([]*model.User, error) {
+	skill_ids := ""
+	for _, skill := range skills {
+		skill_ids += fmt.Sprintf(`lr:%s `, skill)
 	}
-	if location != nil {
-		q.Filter("location", []string{*location}, query_builder.EQ)
+	skill_filter := ""
+	if skill_ids != "" {
+		skill_filter = fmt.Sprintf("FILTER(?escoSkill IN (%s))", skill_ids)
 	}
-	if isEmployer != nil {
-		q.Filter("isEmployer", []string{strconv.FormatBool(*isEmployer)}, query_builder.EQ)
-	}
-	if len(skills) > 0 {
-		convSkills := util.Map(skills, func(s *string) string {
-			return fmt.Sprintf("\"%s\"", *s)
-		})
-		q.Filter("skill", convSkills, query_builder.IN)
-	}
-	if lookingForOpportunities != nil {
-		q.Filter("isLookingForOpportunities", []string{strconv.FormatBool(*lookingForOpportunities)}, query_builder.EQ)
-	}
-	qs := q.GroupBy([]string{"id", "name", "email", "isEmployer", "location", "lookingForOpportunities"}).Build()
 
-	fmt.Println(qs)
+	name_filter := ""
+	if name != nil {
+		name_filter = fmt.Sprintf(`FILTER(?name = "%s")`, *name)
+	}
+
+	oppt_filter := ""
+	if lookingForOpportunities != nil {
+		oppt_filter = fmt.Sprintf("FILTER(?isLookingForOpportunities = %v)", *lookingForOpportunities)
+	}
+
+	qs := fmt.Sprintf(`
+	PREFIX lr: <http://linkrec.example.org/schema#>
+	PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+	PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+	PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+	PREFIX esco_skill : <http://data.europa.eu/esco/Skill>
+
+	SELECT ?id ?name ?email ?location ?lookingForOpportunities 
+		(GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills) 
+		(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections) 
+		(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
+	WHERE {
+		?user a lr:User ;
+		lr:Id ?id ;
+		foaf:name ?name ;
+		foaf:mbox ?email ;
+		lr:isLookingForOpportunities ?isLookingForOpportunities .
+		OPTIONAL {
+			?user lr:hasLocation ?locationEntry .
+			?locationEntry lr:Id ?location .
+		}
+		OPTIONAL {
+			?user lr:hasSkill ?escoSkill .
+			?escoSkill skos:prefLabel ?skill .
+		}
+		OPTIONAL {
+			?user lr:hasConnection ?connection .
+			?connection lr:Id ?connectionName .
+		}
+		OPTIONAL {
+			?user lr:hasEducation ?education .
+			?education lr:Id ?educationEntry .
+		}
+		BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
+		FILTER(LANG(?skill) = "en")
+		%s
+		%s
+		%s
+
+	}
+	GROUP BY ?id ?name ?email ?location ?lookingForOpportunities`, name_filter, skill_filter, oppt_filter)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-
-	fmt.Println("res:", res)
 
 	users := make([]*model.User, 0)
 	for _, user := range res.Solutions() {
@@ -414,11 +583,15 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 	return users, nil
 }
 
+// GetUsersByID is the resolver for the getUsersById field.
+func (r *queryResolver) GetUsersByID(ctx context.Context, ids []string) ([]*model.User, error) {
+	return loaders.GetUsers(ctx, ids)
+}
+
 // GetVacancies is the resolver for the getVacancies field.
 func (r *queryResolver) GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error) {
 	q := query_builder.
 		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "education"}).
-		GroupConcat("experienceType", ", ", "experienceTypes", true).
 		GroupConcat("experienceDuration", ", ", "experienceDurations", true).
 		WhereSubject("vacancy", "Vacancy").
 		Where("Id", "id").
@@ -430,7 +603,6 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 		Where("vacancyEndDate", "endDate").
 		Where("vacancyStatus", "status").
 		Where("requiredEducation", "education").
-		Where("requiredExperienceType", "experienceType").
 		Where("requiredExperienceDuration", "experienceDuration").
 		WhereExtraction("postedBy", "Id", "postedById")
 	if title != nil {
@@ -447,7 +619,6 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 	}
 	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "education"}).Build()
 
-	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
@@ -461,7 +632,6 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 			return nil, err
 		}
 		vacancies = append(vacancies, obj)
-		fmt.Println("obj:", obj)
 	}
 	return vacancies, nil
 }
@@ -473,45 +643,45 @@ func (r *queryResolver) GetVacancy(ctx context.Context, id string) (*model.Vacan
 
 // GetEmployers is the resolver for the getEmployers field.
 func (r *queryResolver) GetEmployers(ctx context.Context, name *string, location *string) ([]*model.Employer, error) {
-	q := query_builder.
-		QueryBuilder().Select([]string{"id", "name", "email", "location"}).
-		GroupConcat("vacancyId", ", ", "vacancies", true).
-		GroupConcat("employeeId", ", ", "employees", true).
-		WhereSubject("employer", "Employer").
-		Where("Id", "id").
-		Where("employerName", "name").
-		Where("employerEmail", "email").
-		Where("employerLocation", "location").
-		Where("hasVacancy", "vacancy").
-		Where("hasEmployee", "employee").
-		OptionalSubject("vacancy", "Vacancy").
-		Optional("Id", "vacancyId").
-		OptionalSubject("employee", "User").
-		Optional("Id", "employeeId")
-	if name != nil {
-		q.Filter("name", []string{*name}, query_builder.EQ)
-	}
-	if location != nil {
-		q.Filter("location", []string{*location}, query_builder.EQ)
-	}
-	qs := q.GroupBy([]string{"id", "name", "email", "location"}).Build()
+	// q := query_builder.
+	// 	QueryBuilder().Select([]string{"id", "name", "email", "location"}).
+	// 	GroupConcat("vacancyId", ", ", "vacancies", true).
+	// 	GroupConcat("employeeId", ", ", "employees", true).
+	// 	WhereSubject("employer", "Employer").
+	// 	Where("Id", "id").
+	// 	Where("employerName", "name").
+	// 	Where("employerEmail", "email").
+	// 	Where("employerLocation", "location").
+	// 	Where("hasVacancy", "vacancy").
+	// 	Where("hasEmployee", "employee").
+	// 	NewOptional("vacancy", "Vacancy").
+	// 	Optional("Id", "vacancyId").
+	// 	OptionalSubject("employee", "User").
+	// 	Optional("Id", "employeeId")
+	// if name != nil {
+	// 	q.Filter("name", []string{*name}, query_builder.EQ)
+	// }
+	// if location != nil {
+	// 	q.Filter("location", []string{*location}, query_builder.EQ)
+	// }
+	// qs := q.GroupBy([]string{"id", "name", "email", "location"}).Build()
 
-	fmt.Println(qs)
-	res, err := r.Repo.Query(qs)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
+	// res, err := r.Repo.Query(qs)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	return nil, err
+	// }
 
-	employers := make([]*model.Employer, 0)
-	for _, employer := range res.Solutions() {
-		obj, err := util.MapRdfEmployerToGQL(employer)
-		if err != nil {
-			return nil, err
-		}
-		employers = append(employers, obj)
-	}
-	return employers, nil
+	// employers := make([]*model.Employer, 0)
+	// for _, employer := range res.Solutions() {
+	// 	obj, err := util.MapRdfEmployerToGQL(employer)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	employers = append(employers, obj)
+	// }
+	// return employers, nil
+	return nil, nil
 }
 
 // GetEmployer is the resolver for the getEmployer field.
@@ -536,13 +706,11 @@ func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]
 	}
 	qs := q.GroupBy([]string{"id", "title", "message", "forUserId", "createdAt"}).Build()
 
-	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	fmt.Println("res:", res)
 
 	notifications := make([]*model.Notification, 0)
 	for _, notification := range res.Solutions() {
@@ -553,6 +721,11 @@ func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]
 		notifications = append(notifications, obj)
 	}
 	return notifications, nil
+}
+
+// GetPotentialCandiatesForVacancy is the resolver for the getPotentialCandiatesForVacancy field.
+func (r *queryResolver) GetPotentialCandiatesForVacancy(ctx context.Context, id string, distanceInKm int) ([]*model.User, error) {
+	panic(fmt.Errorf("not implemented: GetPotentialCandiatesForVacancy - getPotentialCandiatesForVacancy"))
 }
 
 // GetConnectionRequests is the resolver for the getConnectionRequests field.
@@ -568,7 +741,6 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 		WhereExtraction("connectedTo", "Id", "connectedToUserId")
 	if userID != "" {
 		quotedUserID := fmt.Sprintf("\"%s\"", userID)
-		//q.Filter("fromUserId", []string{quotedUserID}, query_builder.EQ)
 		q.Filter("connectedToUserId", []string{quotedUserID}, query_builder.EQ)
 	}
 	if status != nil && userID != "" {
@@ -578,13 +750,11 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 	}
 	qs := q.GroupBy([]string{"id", "fromUserId", "connectedToUserId", "status"}).Build()
 
-	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	fmt.Println("res:", res)
 
 	connectionRequests := make([]*model.ConnectionRequest, 0)
 	for _, connectionRequest := range res.Solutions() {
@@ -597,70 +767,9 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 	return connectionRequests, nil
 }
 
-// GetPotentialCandiatesForVacancy is the resolver for the getPotentialCandiatesForVacancy field.
-func (r *queryResolver) GetPotentialCandiatesForVacancy(ctx context.Context, id string, distanceInKm int) ([]*model.User, error) {
-	_ = fmt.Sprintf(
-		`
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX lr: <http://linkrec.example.org/schema#>
-PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
-PREFIX schema: <http://schema.org/> 
-PREFIX vcard: <http://www.w3.org/2006/vcard/ns#> 
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
-PREFIX esco: <http://data.europa.eu/esco/model#>
-PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
-PREFIX ofn: <http://www.ontotext.com/sparql/functions/>
-PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
-
-SELECT ?userId ?userName ?userEmail ?userDegreeField ?userDegreeType ?userSkill ?distanceInKm
-WHERE {
-  # declare pi for convenience
-  VALUES (?pi) { ( 3.1415926535897932384) }
-
-  VALUES ?vacancyId {"%s"}
-  ?vacancy lr:Id ?vacancyId ;
-    lr:requiredSkill ?requiredSkill ;
-    lr:vacancyLocation ?vacancyLoc ;
-    lr:requiredDegreeType ?requiredDegreeType;
-    lr:requiredDegreeField ?requiredDegreeField .
-  
-
-  ?vacancyLoc lr:longitude ?long2 ;
-    lr:latitude ?lat2 .
-    
-  ?user lr:Id ?userId ;
-    lr:hasEmail ?userEmail ;
-    lr:hasName ?userName ;
-    lr:hasLocation ?userLoc;
-    lr:hasSkill ?requiredSkill;  
-    lr:hasEducation ?education ;
-    lr:isProfileComplete true ;
-    lr:isLookingForOpportunities true ;
-    lr:isEmployer false .
-    
-  ?userLoc lr:longitude ?long1 ;
-    lr:latitude ?lat1 .
-    
-  ?education lr:degreeType ?userDegreeType;
-    lr:degreeField ?userDegreeField.
-    
-
-  ?userDegreeType rdfs:subClassOf* ?requiredDegreeType .
-  ?userDegreeField rdfs:subClassOf* ?requiredDegreeField .
-  
-  BIND(6371 * 2 * lfn:sin-1(lfn:sqrt(
-    lfn:pow(lfn:sin((?lat2 - ?lat1) * ?pi / 360), 2) +
-    lfn:cos(?lat1 * ?pi / 180) * lfn:cos(?lat2 * ?pi / 180) *
-    lfn:pow(lfn:sin((?long2 - ?long1) * ?pi / 360), 2)
-  )) AS ?distanceInKm)
-  
-  FILTER(?distanceInKm <= %d)
-}
-		`, id, distanceInKm)
-
-	panic(fmt.Errorf("not implemented: GetPotentialCandiatesForVacancy - getPotentialCandiatesForVacancy"))
+// MatchVacancyToUsers is the resolver for the matchVacancyToUsers field.
+func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID string) ([]*model.User, error) {
+	panic(fmt.Errorf("not implemented: MatchVacancyToUsers - matchVacancyToUsers"))
 }
 
 // NewConnectionRequest is the resolver for the newConnectionRequest field.
@@ -697,14 +806,6 @@ func (r *userResolver) Education(ctx context.Context, obj *model.User) ([]*model
 		return e.ID
 	})
 	return loaders.GetEducationEntries(ctx, ids)
-}
-
-// Experience is the resolver for the experience field.
-func (r *userResolver) Experience(ctx context.Context, obj *model.User) ([]*model.ExperienceEntry, error) {
-	ids := util.Map(obj.Experience, func(e *model.ExperienceEntry) string {
-		return e.ID
-	})
-	return loaders.GetExperienceEntries(ctx, ids)
 }
 
 // PostedBy is the resolver for the postedBy field.

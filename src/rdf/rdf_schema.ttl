@@ -7,23 +7,19 @@ PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> 
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
 PREFIX esco: <http://data.europa.eu/esco/model#>
+PREFIX esco_skill: <http://data.europa.eu/esco/Skill>
 
 # User (represents a person or employer on LinkRec)
-lr:User a rdfs:Class .
+lr:User a rdfs:Class ;
+    rdfs:subClassOf foaf:Person .
 lr:Id a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range schema:Text .
-lr:hasName a rdf:Property ;
-    rdfs:domain lr:User ;
+foaf:name rdfs:domain lr:User ;
     rdfs:range schema:Text .
-lr:hasEmail a rdf:Property ;
-    rdfs:domain lr:User ;
+foaf:mbox rdfs:domain lr:User ;
     rdfs:range schema:Text .
-lr:isEmployer a rdf:Property ;
-    rdfs:domain lr:User ;
-    rdfs:range schema:Boolean .
-lr:hasLocation a rdf:Property ;
-    rdfs:domain lr:User ;
+foaf:based_near rdfs:domain lr:User ;
     rdfs:range lr:Location .
 lr:hasConnection a rdf:Property ;
     rdfs:domain lr:User ;
@@ -335,6 +331,5 @@ lr:connectedToUser a rdf:Property ;
 lr:requestStatus a rdf:Property ;
     rdfs:domain lr:ConnectionRequest ;
     rdfs:range schema:Boolean .
-
 
 

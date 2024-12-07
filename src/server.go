@@ -71,20 +71,21 @@ func signInWithProvider(c *gin.Context) {
 }
 
 func loginGothUser(c *gin.Context, goth_user goth.User) (*usersession.UserSessionInfo, error) {
+	fmt.Println("LOGGING GOTH USER IN: ", goth_user)
 	query_repo := GetQueryRepo(c)
 
 	// check if the user already exists
 	res, err := query_repo.Query(fmt.Sprintf(`			
 	    PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
 
-		SELECT ?id ?email ?name ?accountCompleted
+		SELECT ?id ?email ?name ?ProfileCompleted
 		WHERE{
 			?user a lr:User;
 				lr:Id ?id ;
-				lr:hasName ?name;
-				lr:hasEmail ?email;
-				lr:isEmployer false ;
-				lr:isProfileComplete ?accountCompleted .
+				foaf:name ?name;
+				foaf:mbox ?email;
+				lr:isProfileComplete ?ProfileCompleted .
 
 			FILTER(?email = "%s")
 		}
@@ -99,16 +100,16 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*usersession.UserSessio
 		uuid := uuid.New().String()
 		insertQuery := fmt.Sprintf(`
 		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
 
 	    INSERT DATA {
 	        lr:User%s a lr:User ;
 	        	lr:Id "%s" ;
-	            lr:hasName "%s" ;
-	            lr:hasEmail "%s" ;
-	            lr:isEmployer false ;
+	            foaf:name "%s" ;
+	            foaf:mbox "%s" ;
 	            lr:isProfileComplete false .
 	    }
-	    `, uuid, uuid, goth_user.Name, goth_user.Email)
+	    `, uuid, uuid, goth_user.FirstName+" "+goth_user.LastName, goth_user.Email)
 
 		err := update_repo.Update(insertQuery)
 		fmt.Println("MADE UPDATE")
@@ -117,9 +118,10 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*usersession.UserSessio
 		}
 		return &usersession.UserSessionInfo{
 			IsComplete: false,
-			IsUser:     true,
 			Email:      goth_user.Email,
-			Id:         uuid}, nil
+			Id:         uuid,
+			Cookie:     goth_user.AccessToken,
+		}, nil
 	} else {
 		// user exists create session info and return
 		sessInfo, err := util.MapPrimitiveBindingsToStruct[usersession.UserSessionInfo](res.Solutions()[0])
@@ -128,7 +130,6 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*usersession.UserSessio
 			return nil, err
 		}
 		sessInfo.Cookie = goth_user.AccessToken
-		sessInfo.IsUser = true
 
 		return &sessInfo, nil
 	}
@@ -154,16 +155,12 @@ func callbackHandler(c *gin.Context) {
 
 	session.Values["access_token"] = goth_user.AccessToken
 
-	if err != nil {
-		_ = c.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
 	sessionInfo, err := loginGothUser(c, goth_user)
 	if err != nil {
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
-	session.Values[usersession.SessionInfoKey] = &sessionInfo
+	session.Values[usersession.SessionInfoKey] = sessionInfo
 
 	if err := session.Save(c.Request, c.Writer); err != nil {
 		_ = c.AbortWithError(http.StatusInternalServerError, err)
@@ -188,9 +185,8 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		if val, ok := session.Values[usersession.SessionInfoKey]; !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Can't get session info", "authorization_urls": []string{"/auth/google"}})
-			return
+		if val, ok := session.Values[usersession.SessionInfoKey].(*usersession.UserSessionInfo); !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("Can't get session info: %T", session.Values[usersession.SessionInfoKey]), "authorization_urls": []string{"/auth/google"}})
 		} else {
 			c.Set(string(usersession.SessionInfoKey), val)
 		}
@@ -201,7 +197,8 @@ func AuthMiddleware() gin.HandlerFunc {
 
 func ginCtxToRawCtx(gqlHandler *handler.Server) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		keys := []string{QueryRepoKey, UpdateRepoKey, loaders.LoadersKey, usersession.SessionInfoKey}
+		// these 2 are used by internals/implementations of graphql which we don't want to modify
+		keys := []string{loaders.LoadersKey, usersession.SessionInfoKey}
 
 		ctx := c.Request.Context()
 		for _, key := range keys {
@@ -209,8 +206,10 @@ func ginCtxToRawCtx(gqlHandler *handler.Server) gin.HandlerFunc {
 			if !exists || val == nil {
 				c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("Man wtf man: %s", key))
 			}
-			ctx = context.WithValue(ctx, key, c.Value(string(key)))
+			ctx = context.WithValue(ctx, key, val)
 		}
+		// put gin inside of the ctx so we can access them inside the resolvers
+		ctx = context.WithValue(ctx, "ginCtx", c)
 
 		// Create a new request with the modified context
 		req := c.Request.WithContext(ctx)
@@ -228,14 +227,33 @@ func setupRouter(repo *sparql.Repo, updateRepo *sparql.Repo) *gin.Engine {
 		c.Next()
 	})
 	r.Use(loaders.Middleware(repo))
+	// Middleware to save session after each request
 
 	r.GET("/auth/:provider", signInWithProvider)
 	r.GET("/auth/:provider/callback", callbackHandler)
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{Repo: repo}}))
+	srv := handler.NewDefaultServer(
+		graph.NewExecutableSchema(
+			graph.Config{
+				Resolvers: &graph.Resolver{
+					Repo:       repo,
+					UpdateRepo: updateRepo,
+					Store:      store},
+			},
+		))
 
 	protected := r.Group("/")
 	protected.Use(AuthMiddleware())
+	protected.Use(func(c *gin.Context) {
+		c.Next() // Process request first
+
+		// After processing the request, save the session
+		session, _ := store.Get(c.Request, "user-session")
+		if err := session.Save(c.Request, c.Writer); err != nil {
+			// Log or handle session save error if needed
+			log.Printf("Error saving session: %v", err)
+		}
+	})
 	{
 		protected.GET("/playground", gin.WrapH(playground.Handler("GraphQL playground", "/graphql")))
 		protected.GET("/is_authorized", func(c *gin.Context) { c.String(http.StatusAccepted, "AUTHORIZED") })
