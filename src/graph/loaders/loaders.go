@@ -30,37 +30,35 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 			(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
 			(GROUP_CONCAT(DISTINCT ?companyId; separator=", ") AS ?companies)
 		WHERE {
-		?user a lr:User ;
-				lr:Id ?id ;
-				lr:hasName ?name ;
-				lr:hasEmail ?email ;
-				lr:isLookingForOpportunities ?isLookingForOpportunities ;
-		BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
-
-		OPTIONAL {
-			?user lr:hasSkill ?escoSkill .
-			?escoSkill skos:prefLabel ?skill .
-		}
-		OPTIONAL {
-			?user lr:hasConnection ?connection .
-			?connection lr:Id ?connectionName .
-		}
-		OPTIONAL {
-			?user lr:hasEducation ?education .
-			?education lr:Id ?educationEntry .
-		}
-		OPTIONAL {
-			?user lr:hasLocation ?location .
-			?location lr:Id ?locationEntry .
-		}
-		OPTIONAL {
 			?user a lr:User ;
-			lr:hasCompany ?company .
-			?company lr:Id ?companyId .
-		}
+					lr:Id ?id ;
+					lr:hasName ?name ;
+					lr:hasEmail ?email ;
+					lr:isLookingForOpportunities ?isLookingForOpportunities ;
+			BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
 
-		FILTER(%s)
-		FILTER(LANG(?skill) = "en")
+			OPTIONAL {
+				?user lr:hasSkill ?escoSkill .
+				?escoSkill skos:prefLabel ?skill .
+			}
+			OPTIONAL {
+				?user lr:hasConnection ?connection .
+				?connection lr:Id ?connectionName .
+			}
+			OPTIONAL {
+				?user lr:hasEducation ?education .
+				?education lr:Id ?educationEntry .
+			}
+			OPTIONAL {
+				?user lr:hasLocation ?location .
+				?location lr:Id ?locationEntry .
+			}
+			OPTIONAL {
+				?user a lr:User ;
+				lr:hasCompany ?company .
+				?company lr:Id ?companyId .
+			}
+			FILTER(%s)
 		}
 		GROUP BY ?id ?name ?email ?location ?lookingForOpportunities
 	`, filter)

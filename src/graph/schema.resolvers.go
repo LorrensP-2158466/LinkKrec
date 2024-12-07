@@ -198,8 +198,6 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 			  lr:requiredDegreeField lr:%s ;
 			  lr:requiredExperienceDuration %d %s
 		}
-
-		
 		`, vacancyID, vacancyID, input.Title, input.Description, input.Location, companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType, input.RequiredDegreeField, input.RequiredExperienceDuration, skillQueries)
 
 	err := r.UpdateRepo.Update(q)
@@ -533,56 +531,56 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 // MatchVacancyToUsers is the resolver for the matchVacancyToUsers field.
 func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID string, maxDist float64) ([]*model.User, error) {
 	q := fmt.Sprintf(`
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX lr: <http://linkrec.example.org/schema#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
+		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
 
-SELECT DISTINCT ?userId ?distanceInKm
-WHERE {
-  # constants
-  	VALUES (?pi ?earthRadius ) { ( 3.1415926535 6378.137 ) }
-  
- 	?vacancy lr:Id "%s" ;
-		lr:vacancyLocation ?vacancyLoc ;
-		OPTIONAL { ?vacancy lr:requiredSkill ?requiredSkill }
-		OPTIONAL { ?vacancy lr:requiredDegreeType ?requiredDegreeType }
-		OPTIONAL { ?vacancy lr:requiredDegreeField ?requiredDegreeField }
-
-
-	
-	?vacancyLoc lr:longitude ?long2 ;
-		lr:latitude ?lat2 .
+		SELECT DISTINCT ?userId ?distanceInKm
+		WHERE {
+		# constants
+			VALUES (?pi ?earthRadius ) { ( 3.1415926535 6378.137 ) }
 		
-	?user lr:Id ?userId ;
-		lr:hasEmail ?userEmail ;
-		lr:hasName ?userName ;
-		lr:hasLocation ?userLoc;
-		lr:hasSkill ?requiredSkill;  # Direct match instead of FILTER
-		lr:hasEducation ?education ;
-		lr:isProfileComplete true ;
-		lr:isLookingForOpportunities true .
-		
-	?userLoc lr:longitude ?long1 ;
-		lr:latitude ?lat1 .
-		
-	?education lr:degreeType ?userDegreeType;
-		lr:degreeField ?userDegreeField.
+			?vacancy lr:Id "%s" ;
+				lr:vacancyLocation ?vacancyLoc ;
+				OPTIONAL { ?vacancy lr:requiredSkill ?requiredSkill }
+				OPTIONAL { ?vacancy lr:requiredDegreeType ?requiredDegreeType }
+				OPTIONAL { ?vacancy lr:requiredDegreeField ?requiredDegreeField }
 
-	?userDegreeType rdfs:subClassOf* ?requiredDegreeType .
-	?userDegreeField rdfs:subClassOf* ?requiredDegreeField .
-	
-	# haversine
-	BIND(?earthRadius * 2 * lfn:sin-1(lfn:sqrt(
-		lfn:pow(lfn:sin((?lat2 - ?lat1) * ?pi / 360), 2) +
-		lfn:cos(?lat1 * ?pi / 180) * lfn:cos(?lat2 * ?pi / 180) *
-		lfn:pow(lfn:sin((?long2 - ?long1) * ?pi / 360), 2)
-	)) AS ?distanceInKm)
-  
-  FILTER(?distanceInKm <= %f)
-}
+
+			
+			?vacancyLoc lr:longitude ?long2 ;
+				lr:latitude ?lat2 .
+				
+			?user lr:Id ?userId ;
+				lr:hasEmail ?userEmail ;
+				lr:hasName ?userName ;
+				lr:hasLocation ?userLoc;
+				lr:hasSkill ?requiredSkill;  # Direct match instead of FILTER
+				lr:hasEducation ?education ;
+				lr:isProfileComplete true ;
+				lr:isLookingForOpportunities true .
+				
+			?userLoc lr:longitude ?long1 ;
+				lr:latitude ?lat1 .
+				
+			?education lr:degreeType ?userDegreeType;
+				lr:degreeField ?userDegreeField.
+
+			?userDegreeType rdfs:subClassOf* ?requiredDegreeType .
+			?userDegreeField rdfs:subClassOf* ?requiredDegreeField .
+			
+			# haversine
+			BIND(?earthRadius * 2 * lfn:sin-1(lfn:sqrt(
+				lfn:pow(lfn:sin((?lat2 - ?lat1) * ?pi / 360), 2) +
+				lfn:cos(?lat1 * ?pi / 180) * lfn:cos(?lat2 * ?pi / 180) *
+				lfn:pow(lfn:sin((?long2 - ?long1) * ?pi / 360), 2)
+			)) AS ?distanceInKm)
+		
+			FILTER(?distanceInKm <= %f)
+		}
 	`, vacancyID, maxDist)
 
 	res, _ := r.Repo.Query(q)
@@ -601,51 +599,51 @@ WHERE {
 // MatchUserToVacancies is the resolver for the matchUserToVacancies field.
 func (r *queryResolver) MatchUserToVacancies(ctx context.Context, userID string, maxDist float64) ([]*model.Vacancy, error) {
 	q := fmt.Sprintf(`
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX lr: <http://linkrec.example.org/schema#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
+		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX lfn: <http://www.dotnetrdf.org/leviathan#>
 
-SELECT DISTINCT ?vacancyId ?matchedSkill ?distanceInKm WHERE {
-    # constants
-    VALUES (?pi ?earthRadius) {
-        ( 3.1415926535 6378.137 )
-    }
+		SELECT DISTINCT ?vacancyId ?matchedSkill ?distanceInKm WHERE {
+			# constants
+			VALUES (?pi ?earthRadius) {
+				( 3.1415926535 6378.137 )
+			}
 
-    ?user lr:Id "%s" ;
-        lr:hasLocation ?userLoc ;
-        lr:hasSkill ?userSkill ;
-        lr:hasEducation ?education .
+			?user lr:Id "%s" ;
+				lr:hasLocation ?userLoc ;
+				lr:hasSkill ?userSkill ;
+				lr:hasEducation ?education .
 
-    ?userLoc lr:longitude ?long1 ;
-             lr:latitude ?lat1 .
+			?userLoc lr:longitude ?long1 ;
+					lr:latitude ?lat1 .
 
-    ?education lr:degreeType ?userDegreeType ;
-               lr:degreeField ?userDegreeField .
+			?education lr:degreeType ?userDegreeType ;
+					lr:degreeField ?userDegreeField .
 
-    # Vacancy matching
-    ?vacancy lr:Id ?vacancyId ;
-		lr:vacancyLocation ?vacancyLoc ;
-	OPTIONAL { ?vacancy lr:requiredSkill ?userSkill }
-	OPTIONAL { ?vacancy lr:requiredDegreeType ?requiredDegreeType }
-	OPTIONAL { ?vacancy lr:requiredDegreeField ?requiredDegreeField }
+			# Vacancy matching
+			?vacancy lr:Id ?vacancyId ;
+				lr:vacancyLocation ?vacancyLoc ;
+			OPTIONAL { ?vacancy lr:requiredSkill ?userSkill }
+			OPTIONAL { ?vacancy lr:requiredDegreeType ?requiredDegreeType }
+			OPTIONAL { ?vacancy lr:requiredDegreeField ?requiredDegreeField }
 
-    ?vacancyLoc lr:longitude ?long2 ;
-                lr:latitude ?lat2 .
+			?vacancyLoc lr:longitude ?long2 ;
+						lr:latitude ?lat2 .
 
-    ?requiredDegreeType rdfs:subClassOf* ?userDegreeType .
-    ?requiredDegreeField rdfs:subClassOf* ?userDegreeField .
+			?requiredDegreeType rdfs:subClassOf* ?userDegreeType .
+			?requiredDegreeField rdfs:subClassOf* ?userDegreeField .
 
-    BIND(?earthRadius * 2 * lfn:sin-1(lfn:sqrt(
-        lfn:pow(lfn:sin((?lat2 - ?lat1) * ?pi / 360), 2) +
-        lfn:cos(?lat1 * ?pi / 180) * lfn:cos(?lat2 * ?pi / 180) *
-        lfn:pow(lfn:sin((?long2 - ?long1) * ?pi / 360), 2)
-    )) AS ?distanceInKm)
+			BIND(?earthRadius * 2 * lfn:sin-1(lfn:sqrt(
+				lfn:pow(lfn:sin((?lat2 - ?lat1) * ?pi / 360), 2) +
+				lfn:cos(?lat1 * ?pi / 180) * lfn:cos(?lat2 * ?pi / 180) *
+				lfn:pow(lfn:sin((?long2 - ?long1) * ?pi / 360), 2)
+			)) AS ?distanceInKm)
 
-    FILTER(?distanceInKm <= %f)
-}
+			FILTER(?distanceInKm <= %f)
+		}
 	`, userID, maxDist)
 
 	res, _ := r.Repo.Query(q)

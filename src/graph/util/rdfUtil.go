@@ -2,6 +2,7 @@ package util
 
 import (
 	"LinkKrec/graph/model"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -10,6 +11,8 @@ import (
 
 func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 	userObj, err := MapPrimitiveBindingsToStruct[model.User](user)
+	fmt.Println(userObj, err)
+
 	if err != nil {
 		return nil, err
 	}
