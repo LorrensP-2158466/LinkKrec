@@ -7,6 +7,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
 PREFIX esco: <http://data.europa.eu/esco/model#>
 PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
 
 lr:User1 a lr:User ;
     lr:Id "1" ;
@@ -17,6 +18,7 @@ lr:User1 a lr:User ;
     lr:hasConnection lr:User3 ;
     lr:hasEducation lr:EducationEntry1 ;
     lr:hasSkill esco_skill:19a8293b-8e95-4de3-983f-77484079c389 ;
+    lr:hasOccupation esco_occupation: a8d05b64-f60b-4dd9-91c2-e2e63d82f2f5 ;
     lr:isLookingForOpportunities true ;
     lr:isProfileComplete true .
 
@@ -27,6 +29,7 @@ lr:User2 a lr:User ;
     foaf:based_near lr:Location2 ;
     lr:hasSkill esco_skill:b633eb55-8f1f-4ae6-ab4c-2022ffe2cb7f ;
     lr:hasSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
+    lr:hasOccupation esco_occupation: a8d05b64-f60b-4dd9-91c2-e2e63d82f2f5 ;
     lr:isLookingForOpportunities true ;
     lr:hasConnection lr:User3 ;
     lr:hasEducation lr:EducationEntry2 ;
@@ -40,6 +43,7 @@ lr:User3 a lr:User ;
     foaf:based_near lr:Location1 ;
     lr:hasSkill esco_skill:3cd569a2-4f88-4c1e-9995-8dce8c5e51a7 ;
     lr:hasSkill esco_skill:9b9de2a4-d8af-4a7b-933a-a8334ae60067;
+    lr:hasOccupation esco_occupation: a8d05b64-f60b-4dd9-91c2-e2e63d82f2f5 ;
     lr:isLookingForOpportunities true ;
     lr:hasConnection lr:User2 ;
     lr:hasEducation lr:EducationEntry1 ;
@@ -52,6 +56,7 @@ lr:User4 a lr:User ;
     foaf:mbox "Ivan@student.uhasselt.be" ;
     foaf:based_near lr:Location1 ;
     lr:hasSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
+    lr:hasOccupation esco_occupation: a8d05b64-f60b-4dd9-91c2-e2e63d82f2f5 ;
     lr:isLookingForOpportunities true ;
     lr:hasEducation lr:EducationEntry3 ;
     lr:isLookingForOpportunities true ;

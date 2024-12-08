@@ -8,6 +8,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
 PREFIX esco: <http://data.europa.eu/esco/model#>
 PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
 
 # User (represents a person or employer on LinkRec)
 lr:User a rdfs:Class ;
@@ -30,6 +31,9 @@ lr:hasEducation a rdf:Property ;
 lr:hasSkill a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range esco:Skill .
+lr:hasExperience a rdf:Property ;
+    rdfs:domain lr:User ;
+    rdfs:range esco:Occupation .
 lr:isLookingForOpportunities a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range schema:Boolean .

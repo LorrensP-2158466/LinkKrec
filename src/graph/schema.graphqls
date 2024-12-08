@@ -107,6 +107,7 @@ type User {
     connections: [User!]
     education: [EducationEntry!]
     skills: [Skill!]
+    experiences: [Experience!]
     lookingForOpportunities: Boolean!
     isProfileComplete: Boolean
     companies: [Company]
@@ -321,6 +322,12 @@ type Location {
 type Skill {
     id: String!
     label: String!
+}
+
+type Experience {
+    id: String!
+    label: String!
+    durationInMonths: Int!
 }
 
 input RegisterUserInput {

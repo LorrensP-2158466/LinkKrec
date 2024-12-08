@@ -73,6 +73,12 @@ type EducationEntryInput struct {
 	Field       DegreeField `json:"field"`
 }
 
+type Experience struct {
+	ID               string `json:"id"`
+	Label            string `json:"label"`
+	DurationInMonths int    `json:"durationInMonths"`
+}
+
 type ExperienceEntry struct {
 	ID             string         `json:"id"`
 	Title          string         `json:"title"`
@@ -166,6 +172,7 @@ type User struct {
 	Connections             []*User           `json:"connections,omitempty"`
 	Education               []*EducationEntry `json:"education,omitempty"`
 	Skills                  []*Skill          `json:"skills,omitempty"`
+	Experiences             []*Experience     `json:"experiences,omitempty"`
 	LookingForOpportunities bool              `json:"lookingForOpportunities"`
 	IsProfileComplete       *bool             `json:"isProfileComplete,omitempty"`
 	Companies               []*Company        `json:"companies,omitempty"`
