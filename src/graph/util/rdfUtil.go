@@ -52,6 +52,17 @@ func MapRdfUserToGQL(user map[string]rdf.Term) (*model.User, error) {
 		}
 	}
 	userObj.Skills = skills
+
+	var expr = make([]*model.Experience, 0)
+	if user["occupIdsLabelsDurs"] != nil {
+		for _, idsLabelsDurs := range strings.Split(user["occupIdsLabelsDurs"].String(), ", ") {
+			splitted := strings.Split(idsLabelsDurs, "|")
+			dur, _ := strconv.Atoi(splitted[2])
+			expr = append(expr, &model.Experience{ID: splitted[0], Label: splitted[1], DurationInMonths: dur})
+		}
+	}
+	userObj.Experiences = expr
+
 	return &userObj, nil
 }
 
@@ -139,6 +150,16 @@ func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
 		}
 	}
 	vacancyObj.RequiredSkills = skills
+
+	var expr = make([]*model.Experience, 0)
+	if vacancy["occupIdsLabelsDurs"] != nil {
+		for _, idsLabelsDurs := range strings.Split(vacancy["occupIdsLabelsDurs"].String(), ", ") {
+			splitted := strings.SplitN(idsLabelsDurs, "|", 3)
+			dur, _ := strconv.Atoi(splitted[2])
+			expr = append(expr, &model.Experience{ID: splitted[0], Label: splitted[1], DurationInMonths: dur})
+		}
+	}
+	vacancyObj.RequiredExperience = expr
 
 	return &vacancyObj, nil
 }

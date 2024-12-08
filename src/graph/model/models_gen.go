@@ -179,18 +179,19 @@ type User struct {
 }
 
 type Vacancy struct {
-	ID                         string       `json:"id"`
-	Title                      string       `json:"title"`
-	Description                string       `json:"description"`
-	Location                   *Location    `json:"location"`
-	PostedBy                   *Company     `json:"postedBy"`
-	StartDate                  string       `json:"startDate"`
-	EndDate                    string       `json:"endDate"`
-	Status                     bool         `json:"status"`
-	RequiredDegreeType         *DegreeType  `json:"requiredDegreeType,omitempty"`
-	RequiredDegreeField        *DegreeField `json:"requiredDegreeField,omitempty"`
-	RequiredExperienceDuration *int         `json:"requiredExperienceDuration,omitempty"`
-	RequiredSkills             []*Skill     `json:"requiredSkills,omitempty"`
+	ID                         string        `json:"id"`
+	Title                      string        `json:"title"`
+	Description                string        `json:"description"`
+	Location                   *Location     `json:"location"`
+	PostedBy                   *Company      `json:"postedBy"`
+	StartDate                  string        `json:"startDate"`
+	EndDate                    string        `json:"endDate"`
+	Status                     bool          `json:"status"`
+	RequiredDegreeType         *DegreeType   `json:"requiredDegreeType,omitempty"`
+	RequiredDegreeField        *DegreeField  `json:"requiredDegreeField,omitempty"`
+	RequiredExperienceDuration *int          `json:"requiredExperienceDuration,omitempty"`
+	RequiredExperience         []*Experience `json:"requiredExperience,omitempty"`
+	RequiredSkills             []*Skill      `json:"requiredSkills,omitempty"`
 }
 
 type DegreeField string

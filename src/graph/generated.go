@@ -176,6 +176,7 @@ type ComplexityRoot struct {
 		PostedBy                   func(childComplexity int) int
 		RequiredDegreeField        func(childComplexity int) int
 		RequiredDegreeType         func(childComplexity int) int
+		RequiredExperience         func(childComplexity int) int
 		RequiredExperienceDuration func(childComplexity int) int
 		RequiredSkills             func(childComplexity int) int
 		StartDate                  func(childComplexity int) int
@@ -988,6 +989,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Vacancy.RequiredDegreeType(childComplexity), true
+
+	case "Vacancy.requiredExperience":
+		if e.complexity.Vacancy.RequiredExperience == nil {
+			break
+		}
+
+		return e.complexity.Vacancy.RequiredExperience(childComplexity), true
 
 	case "Vacancy.requiredExperienceDuration":
 		if e.complexity.Vacancy.RequiredExperienceDuration == nil {
@@ -2483,6 +2491,8 @@ func (ec *executionContext) fieldContext_Company_vacancies(_ context.Context, fi
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
 			case "requiredExperienceDuration":
 				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
+			case "requiredExperience":
+				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
 				return ec.fieldContext_Vacancy_requiredSkills(ctx, field)
 			}
@@ -4170,6 +4180,8 @@ func (ec *executionContext) fieldContext_Mutation_createVacancy(ctx context.Cont
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
 			case "requiredExperienceDuration":
 				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
+			case "requiredExperience":
+				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
 				return ec.fieldContext_Vacancy_requiredSkills(ctx, field)
 			}
@@ -4248,6 +4260,8 @@ func (ec *executionContext) fieldContext_Mutation_updateVacancy(ctx context.Cont
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
 			case "requiredExperienceDuration":
 				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
+			case "requiredExperience":
+				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
 				return ec.fieldContext_Vacancy_requiredSkills(ctx, field)
 			}
@@ -5107,6 +5121,8 @@ func (ec *executionContext) fieldContext_Query_getVacancies(ctx context.Context,
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
 			case "requiredExperienceDuration":
 				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
+			case "requiredExperience":
+				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
 				return ec.fieldContext_Vacancy_requiredSkills(ctx, field)
 			}
@@ -5185,6 +5201,8 @@ func (ec *executionContext) fieldContext_Query_getVacancy(ctx context.Context, f
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
 			case "requiredExperienceDuration":
 				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
+			case "requiredExperience":
+				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
 				return ec.fieldContext_Vacancy_requiredSkills(ctx, field)
 			}
@@ -5597,6 +5615,8 @@ func (ec *executionContext) fieldContext_Query_matchUserToVacancies(ctx context.
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
 			case "requiredExperienceDuration":
 				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
+			case "requiredExperience":
+				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
 				return ec.fieldContext_Vacancy_requiredSkills(ctx, field)
 			}
@@ -6058,6 +6078,8 @@ func (ec *executionContext) fieldContext_Subscription_newMatchingVacancy(ctx con
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
 			case "requiredExperienceDuration":
 				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
+			case "requiredExperience":
+				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
 				return ec.fieldContext_Vacancy_requiredSkills(ctx, field)
 			}
@@ -7198,6 +7220,55 @@ func (ec *executionContext) fieldContext_Vacancy_requiredExperienceDuration(_ co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Vacancy_requiredExperience(ctx context.Context, field graphql.CollectedField, obj *model.Vacancy) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Vacancy_requiredExperience(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RequiredExperience, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Experience)
+	fc.Result = res
+	return ec.marshalOExperience2ᚕᚖLinkKrecᚋgraphᚋmodelᚐExperienceᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Vacancy_requiredExperience(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Vacancy",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Experience_id(ctx, field)
+			case "label":
+				return ec.fieldContext_Experience_label(ctx, field)
+			case "durationInMonths":
+				return ec.fieldContext_Experience_durationInMonths(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Experience", field.Name)
 		},
 	}
 	return fc, nil
@@ -10933,6 +11004,8 @@ func (ec *executionContext) _Vacancy(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Vacancy_requiredDegreeField(ctx, field, obj)
 		case "requiredExperienceDuration":
 			out.Values[i] = ec._Vacancy_requiredExperienceDuration(ctx, field, obj)
+		case "requiredExperience":
+			out.Values[i] = ec._Vacancy_requiredExperience(ctx, field, obj)
 		case "requiredSkills":
 			out.Values[i] = ec._Vacancy_requiredSkills(ctx, field, obj)
 		default:

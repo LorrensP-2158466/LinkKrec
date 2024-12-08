@@ -33,7 +33,7 @@ lr:hasSkill a rdf:Property ;
     rdfs:range esco:Skill .
 lr:hasExperience a rdf:Property ;
     rdfs:domain lr:User ;
-    rdfs:range esco:Occupation .
+    rdfs:range lr:Experience .
 lr:isLookingForOpportunities a rdf:Property ;
     rdfs:domain lr:User ;
     rdfs:range schema:Boolean .
@@ -157,26 +157,13 @@ lr:degreeField a rdf:Property ;
     rdfs:domain lr:EducationEntry ;
     rdfs:range lr:DegreeField .
 
-# Experience Entry
-lr:ExperienceEntry a rdfs:Class .
-lr:Id a rdf:Property ;
-    rdfs:domain lr:ExperienceEntry ;
-    rdfs:range schema:Text .
-lr:experienceTitle a rdf:Property ;
-    rdfs:domain lr:ExperienceEntry ;
-    rdfs:range schema:Text .
-lr:experienceDescription a rdf:Property ;
-    rdfs:domain lr:ExperienceEntry ;
-    rdfs:range schema:Text .
-lr:experienceType a rdf:Property ;
-    rdfs:domain lr:ExperienceEntry ;
-    rdfs:range lr:ExperienceType .
-lr:experienceStartDate a rdf:Property ;
-    rdfs:domain lr:ExperienceEntry ;
-    rdfs:range schema:Date .
-lr:experienceEndDate a rdf:Property ;
-    rdfs:domain lr:ExperienceEntry ;
-    rdfs:range schema:Date .
+lr:Experience a rdfs:Class .
+lr:escoOccup a rdf:Property ;
+    rdfs:domain lr:Experience ;
+    rdfs:range esco:Occupation .
+lr:durationInMonths a rdf:Property ;
+    rdfs:domain lr:Experience ;
+    rdfs:range schema:Number .
 
 # DegreeType (degree qualifications for users and vacancies)
 lr:DegreeType rdfs:subClassOf rdfs:Class .

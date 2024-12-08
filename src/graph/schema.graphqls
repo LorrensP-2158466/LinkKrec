@@ -288,6 +288,7 @@ type Vacancy {
     requiredDegreeType: DegreeType
     requiredDegreeField: DegreeField
     requiredExperienceDuration: Int
+    requiredExperience: [Experience!]
     requiredSkills: [Skill!]
 }
 

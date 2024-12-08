@@ -27,12 +27,14 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 		PREFIX esco: <http://data.europa.eu/esco/model#>
 		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+		PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
 
 		SELECT ?id ?name ?email ?locationId ?lookingForOpportunities ?isProfileComplete
 			(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections)
 			(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
 			(GROUP_CONCAT(DISTINCT ?companyId; separator=", ") AS ?companies)
-			(GROUP_CONCAT(CONCAT(STRAFTER(STR(?escoSkill), STR(esco_skill:)), "|", ?skill); separator=", ") as ?skillIdsAndLabels)
+			(GROUP_CONCAT(DISTINCT CONCAT(STRAFTER(STR(?escoSkill), STR(esco_skill:)), "|", ?skill); separator=", ") as ?skillIdsAndLabels)
+			(GROUP_CONCAT(DISTINCT CONCAT(STRAFTER(STR(?escoOccup), STR(esco_occupation:)), "|", ?occup, "|", STR(?dur)); separator=", ") as ?occupIdsLabelsDurs)
 		WHERE {
 			?user a lr:User ;
 				lr:Id ?id ;
@@ -46,6 +48,13 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 				?user lr:hasSkill ?escoSkill .
 				?escoSkill skos:prefLabel ?skill .
 				FILTER(LANG(?skill) = "en")
+			}
+			OPTIONAL {
+				?user lr:hasExperience ?expr .
+				?expr lr:escoOccup ?escoOccup .
+				?escoOccup skos:prefLabel ?occup .
+				?expr lr:durationInMonths ?dur .
+				FILTER(LANG(?occup) = "en")
 			}
 			OPTIONAL {
 				?user lr:hasConnection ?connection .
@@ -108,11 +117,13 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+		PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
 
 		SELECT ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?experienceDuration 
 			(STRAFTER(STR(?degField), "#") AS ?degreeField) 
 			(STRAFTER(STR(?degType), "#") AS ?degreeType)
-			(GROUP_CONCAT(CONCAT(STRAFTER(STR(?escoSkill), STR(esco_skill:)), "|", ?skill); separator=", ") as ?skillIdsAndLabels)
+			(GROUP_CONCAT(DISTINCT CONCAT(STRAFTER(STR(?escoSkill), STR(esco_skill:)), "|", ?skill); separator=", ") as ?skillIdsAndLabels)
+			(GROUP_CONCAT(DISTINCT CONCAT(STRAFTER(STR(?escoOccup), STR(esco_occupation:)), "|", ?occup, "|", STR(?dur)); separator=", ") as ?occupIdsLabelsDurs)
 		WHERE {
 			?vacancy a lr:Vacancy ;
 				lr:Id ?id ;
@@ -130,6 +141,13 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 				?vacancy lr:requiredSkill ?escoSkill .
 				?escoSkill skos:prefLabel ?skill .
 				FILTER(LANG(?skill) = "en")
+			}
+			OPTIONAL {
+				?user lr:hasExperience ?expr .
+				?expr lr:escoOccup ?escoOccup .
+				?escoOccup skos:prefLabel ?occup .
+				?expr lr:durationInMonths ?dur .
+				FILTER(LANG(?occup) = "en")
 			}
 			OPTIONAL { 
 				?vacancy lr:requiredDegreeType ?degType .
