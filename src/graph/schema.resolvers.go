@@ -1418,33 +1418,53 @@ func (r *queryResolver) GetVacancy(ctx context.Context, id string) (*model.Vacan
 }
 
 // GetCompanies is the resolver for the getCompanies field.
-func (r *queryResolver) GetCompanies(ctx context.Context, name *string, location *string) ([]*model.Company, error) {
+func (r *queryResolver) GetCompanies(ctx context.Context, name *string, location *model.LocationFilter) ([]*model.Company, error) {
 	if !usersession.IsProfileComplete(ctx) {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
 	}
-	q := query_builder.
-		QueryBuilder().Select([]string{"id", "name", "email", "locationId"}).
-		GroupConcat("vacancyId", ", ", "vacancies", true).
-		GroupConcat("employeeId", ", ", "employees", true).
-		WhereSubject("company", "Company").
-		Where("Id", "id").
-		Where("companyName", "name").
-		Where("companyEmail", "email").
-		NewOptional("company", "lr:companyLocation", "location").
-		AddOptionalTriple("location", "lr:Id", "locationId").
-		NewOptional("company", "lr:hasVacancy", "vacancy").
-		AddOptionalTriple("vacancy", "lr:Id", "vacancyId").
-		NewOptional("company", "lr:hasEmployee", "employee").
-		AddOptionalTriple("employee", "lr:Id", "employeeId")
-	if name != nil {
-		q.Filter("name", []string{*name}, query_builder.EQ)
-	}
-	if location != nil {
-		q.Filter("location", []string{*location}, query_builder.EQ)
-	}
-	qs := q.GroupBy([]string{"id", "name", "email", "locationId"}).Build()
 
-	res, err := r.Repo.Query(qs)
+	nameFilter := ""
+	if name != nil {
+		nameFilter = fmt.Sprintf(`FILTER(regex(?name, ".*%s.*"))`, *name)
+	}
+	locationFilter := ""
+	if location != nil {
+		locationFilter = fmt.Sprintf(`?location lr:inCountry "%s"; lr:inCity "%s" .`, location.Country, location.City)
+
+	}
+	q := fmt.Sprintf(`
+			PREFIX lr: <http://linkrec.example.org/schema#>
+			PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+			PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+			PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+			SELECT ?id ?name ?email ?locationId (GROUP_CONCAT(DISTINCT ?vacancyId; separator=", ") AS ?vacancies) (GROUP_CONCAT(DISTINCT ?employeeId; separator=", ") AS ?employees)
+			WHERE {
+				?company a lr:Company ;
+				lr:Id ?id ;
+				lr:companyName ?name ;
+				lr:companyEmail ?email .
+				OPTIONAL {
+					?company lr:companyLocation ?location .
+					?location lr:Id ?locationId .
+					%s
+				}
+				OPTIONAL {
+					?company lr:hasVacancy ?vacancy .
+					?vacancy lr:Id ?vacancyId .
+				}
+				OPTIONAL {
+					?company lr:hasEmployee ?employee .
+					?employee lr:Id ?employeeId .
+				}
+				%s
+
+			}
+			GROUP BY ?id ?name ?email ?locationId
+		`, locationFilter, nameFilter)
+
+	res, err := r.Repo.Query(q)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err

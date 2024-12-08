@@ -122,7 +122,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		GetCompanies          func(childComplexity int, name *string, location *string) int
+		GetCompanies          func(childComplexity int, name *string, location *model.LocationFilter) int
 		GetCompany            func(childComplexity int, id string) int
 		GetConnectionRequests func(childComplexity int, userID string, status *bool) int
 		GetNotifications      func(childComplexity int, userID string) int
@@ -213,7 +213,7 @@ type QueryResolver interface {
 	GetUsersByID(ctx context.Context, ids []string) ([]*model.User, error)
 	GetVacancies(ctx context.Context, title *string, location *model.LocationFilter, requiredEducation *model.DegreeType, educationField *model.DegreeField, status *bool) ([]*model.Vacancy, error)
 	GetVacancy(ctx context.Context, id string) (*model.Vacancy, error)
-	GetCompanies(ctx context.Context, name *string, location *string) ([]*model.Company, error)
+	GetCompanies(ctx context.Context, name *string, location *model.LocationFilter) ([]*model.Company, error)
 	GetCompany(ctx context.Context, id string) (*model.Company, error)
 	GetNotifications(ctx context.Context, userID string) ([]*model.Notification, error)
 	GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*model.ConnectionRequest, error)
@@ -658,7 +658,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetCompanies(childComplexity, args["name"].(*string), args["location"].(*string)), true
+		return e.complexity.Query.GetCompanies(childComplexity, args["name"].(*string), args["location"].(*model.LocationFilter)), true
 
 	case "Query.getCompany":
 		if e.complexity.Query.GetCompany == nil {
@@ -1747,13 +1747,13 @@ func (ec *executionContext) field_Query_getCompanies_argsName(
 func (ec *executionContext) field_Query_getCompanies_argsLocation(
 	ctx context.Context,
 	rawArgs map[string]interface{},
-) (*string, error) {
+) (*model.LocationFilter, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
 	if tmp, ok := rawArgs["location"]; ok {
-		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+		return ec.unmarshalOLocationFilter2ᚖLinkKrecᚋgraphᚋmodelᚐLocationFilter(ctx, tmp)
 	}
 
-	var zeroVal *string
+	var zeroVal *model.LocationFilter
 	return zeroVal, nil
 }
 
@@ -5185,7 +5185,7 @@ func (ec *executionContext) _Query_getCompanies(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetCompanies(rctx, fc.Args["name"].(*string), fc.Args["location"].(*string))
+		return ec.resolvers.Query().GetCompanies(rctx, fc.Args["name"].(*string), fc.Args["location"].(*model.LocationFilter))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

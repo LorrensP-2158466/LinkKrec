@@ -29,7 +29,7 @@ type Query {
     getVacancy(id: ID!): Vacancy
 
     # Fetch companies with optional filtering
-    getCompanies(name: String, location: String): [Company]
+    getCompanies(name: String, location: LocationFilter): [Company]
 
     # Fetch specific company by ID, with details about their vacancies and employees
     getCompany(id: ID!): Company

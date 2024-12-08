@@ -342,25 +342,23 @@ func buildBinds(binds []Bind) string {
 
 func main() {
 	q :=
-		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField"}).
-			GroupConcat("skill", ", ", "skills", true).
-			WhereSubject("vacancy", "Vacancy").
+		QueryBuilder().Select([]string{"id", "name", "email", "locationId"}).
+			GroupConcat("vacancyId", ", ", "vacancies", true).
+			GroupConcat("employeeId", ", ", "employees", true).
+			WhereSubject("company", "Company").
 			Where("Id", "id").
-			Where("vacancyTitle", "title").
-			Where("vacancyDescription", "description").
-			Where("vacancyLocation", "location").
-			Where("postedBy", "postedBy").
-			Where("vacancyStartDate", "startDate").
-			Where("vacancyEndDate", "endDate").
-			Where("vacancyStatus", "status").
-			Where("requiredDegreeType", "degreeType").
-			Where("requiredDegreeField", "degreeField").
-			Where("requiredSkill", "skill").
-			WhereExtraction("postedBy", "Id", "postedById")
+			Where("companyName", "name").
+			Where("companyEmail", "email").
+			NewOptional("company", "lr:companyLocation", "location").
+			AddOptionalTriple("location", "lr:Id", "locationId").
+			NewOptional("company", "lr:hasVacancy", "vacancy").
+			AddOptionalTriple("vacancy", "lr:Id", "vacancyId").
+			NewOptional("company", "lr:hasEmployee", "employee").
+			AddOptionalTriple("employee", "lr:Id", "employeeId")
 	q.Filter("name", []string{"name"}, EQ)
-	// q.Filter("requiredEducation", []string{string(*requiredEducation)}, EQ)
-	q.Filter("status", []string{"true"}, EQ)
-	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField"}).Build()
+
+	q.Filter("location", []string{"hello"}, EQ)
+	qs := q.GroupBy([]string{"id", "name", "email", "locationId"}).Build()
 
 	fmt.Println(qs)
 
