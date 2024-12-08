@@ -427,6 +427,10 @@ func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, inp
 
 // AddConnectionRequest is the resolver for the addConnectionRequest field.
 func (r *mutationResolver) AddConnectionRequest(ctx context.Context, fromUserID string, connectedToUserID string) (*model.ConnectionRequest, error) {
+	usersess := usersession.For(ctx)
+	if usersess.Id != fromUserID || usersess.IsComplete == false {
+		return nil, graphql.ErrorOnPath(ctx, fmt.Errorf("Unauthorized access"))
+	}
 	requestID := uuid.New().String()
 
 	q := fmt.Sprintf(`
@@ -461,6 +465,10 @@ func (r *mutationResolver) AddConnectionRequest(ctx context.Context, fromUserID 
 
 // SetConnectionRequestStatusFalse is the resolver for the setConnectionRequestStatusFalse field.
 func (r *mutationResolver) SetConnectionRequestStatusFalse(ctx context.Context, id string) (*model.ConnectionRequest, error) {
+	usersess := usersession.For(ctx)
+	if usersess.IsComplete == false {
+		return nil, graphql.ErrorOnPath(ctx, fmt.Errorf("Unauthorized access"))
+	}
 	q := fmt.Sprintf(`
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -476,9 +484,10 @@ func (r *mutationResolver) SetConnectionRequestStatusFalse(ctx context.Context, 
         WHERE {
             ?connectionRequest a lr:ConnectionRequest ;
                                lr:Id "%s" ;
+                               lr:connectedToUser "%s" ;
                                lr:status ?status .
         }
-    `, id)
+    `, id, usersess.Id)
 
 	err := r.UpdateRepo.Update(q)
 	if err != nil {
@@ -490,6 +499,10 @@ func (r *mutationResolver) SetConnectionRequestStatusFalse(ctx context.Context, 
 
 // NotifyProfileVisit is the resolver for the notifyProfileVisit field.
 func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID string, visitedUserID string) (*model.Notification, error) {
+	usersess := usersession.For(ctx)
+	if usersess.Id != visitorID || usersess.IsComplete == false {
+		return nil, graphql.ErrorOnPath(ctx, fmt.Errorf("Unauthorized access"))
+	}
 	notificationID := uuid.New().String()
 
 	visitedByUser, err := loaders.GetUser(ctx, visitorID)
@@ -637,7 +650,7 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 // UpdateVacancy is the resolver for the updateVacancy field.
 func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input model.UpdateVacancyInput) (*model.Vacancy, error) {
 	usersess := usersession.For(ctx)
-	if !slices.Contains(usersess.CompanyIds, id) {
+	if !usersess.IsComplete || !slices.Contains(usersess.CompanyIds, id) {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update vacancy of not owned company")
 	}
 	var deleteParts, insertParts string
@@ -809,7 +822,7 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 // DeleteVacancy is the resolver for the deleteVacancy field.
 func (r *mutationResolver) DeleteVacancy(ctx context.Context, id string) (*bool, error) {
 	usersess := usersession.For(ctx)
-	if !slices.Contains(usersess.CompanyIds, id) {
+	if !usersess.IsComplete || !slices.Contains(usersess.CompanyIds, id) {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't create vacancy for other company")
 	}
 	q := fmt.Sprintf(`
@@ -911,7 +924,8 @@ func (r *mutationResolver) CreateCompany(ctx context.Context, input model.Create
 
 // UpdateCompany is the resolver for the updateCompany field.
 func (r *mutationResolver) UpdateCompany(ctx context.Context, id string, input model.UpdateCompanyInput) (*model.Company, error) {
-	if !slices.Contains(usersession.For(ctx).CompanyIds, id) {
+	usersess := usersession.For(ctx)
+	if !usersess.IsComplete && !slices.Contains(usersess.CompanyIds, id) {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't Update non owned company")
 	}
 
@@ -964,7 +978,8 @@ func (r *mutationResolver) UpdateCompany(ctx context.Context, id string, input m
 
 // DeleteCompany is the resolver for the deleteCompany field.
 func (r *mutationResolver) DeleteCompany(ctx context.Context, id string) (*bool, error) {
-	if !slices.Contains(usersession.For(ctx).CompanyIds, id) {
+	usersess := usersession.For(ctx)
+	if !usersess.IsComplete && !slices.Contains(usersess.CompanyIds, id) {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't Delete non owned company")
 	}
 
@@ -1047,6 +1062,11 @@ func (r *mutationResolver) DeleteCompany(ctx context.Context, id string) (*bool,
 
 // UpdateUserLookingForOpportunities is the resolver for the updateUserLookingForOpportunities field.
 func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context, userID string, looking bool) (*model.User, error) {
+	usersess := usersession.For(ctx)
+	if !usersess.IsComplete && usersess.Id != userID {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't Delete non owned company")
+	}
+
 	// Convert the `looking` boolean to a string representation
 	lookingStr := strconv.FormatBool(looking)
 
@@ -1082,8 +1102,9 @@ func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context
 
 // AddEmployeesToCompany is the resolver for the addEmployeesToCompany field.
 func (r *mutationResolver) AddEmployeesToCompany(ctx context.Context, companyID string, input model.EmployeeIds) ([]string, error) {
-	if !slices.Contains(usersession.For(ctx).CompanyIds, companyID) {
-		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update non owned company")
+	usersess := usersession.For(ctx)
+	if !usersess.IsComplete && !slices.Contains(usersess.CompanyIds, companyID) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
 	}
 	employeeTriples := ""
 	for _, empID := range input.Ids {
@@ -1136,11 +1157,9 @@ func (r *mutationResolver) AddEmployeesToCompany(ctx context.Context, companyID 
 
 // RemoveEmployeesFromCompany is the resolver for the removeEmployeesFromCompany field.
 func (r *mutationResolver) RemoveEmployeesFromCompany(ctx context.Context, companyID string, input model.EmployeeIds) ([]string, error) {
-	if !slices.Contains(usersession.For(ctx).CompanyIds, companyID) {
-		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update non owned company")
-	}
-	if !slices.Contains(usersession.For(ctx).CompanyIds, companyID) {
-		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update non owned company")
+	usersess := usersession.For(ctx)
+	if !usersess.IsComplete && !slices.Contains(usersess.CompanyIds, companyID) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
 	}
 	employeeTriples := ""
 	for _, empID := range input.Ids {
@@ -1198,11 +1217,17 @@ func (r *notificationResolver) ForUser(ctx context.Context, obj *model.Notificat
 
 // GetUser is the resolver for the getUser field.
 func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, error) {
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
 	return loaders.GetUser(ctx, id)
 }
 
 // GetUsers is the resolver for the getUsers field.
 func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, skills []string, lookingForOpportunities *bool) ([]*model.User, error) {
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
 	// TODO: companies
 	skill_ids := ""
 	for _, skill := range skills {
@@ -1235,6 +1260,7 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 	SELECT ?id ?name ?email ?locationId ?lookingForOpportunities 
 		(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections) 
 		(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
+		(GROUP_CONCAT(DISTINCT ?companyId; separator=", ") AS ?companies)
 		(GROUP_CONCAT(CONCAT(STRAFTER(STR(?escoSkill), STR(esco_skill:)), "|", ?skill); separator=",") as ?skillIdsAndLabels)
 	WHERE {
 		?user a lr:User ;
@@ -1257,6 +1283,10 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 		OPTIONAL {
 			?user lr:hasEducation ?education .
 			?education lr:Id ?educationEntry .
+		}
+		OPTIONAL {
+			?user lr:hasCompany ?company.
+			?company lr:Id ?companyId .
 		}
 		BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
 		FILTER(LANG(?skill) = "en")
@@ -1286,43 +1316,83 @@ func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *st
 
 // GetUsersByID is the resolver for the getUsersById field.
 func (r *queryResolver) GetUsersByID(ctx context.Context, ids []string) ([]*model.User, error) {
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
 	return loaders.GetUsers(ctx, ids)
 }
 
 // GetVacancies is the resolver for the getVacancies field.
-func (r *queryResolver) GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error) {
-	q := query_builder.
-		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField"}).
-		GroupConcat("skill", ", ", "skills", true).
-		WhereSubject("vacancy", "Vacancy").
-		Where("Id", "id").
-		Where("vacancyTitle", "title").
-		Where("vacancyDescription", "description").
-		Where("vacancyLocation", "location").
-		Where("postedBy", "postedBy").
-		Where("vacancyStartDate", "startDate").
-		Where("vacancyEndDate", "endDate").
-		Where("vacancyStatus", "status").
-		Where("requiredDegreeType", "degreeType").
-		Where("requiredDegreeField", "degreeField").
-		Where("requiredSkill", "skill").
-		WhereExtraction("postedBy", "Id", "postedById")
-	if title != nil {
-		q.Filter("name", []string{*title}, query_builder.EQ)
+func (r *queryResolver) GetVacancies(ctx context.Context, title *string, location *model.LocationFilter, requiredEducation *model.DegreeType, educationField *model.DegreeField, status *bool) ([]*model.Vacancy, error) {
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
 	}
-	if location != nil {
-		q.Filter("location", []string{*location}, query_builder.EQ)
-	}
-	if requiredEducation != nil {
-		q.Filter("requiredEducation", []string{string(*requiredEducation)}, query_builder.EQ)
-	}
-	if status != nil {
-		q.Filter("status", []string{strconv.FormatBool(*status)}, query_builder.EQ)
-	}
-	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField"}).Build()
 
-	fmt.Println(qs)
-	res, err := r.Repo.Query(qs)
+	titleFilter := ""
+	if title != nil {
+		titleFilter = fmt.Sprintf(`FILTER(regex(?title, ".*%s.*" , "i"))`, *title)
+	}
+	degreeFilter := ""
+	if requiredEducation != nil {
+		degreeFilter = fmt.Sprintf(`FILTER(?degreeType = lr:%s) `, *requiredEducation)
+
+	}
+	fieldFilter := ""
+	if educationField != nil {
+		fieldFilter = fmt.Sprintf(`FILTER(?degreeField = lr:%s) `, *educationField)
+
+	}
+	statusFilter := ""
+	if status != nil {
+		statusFilter = fmt.Sprintf(`FILTER(?status = %v)`, *status)
+	}
+	locationFilter := ""
+	if location != nil {
+		locationFilter = fmt.Sprintf(
+			`?location lr:inCity "%s" ;
+				lr:inCountry "%s" .
+			`, location.City, location.Country)
+
+	}
+	q := fmt.Sprintf(`
+			PREFIX lr: <http://linkrec.example.org/schema#>
+			PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+			PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+			PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+			PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+
+			SELECT ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField (GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
+			WHERE {
+			?vacancy a lr:Vacancy ;
+				lr:Id ?id ;
+				lr:vacancyTitle ?title ;
+				lr:vacancyDescription ?description ;
+				foaf:based_near ?location ;
+				lr:postedBy ?postedBy ;
+				lr:requiredDegreeField ?degreeField;
+				lr:requiredDegreeType ?degreeType;
+				lr:vacancyStartDate ?startDate ;
+				lr:vacancyEndDate ?endDate ;
+				lr:vacancyStatus ?status ;
+				lr:requiredSkill ?skill .
+
+			%s #degree filter
+			%s # field filter
+			%s #title filter
+			%s #status filter
+
+			%s #location filter
+
+			?postedBy lr:Id ?postedById .
+			?location lr:Id ?locationId .
+
+			}
+			GROUP BY ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField
+		`, degreeFilter, fieldFilter, titleFilter, statusFilter, locationFilter)
+	fmt.Println(q)
+
+	res, err := r.Repo.Query(q)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
@@ -1341,11 +1411,17 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 
 // GetVacancy is the resolver for the getVacancy field.
 func (r *queryResolver) GetVacancy(ctx context.Context, id string) (*model.Vacancy, error) {
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
 	return loaders.GetVacancy(ctx, id)
 }
 
 // GetCompanies is the resolver for the getCompanies field.
 func (r *queryResolver) GetCompanies(ctx context.Context, name *string, location *string) ([]*model.Company, error) {
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
 	q := query_builder.
 		QueryBuilder().Select([]string{"id", "name", "email", "locationId"}).
 		GroupConcat("vacancyId", ", ", "vacancies", true).
@@ -1387,11 +1463,17 @@ func (r *queryResolver) GetCompanies(ctx context.Context, name *string, location
 
 // GetCompany is the resolver for the getCompany field.
 func (r *queryResolver) GetCompany(ctx context.Context, id string) (*model.Company, error) {
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
 	return loaders.GetCompany(ctx, id)
 }
 
 // GetNotifications is the resolver for the getNotifications field.
 func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]*model.Notification, error) {
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
 	q := query_builder.
 		QueryBuilder().Select([]string{"id", "title", "message", "forUserId", "createdAt"}).
 		WhereSubject("notification", "Notification").
@@ -1426,6 +1508,9 @@ func (r *queryResolver) GetNotifications(ctx context.Context, userID string) ([]
 
 // GetConnectionRequests is the resolver for the getConnectionRequests field.
 func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*model.ConnectionRequest, error) {
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
 	q := query_builder.
 		QueryBuilder().Select([]string{"id", "fromUserId", "connectedToUserId", "status"}).
 		WhereSubject("connectionRequest", "ConnectionRequest").
@@ -1465,6 +1550,11 @@ func (r *queryResolver) GetConnectionRequests(ctx context.Context, userID string
 
 // MatchVacancyToUsers is the resolver for the matchVacancyToUsers field.
 func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID string, maxDist float64) ([]*model.User, error) {
+	// TODO: now way of checking if user can match against this vacancy, but oh well
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
+
 	q := fmt.Sprintf(`
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX lr: <http://linkrec.example.org/schema#>
@@ -1575,11 +1665,19 @@ LIMIT 50
 
 // MatchUserToVacancies is the resolver for the matchUserToVacancies field.
 func (r *queryResolver) MatchUserToVacancies(ctx context.Context, userID string, maxDist float64, interval *model.DateInterval) ([]*model.Vacancy, error) {
-	dateFilter := ""
+	usersess := usersession.For(ctx)
+	if !usersess.IsComplete || usersess.Id != userID {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
+	// TODO: BUGFIX, for some reason this filter breaks literally everything in our webservice, even auth doesnt work when the filter is on
+	_ = ""
+	if maxDist <= 5 {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Matching function can't be more precise than 5km")
+	}
 	if interval != nil {
 		start := time.Time(interval.Start)
 		end := time.Time(interval.End)
-		dateFilter = fmt.Sprintf(`FILTER(?startDate >= "%s" && ?endDate <= "%s")`, start.Format(time.DateOnly), end.Format(time.DateOnly))
+		_ = fmt.Sprintf(`FILTER(?startDate >= "%s" && ?endDate <= "%s")`, start.Format(time.DateOnly), end.Format(time.DateOnly))
 	}
 	q := fmt.Sprintf(`
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
@@ -1613,10 +1711,6 @@ WHERE {
      	lr:vacancyEndDate ?endDate ;
         foaf:based_near ?vacancyLoc ;
         lr:vacancyStatus true .
-  
-
-        %s
-  	
   
 
     OPTIONAL {
@@ -1686,7 +1780,7 @@ GROUP BY ?vacancyId ?sumRank
 HAVING (?rank >= 0)
 ORDER BY DESC(?rank)
 LIMIT 50
-	`, userID, dateFilter, maxDist)
+	`, userID, maxDist)
 
 	res, _ := r.Repo.Query(q)
 	fmt.Println(q)
@@ -1707,6 +1801,10 @@ LIMIT 50
 
 // GetSkillsByName is the resolver for the getSkillsByName field.
 func (r *queryResolver) GetSkillsByName(ctx context.Context, name string) ([]*model.Skill, error) {
+	if !usersession.IsProfileComplete(ctx) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Unauthorized")
+	}
+	// yeah we are not filtering against the entire db
 	if len(name) < 3 {
 		return []*model.Skill{}, nil
 	}
@@ -1761,6 +1859,7 @@ func (r *subscriptionResolver) NewNotification(ctx context.Context, forUserID st
 
 // Location is the resolver for the location field.
 func (r *userResolver) Location(ctx context.Context, obj *model.User) (*model.Location, error) {
+	// location is private
 	if usersession.For(ctx).Id != obj.ID {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Getting location of other user is not permitted")
 	}

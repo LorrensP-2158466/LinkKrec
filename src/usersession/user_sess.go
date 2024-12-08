@@ -27,3 +27,7 @@ func init() {
 func For(ctx context.Context) *UserSessionInfo {
 	return ctx.Value(SessionInfoKey).(*UserSessionInfo)
 }
+
+func IsProfileComplete(ctx context.Context) bool {
+	return For(ctx).IsComplete
+}

@@ -68,10 +68,6 @@ lr:latitude a rdf:Property ;
     rdfs:range xsd:double .
 
 
-lr:hasCompanies a rdf:Property ;
-    rdfs:domain lr:User ;
-    rdfs:range lr:Company .
-
 # Company (represents a company)
 lr:Company a rdfs:Class .
 lr:Id a rdf:Property ;

@@ -196,6 +196,8 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		if _, ok := session.Values["access_token"]; !ok {
+			session.Options.MaxAge = -1
+			_ = session.Save(c.Request, c.Writer)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}

@@ -130,7 +130,7 @@ type ComplexityRoot struct {
 		GetUser               func(childComplexity int, id string) int
 		GetUsers              func(childComplexity int, name *string, location *string, skills []string, lookingForOpportunities *bool) int
 		GetUsersByID          func(childComplexity int, ids []string) int
-		GetVacancies          func(childComplexity int, title *string, location *string, requiredEducation *model.DegreeType, status *bool) int
+		GetVacancies          func(childComplexity int, title *string, location *model.LocationFilter, requiredEducation *model.DegreeType, educationField *model.DegreeField, status *bool) int
 		GetVacancy            func(childComplexity int, id string) int
 		MatchUserToVacancies  func(childComplexity int, userID string, maxDist float64, interval *model.DateInterval) int
 		MatchVacancyToUsers   func(childComplexity int, vacancyID string, maxDist float64) int
@@ -211,7 +211,7 @@ type QueryResolver interface {
 	GetUser(ctx context.Context, id string) (*model.User, error)
 	GetUsers(ctx context.Context, name *string, location *string, skills []string, lookingForOpportunities *bool) ([]*model.User, error)
 	GetUsersByID(ctx context.Context, ids []string) ([]*model.User, error)
-	GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error)
+	GetVacancies(ctx context.Context, title *string, location *model.LocationFilter, requiredEducation *model.DegreeType, educationField *model.DegreeField, status *bool) ([]*model.Vacancy, error)
 	GetVacancy(ctx context.Context, id string) (*model.Vacancy, error)
 	GetCompanies(ctx context.Context, name *string, location *string) ([]*model.Company, error)
 	GetCompany(ctx context.Context, id string) (*model.Company, error)
@@ -754,7 +754,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetVacancies(childComplexity, args["title"].(*string), args["location"].(*string), args["requiredEducation"].(*model.DegreeType), args["status"].(*bool)), true
+		return e.complexity.Query.GetVacancies(childComplexity, args["title"].(*string), args["location"].(*model.LocationFilter), args["requiredEducation"].(*model.DegreeType), args["educationField"].(*model.DegreeField), args["status"].(*bool)), true
 
 	case "Query.getVacancy":
 		if e.complexity.Query.GetVacancy == nil {
@@ -1030,6 +1030,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputEducationEntryInput,
 		ec.unmarshalInputEmployeeIds,
 		ec.unmarshalInputExperienceEntryInput,
+		ec.unmarshalInputLocationFilter,
 		ec.unmarshalInputRegisterUserInput,
 		ec.unmarshalInputUpdateCompanyInput,
 		ec.unmarshalInputUpdateProfileInput,
@@ -2007,11 +2008,16 @@ func (ec *executionContext) field_Query_getVacancies_args(ctx context.Context, r
 		return nil, err
 	}
 	args["requiredEducation"] = arg2
-	arg3, err := ec.field_Query_getVacancies_argsStatus(ctx, rawArgs)
+	arg3, err := ec.field_Query_getVacancies_argsEducationField(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["status"] = arg3
+	args["educationField"] = arg3
+	arg4, err := ec.field_Query_getVacancies_argsStatus(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["status"] = arg4
 	return args, nil
 }
 func (ec *executionContext) field_Query_getVacancies_argsTitle(
@@ -2030,13 +2036,13 @@ func (ec *executionContext) field_Query_getVacancies_argsTitle(
 func (ec *executionContext) field_Query_getVacancies_argsLocation(
 	ctx context.Context,
 	rawArgs map[string]interface{},
-) (*string, error) {
+) (*model.LocationFilter, error) {
 	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
 	if tmp, ok := rawArgs["location"]; ok {
-		return ec.unmarshalOString2ᚖstring(ctx, tmp)
+		return ec.unmarshalOLocationFilter2ᚖLinkKrecᚋgraphᚋmodelᚐLocationFilter(ctx, tmp)
 	}
 
-	var zeroVal *string
+	var zeroVal *model.LocationFilter
 	return zeroVal, nil
 }
 
@@ -2050,6 +2056,19 @@ func (ec *executionContext) field_Query_getVacancies_argsRequiredEducation(
 	}
 
 	var zeroVal *model.DegreeType
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_getVacancies_argsEducationField(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*model.DegreeField, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("educationField"))
+	if tmp, ok := rawArgs["educationField"]; ok {
+		return ec.unmarshalODegreeField2ᚖLinkKrecᚋgraphᚋmodelᚐDegreeField(ctx, tmp)
+	}
+
+	var zeroVal *model.DegreeField
 	return zeroVal, nil
 }
 
@@ -5010,7 +5029,7 @@ func (ec *executionContext) _Query_getVacancies(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetVacancies(rctx, fc.Args["title"].(*string), fc.Args["location"].(*string), fc.Args["requiredEducation"].(*model.DegreeType), fc.Args["status"].(*bool))
+		return ec.resolvers.Query().GetVacancies(rctx, fc.Args["title"].(*string), fc.Args["location"].(*model.LocationFilter), fc.Args["requiredEducation"].(*model.DegreeType), fc.Args["educationField"].(*model.DegreeField), fc.Args["status"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9372,6 +9391,40 @@ func (ec *executionContext) unmarshalInputExperienceEntryInput(ctx context.Conte
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputLocationFilter(ctx context.Context, obj interface{}) (model.LocationFilter, error) {
+	var it model.LocationFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"country", "city"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "country":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("country"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Country = data
+		case "city":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("city"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.City = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRegisterUserInput(ctx context.Context, obj interface{}) (model.RegisterUserInput, error) {
 	var it model.RegisterUserInput
 	asMap := map[string]interface{}{}
@@ -12284,6 +12337,14 @@ func (ec *executionContext) marshalOLocation2ᚖLinkKrecᚋgraphᚋmodelᚐLocat
 		return graphql.Null
 	}
 	return ec._Location(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOLocationFilter2ᚖLinkKrecᚋgraphᚋmodelᚐLocationFilter(ctx context.Context, v interface{}) (*model.LocationFilter, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputLocationFilter(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalONotification2ᚕᚖLinkKrecᚋgraphᚋmodelᚐNotification(ctx context.Context, sel ast.SelectionSet, v []*model.Notification) graphql.Marshaler {

@@ -341,16 +341,27 @@ func buildBinds(binds []Bind) string {
 }
 
 func main() {
-	var s = QueryBuilder().
-		Select([]string{"userId", "userName"}).
-		GroupConcat("skill", ", ", "skills", true).
-		WhereSubject("user", "User").
-		Where("Id", "userId").
-		Where("hasName", "userName").
-		Where("hasSkill", "skillList").
-		Filter("userId", []string{"\"1\""}, EQ).
-		OrFilter("userId", []string{"6"}, GT).
-		GroupBy([]string{"userName", "userId"}).
-		Build()
-	fmt.Println(s)
+	q :=
+		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField"}).
+			GroupConcat("skill", ", ", "skills", true).
+			WhereSubject("vacancy", "Vacancy").
+			Where("Id", "id").
+			Where("vacancyTitle", "title").
+			Where("vacancyDescription", "description").
+			Where("vacancyLocation", "location").
+			Where("postedBy", "postedBy").
+			Where("vacancyStartDate", "startDate").
+			Where("vacancyEndDate", "endDate").
+			Where("vacancyStatus", "status").
+			Where("requiredDegreeType", "degreeType").
+			Where("requiredDegreeField", "degreeField").
+			Where("requiredSkill", "skill").
+			WhereExtraction("postedBy", "Id", "postedById")
+	q.Filter("name", []string{"name"}, EQ)
+	// q.Filter("requiredEducation", []string{string(*requiredEducation)}, EQ)
+	q.Filter("status", []string{"true"}, EQ)
+	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField"}).Build()
+
+	fmt.Println(qs)
+
 }

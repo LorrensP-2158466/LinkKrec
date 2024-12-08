@@ -98,6 +98,11 @@ type Location struct {
 	HouseNumber string `json:"houseNumber"`
 }
 
+type LocationFilter struct {
+	Country string `json:"country"`
+	City    string `json:"city"`
+}
+
 type Mutation struct {
 }
 

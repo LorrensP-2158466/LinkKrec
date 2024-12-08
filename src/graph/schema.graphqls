@@ -18,8 +18,10 @@ type Query {
     # Fetch all job vacancies with optional filtering
     getVacancies(
         title: String
-        location: String
+        location: LocationFilter
         requiredEducation: DegreeType
+        educationField: DegreeField
+        # todo: experiences
         status: Boolean
     ): [Vacancy]
 
@@ -416,4 +418,9 @@ input EmployeeIds{
 input DateInterval{
     start: Date!
     end: Date!
+}
+
+input LocationFilter{
+    country: String!
+    city: String!
 }
