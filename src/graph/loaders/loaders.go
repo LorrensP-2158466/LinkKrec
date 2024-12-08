@@ -118,7 +118,7 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 				lr:Id ?id ;
 				lr:vacancyTitle ?title ;
 				lr:vacancyDescription ?description ;
-				lr:vacancyLocation ?location ;
+				foaf:based_near ?location ;
 				lr:postedBy ?postedBy ;
 				lr:vacancyStartDate ?startDate ;
 				lr:vacancyEndDate ?endDate ;

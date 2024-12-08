@@ -336,7 +336,6 @@ func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, inp
 				lr:houseNumber ?oldNumber ;
 				lr:longitude ?oldLong ;
 				lr:latitude ?oldLat .
-
 		}
 		`, input.Country, input.City, input.Streetname, input.Housenumber, coordinates.Long, coordinates.Lat, sess_info.Id)
 
@@ -504,7 +503,7 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 				lr:Id "%s" ;
 				lr:vacancyTitle "%s" ;
 				lr:vacancyDescription "%s" ;
-				lr:vacancyLocation lr:Location%s ;
+				foaf:based_near lr:Location%s ;
 				lr:postedBy lr:Company%s ;
 				lr:vacancyStartDate "%s"^^xsd:date ;
 				lr:vacancyEndDate "%s"^^xsd:date ;
@@ -527,6 +526,7 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 // UpdateVacancy is the resolver for the updateVacancy field.
 func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input model.UpdateVacancyInput) (*model.Vacancy, error) {
 	var deleteParts, insertParts string
+	sess_info := usersession.For(ctx)
 
 	// Conditionally add fields to the DELETE/INSERT sections
 	if input.Title != nil {
@@ -536,10 +536,6 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 	if input.Description != nil {
 		deleteParts += "?vacancy lr:vacancyDescription ?oldDescription .\n"
 		insertParts += fmt.Sprintf("?vacancy lr:vacancyDescription \"%s\" .\n", *input.Description)
-	}
-	if input.Location != nil {
-		deleteParts += "?vacancy lr:vacancyLocation ?oldLocation .\n"
-		insertParts += fmt.Sprintf("?vacancy lr:vacancyLocation \"%s\" .\n", *input.Location)
 	}
 	if input.StartDate != nil {
 		deleteParts += "?vacancy lr:vacancyStartDate ?oldStartDate .\n"
@@ -578,12 +574,63 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 		return nil, fmt.Errorf("no fields provided for update")
 	}
 
+	coordinates := gisco.CoordinatesFromAddress(input.Location.Country, input.Location.City, &input.Location.Street, &input.Location.HouseNumber)
+	if coordinates == nil {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Invalid address")
+	}
+	// delete the old values and insert the new
+	locationInsert := fmt.Sprintf(`
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+		
+		DELETE{
+			?loc a lr:Location ;
+				lr:inCountry ?oldCountry ;
+				lr:inCity ?oldCity ;
+				lr:inStreet ?oldStreet ;
+				lr:houseNumber ?oldNumber ;
+				lr:longitude ?oldLong ;
+				lr:latitude ?oldLat .
+		}
+		INSERT {
+			?loc a lr:Location ;
+				lr:inCountry "%s" ;
+				lr:inCity "%s" ;
+				lr:inStreet "%s" ;
+				lr:houseNumber "%s" ;
+				lr:longitude "%.6f" ;
+				lr:latitude "%.6f" .
+		}
+		WHERE {
+			?vac a lr:Vacancy ;
+				lr:Id "%s" ;
+				foaf:based_near ?loc .
+
+			?loc a lr:Location ;
+				lr:inCountry ?oldCountry ;
+				lr:inCity ?oldCity ;
+				lr:inStreet ?oldStreet ;
+				lr:houseNumber ?oldNumber ;
+				lr:longitude ?oldLong ;
+				lr:latitude ?oldLat .
+		}
+		`, input.Location.Country, input.Location.City, input.Location.Street, input.Location.HouseNumber, coordinates.Long, coordinates.Lat, sess_info.Id)
+	fmt.Println(locationInsert)
+	err := r.UpdateRepo.Update(locationInsert)
+	if err != nil {
+		return nil, err
+	}
+
 	// Construct the full SPARQL query
 	q := fmt.Sprintf(`
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         PREFIX lr: <http://linkrec.example.org/schema#>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
 
         DELETE {
             %s
@@ -593,17 +640,16 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
         }
         WHERE {
             ?vacancy a lr:Vacancy ;
-                     lr:Id "%s" .
+				lr:Id "%s" .
             %s
         }
     `, deleteParts, insertParts, id, deleteParts)
 	fmt.Println(q)
 
-	err := r.UpdateRepo.Update(q)
+	err = r.UpdateRepo.Update(q)
 	if err != nil {
 		return nil, err
 	}
-
 	return loaders.GetVacancy(ctx, id)
 }
 
@@ -624,7 +670,7 @@ func (r *mutationResolver) DeleteVacancy(ctx context.Context, id string) (*bool,
                    lr:Id "%s" ;
                    ?p ?o .
           OPTIONAL {
-            ?vacancy lr:vacancyLocation ?location .
+            ?vacancy foaf:based_near ?location .
             ?location ?lp ?lo .
           }
         }
@@ -965,7 +1011,7 @@ func (r *queryResolver) MatchVacancyToUsers(ctx context.Context, vacancyID strin
 			VALUES (?pi ?earthRadius ) { ( 3.1415926535 6378.137 ) }
 		
 			?vacancy lr:Id "%s" ;
-				lr:vacancyLocation ?vacancyLoc ;
+				foaf:based_near ?vacancyLoc ;
 				lr:vacancyStatus true ;
 				OPTIONAL { ?vacancy lr:requiredSkill ?requiredSkill }
 				OPTIONAL { ?vacancy lr:requiredDegreeType ?requiredDegreeType }
@@ -1045,7 +1091,7 @@ func (r *queryResolver) MatchUserToVacancies(ctx context.Context, userID string,
 
 			# Vacancy matching
 			?vacancy lr:Id ?vacancyId ;
-				lr:vacancyLocation ?vacancyLoc ;
+				foaf:based_near ?vacancyLoc ;
 				lr:vacancyStatus true ;
 			OPTIONAL { ?vacancy lr:requiredSkill ?userSkill }
 			OPTIONAL { ?vacancy lr:requiredDegreeType ?requiredDegreeType }
