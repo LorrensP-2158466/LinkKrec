@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -64,6 +65,7 @@ func init_store() {
 
 func signInWithProvider(c *gin.Context) {
 	provider := c.Param("provider")
+	// todo add redirect parameter
 	q := c.Request.URL.Query()
 	q.Add("provider", provider)
 	c.Request.URL.RawQuery = q.Encode()
@@ -178,7 +180,9 @@ func callbackHandler(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusTemporaryRedirect, "/is_authorized")
+	// for now redirect to playground
+	// in future just return success
+	c.Redirect(http.StatusTemporaryRedirect, "/playground")
 }
 
 func AuthMiddleware() gin.HandlerFunc {
@@ -187,12 +191,12 @@ func AuthMiddleware() gin.HandlerFunc {
 		if err != nil {
 			session.Options.MaxAge = -1
 			_ = session.Save(c.Request, c.Writer)
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized", "authorization_urls": []string{"/auth/google"}})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
 
 		if _, ok := session.Values["access_token"]; !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized", "authorization_urls": []string{"/auth/google"}})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 		}
 
@@ -204,6 +208,44 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+func logoutHandler(c *gin.Context) {
+	// Retrieve the session
+	session, err := store.Get(c.Request, "user-session")
+	if err != nil {
+		// Handle session retrieval error
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	// clear the session
+	session.Values = nil
+
+	if err := session.Save(c.Request, c.Writer); err != nil {
+		_ = c.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:     "user-session",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Unix(0, 0),
+	})
+
+	// back to login screen
+	c.Redirect(http.StatusFound, "/login")
+}
+
+func loginHandler(c *gin.Context) {
+
+	providers := []string{"google"}
+
+	c.JSON(http.StatusOK, gin.H{
+		"providers": providers,
+	})
 }
 
 func ginCtxToRawCtx(gqlHandler *handler.Server) gin.HandlerFunc {
@@ -238,8 +280,8 @@ func setupRouter(repo *sparql.Repo, updateRepo *sparql.Repo) *gin.Engine {
 		c.Next()
 	})
 	r.Use(loaders.Middleware(repo))
-	// Middleware to save session after each request
 
+	r.GET("/login", loginHandler) // shows the avaivable login methods (currently only auth via google)
 	r.GET("/auth/:provider", signInWithProvider)
 	r.GET("/auth/:provider/callback", callbackHandler)
 
@@ -266,6 +308,7 @@ func setupRouter(repo *sparql.Repo, updateRepo *sparql.Repo) *gin.Engine {
 		}
 	})
 	{
+		protected.GET("/logout", logoutHandler)
 		protected.GET("/playground", gin.WrapH(playground.Handler("GraphQL playground", "/graphql")))
 		protected.GET("/is_authorized", func(c *gin.Context) { c.String(http.StatusAccepted, "AUTHORIZED") })
 		protected.GET("/graphql", ginCtxToRawCtx(srv))

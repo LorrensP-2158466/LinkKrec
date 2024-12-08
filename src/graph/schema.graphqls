@@ -42,6 +42,9 @@ type Query {
     matchVacancyToUsers(vacancyId: ID!, maxDist: Float!): [User]
 
     matchUserToVacancies(userId: ID!, maxDist: Float!): [Vacancy]
+
+  # searching skills by name for convenience
+  getSkillsByName(name: String!): [Skill!]
 }
 
 type Mutation {
@@ -84,6 +87,13 @@ type Mutation {
 
     # Set user looking for job opportunities
     updateUserLookingForOpportunities(userId: ID!, looking: Boolean!): User
+
+    # add batch of employees to company and return every employee id
+    addEmployeesToCompany(companyId: ID!, input: EmployeeIds! ): [ID!]
+
+    # remove batch of employees from company and returns every employee Id
+    removeEmployeesFromCompany(companyId: ID!, input: EmployeeIds! ): [ID!]
+    
 }
 
 # We just thought about these, so we don't know if these will be used or are correct
@@ -386,19 +396,20 @@ input CreateLocationInput {
     houseNumber: String!
 }
 
-input CreateCompanyInput {
-    id: ID!
-    name: String!
-    email: String!
-    location: CreateLocationInput!
-    vacancies: [CreateVacancyInput!]!
-    employeeIds: [String!]!
+input CreateCompanyInput{
+ name: String!
+ email: String!
+ location: CreateLocationInput!
 }
 
 input UpdateCompanyInput {
-    name: String
-    email: String
-    location: CreateLocationInput
-    vacancies: [CreateVacancyInput!]
-    employeeIds: [String!]
+ id: ID!
+ name: String
+ email: String
+ location: CreateLocationInput
+} 
+
+
+input EmployeeIds{
+    Ids: [ID!]
 }

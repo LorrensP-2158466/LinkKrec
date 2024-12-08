@@ -85,7 +85,7 @@ lr:companyEmail a rdf:Property ;
     rdfs:range schema:Text .
 lr:companyLocation a rdf:Property ;
     rdfs:domain lr:Company ;
-    rdfs:range schema:Text .
+    rdfs:range lr:Location .
 lr:hasVacancy a rdf:Property ;
     rdfs:domain lr:Company ;
     rdfs:range lr:Vacancy .
