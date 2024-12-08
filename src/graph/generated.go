@@ -128,7 +128,7 @@ type ComplexityRoot struct {
 		GetNotifications      func(childComplexity int, userID string) int
 		GetSkillsByName       func(childComplexity int, name string) int
 		GetUser               func(childComplexity int, id string) int
-		GetUsers              func(childComplexity int, name *string, location *string, isEmployer *bool, skills []string, lookingForOpportunities *bool) int
+		GetUsers              func(childComplexity int, name *string, location *string, skills []string, lookingForOpportunities *bool) int
 		GetUsersByID          func(childComplexity int, ids []string) int
 		GetVacancies          func(childComplexity int, title *string, location *string, requiredEducation *model.DegreeType, status *bool) int
 		GetVacancy            func(childComplexity int, id string) int
@@ -209,7 +209,7 @@ type NotificationResolver interface {
 }
 type QueryResolver interface {
 	GetUser(ctx context.Context, id string) (*model.User, error)
-	GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []string, lookingForOpportunities *bool) ([]*model.User, error)
+	GetUsers(ctx context.Context, name *string, location *string, skills []string, lookingForOpportunities *bool) ([]*model.User, error)
 	GetUsersByID(ctx context.Context, ids []string) ([]*model.User, error)
 	GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error)
 	GetVacancy(ctx context.Context, id string) (*model.Vacancy, error)
@@ -730,7 +730,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.GetUsers(childComplexity, args["name"].(*string), args["location"].(*string), args["isEmployer"].(*bool), args["skills"].([]string), args["lookingForOpportunities"].(*bool)), true
+		return e.complexity.Query.GetUsers(childComplexity, args["name"].(*string), args["location"].(*string), args["skills"].([]string), args["lookingForOpportunities"].(*bool)), true
 
 	case "Query.getUsersById":
 		if e.complexity.Query.GetUsersByID == nil {
@@ -1924,21 +1924,16 @@ func (ec *executionContext) field_Query_getUsers_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["location"] = arg1
-	arg2, err := ec.field_Query_getUsers_argsIsEmployer(ctx, rawArgs)
+	arg2, err := ec.field_Query_getUsers_argsSkills(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["isEmployer"] = arg2
-	arg3, err := ec.field_Query_getUsers_argsSkills(ctx, rawArgs)
+	args["skills"] = arg2
+	arg3, err := ec.field_Query_getUsers_argsLookingForOpportunities(ctx, rawArgs)
 	if err != nil {
 		return nil, err
 	}
-	args["skills"] = arg3
-	arg4, err := ec.field_Query_getUsers_argsLookingForOpportunities(ctx, rawArgs)
-	if err != nil {
-		return nil, err
-	}
-	args["lookingForOpportunities"] = arg4
+	args["lookingForOpportunities"] = arg3
 	return args, nil
 }
 func (ec *executionContext) field_Query_getUsers_argsName(
@@ -1964,19 +1959,6 @@ func (ec *executionContext) field_Query_getUsers_argsLocation(
 	}
 
 	var zeroVal *string
-	return zeroVal, nil
-}
-
-func (ec *executionContext) field_Query_getUsers_argsIsEmployer(
-	ctx context.Context,
-	rawArgs map[string]interface{},
-) (*bool, error) {
-	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("isEmployer"))
-	if tmp, ok := rawArgs["isEmployer"]; ok {
-		return ec.unmarshalOBoolean2ᚖbool(ctx, tmp)
-	}
-
-	var zeroVal *bool
 	return zeroVal, nil
 }
 
@@ -4857,7 +4839,7 @@ func (ec *executionContext) _Query_getUsers(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetUsers(rctx, fc.Args["name"].(*string), fc.Args["location"].(*string), fc.Args["isEmployer"].(*bool), fc.Args["skills"].([]string), fc.Args["lookingForOpportunities"].(*bool))
+		return ec.resolvers.Query().GetUsers(rctx, fc.Args["name"].(*string), fc.Args["location"].(*string), fc.Args["skills"].([]string), fc.Args["lookingForOpportunities"].(*bool))
 	})
 	if err != nil {
 		ec.Error(ctx, err)

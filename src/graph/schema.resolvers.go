@@ -1202,7 +1202,7 @@ func (r *queryResolver) GetUser(ctx context.Context, id string) (*model.User, er
 }
 
 // GetUsers is the resolver for the getUsers field.
-func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, isEmployer *bool, skills []string, lookingForOpportunities *bool) ([]*model.User, error) {
+func (r *queryResolver) GetUsers(ctx context.Context, name *string, location *string, skills []string, lookingForOpportunities *bool) ([]*model.User, error) {
 	// TODO: companies
 	skill_ids := ""
 	for _, skill := range skills {
