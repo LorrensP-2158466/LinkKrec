@@ -25,6 +25,15 @@ type ConnectionRequest struct {
 	Status          bool   `json:"status"`
 }
 
+type CreateCompanyInput struct {
+	ID          string                `json:"id"`
+	Name        string                `json:"name"`
+	Email       string                `json:"email"`
+	Location    *CreateLocationInput  `json:"location"`
+	Vacancies   []*CreateVacancyInput `json:"vacancies"`
+	EmployeeIds []string              `json:"employeeIds"`
+}
+
 type CreateLocationInput struct {
 	Country     string `json:"country"`
 	City        string `json:"city"`
@@ -109,7 +118,20 @@ type RegisterUserInput struct {
 	ProfileUpdate *UpdateProfileInput `json:"profileUpdate,omitempty"`
 }
 
+type Skill struct {
+	ID    string `json:"id"`
+	Label string `json:"label"`
+}
+
 type Subscription struct {
+}
+
+type UpdateCompanyInput struct {
+	Name        *string               `json:"name,omitempty"`
+	Email       *string               `json:"email,omitempty"`
+	Location    *CreateLocationInput  `json:"location,omitempty"`
+	Vacancies   []*CreateVacancyInput `json:"vacancies,omitempty"`
+	EmployeeIds []string              `json:"employeeIds,omitempty"`
 }
 
 type UpdateProfileInput struct {
@@ -143,7 +165,7 @@ type User struct {
 	Location                *Location         `json:"location"`
 	Connections             []*User           `json:"connections,omitempty"`
 	Education               []*EducationEntry `json:"education,omitempty"`
-	Skills                  []string          `json:"skills,omitempty"`
+	Skills                  []*Skill          `json:"skills,omitempty"`
 	LookingForOpportunities bool              `json:"lookingForOpportunities"`
 	IsProfileComplete       *bool             `json:"isProfileComplete,omitempty"`
 	Companies               []*Company        `json:"companies,omitempty"`
@@ -161,7 +183,7 @@ type Vacancy struct {
 	RequiredDegreeType         *DegreeType  `json:"requiredDegreeType,omitempty"`
 	RequiredDegreeField        *DegreeField `json:"requiredDegreeField,omitempty"`
 	RequiredExperienceDuration *int         `json:"requiredExperienceDuration,omitempty"`
-	RequiredSkills             []*string    `json:"requiredSkills,omitempty"`
+	RequiredSkills             []*Skill     `json:"requiredSkills,omitempty"`
 }
 
 type DegreeField string

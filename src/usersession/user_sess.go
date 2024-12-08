@@ -12,9 +12,10 @@ const (
 
 type UserSessionInfo struct {
 	// convenience to quickly determine of this user has a completed account
-	IsComplete bool   `json:"ProfileCompleted"`
-	Email      string `json:"email"`
-	Id         string `json:"id"`
+	IsComplete bool     `json:"ProfileCompleted"`
+	Email      string   `json:"email"`
+	Id         string   `json:"id"`
+	CompanyIds []string `json:"companyIds"`
 	Cookie     string
 	// TODO: More?
 }

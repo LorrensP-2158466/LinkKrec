@@ -79,7 +79,9 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*usersession.UserSessio
 	    PREFIX lr: <http://linkrec.example.org/schema#>
 		PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
 
-		SELECT ?id ?email ?name ?ProfileCompleted
+		SELECT 
+			?id ?email ?name ?ProfileCompleted
+			(GROUP_CONCAT(DISTINCT ?companyId; separator=", ") AS ?companyIds)
 		WHERE{
 			?user a lr:User;
 				lr:Id ?id ;
@@ -87,8 +89,16 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*usersession.UserSessio
 				foaf:mbox ?email;
 				lr:isProfileComplete ?ProfileCompleted .
 
+			OPTIONAL{
+				?user a lr:User ;
+					lr:hasCompany ?company .
+				?company a lr:Company;
+					lr:Id ?companyId .
+			}
+
 			FILTER(?email = "%s")
 		}
+		GROUP BY ?id ?email ?name ?ProfileCompleted
 		`, goth_user.Email))
 
 	if err != nil {
@@ -121,6 +131,7 @@ func loginGothUser(c *gin.Context, goth_user goth.User) (*usersession.UserSessio
 			Email:      goth_user.Email,
 			Id:         uuid,
 			Cookie:     goth_user.AccessToken,
+			CompanyIds: []string{},
 		}, nil
 	} else {
 		// user exists create session info and return
