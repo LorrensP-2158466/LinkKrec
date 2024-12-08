@@ -1410,16 +1410,13 @@ func (r *queryResolver) GetSkillsByName(ctx context.Context, name string) ([]*mo
 	if err != nil {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Error fetching skills")
 	}
-	var foundSkills = make([]*model.Skill, 0, 30)
-	for _, skill := range res.Solutions() {
-		mapped, err := util.MapPrimitiveBindingsToStruct[model.Skill](skill)
-		if err != nil {
-			return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Error fetching skills")
-		}
-		foundSkills = append(foundSkills, &mapped)
+
+	skills, err := util.MapPrimitiveBindingsToStructArray[*model.Skill](res.Solutions())
+	if err != nil {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Error fetching skills")
 	}
 
-	return foundSkills, nil
+	return skills, nil
 }
 
 // NewConnectionRequest is the resolver for the newConnectionRequest field.
@@ -1444,7 +1441,7 @@ func (r *subscriptionResolver) NewNotification(ctx context.Context, forUserID st
 
 // Location is the resolver for the location field.
 func (r *userResolver) Location(ctx context.Context, obj *model.User) (*model.Location, error) {
-	if usersession.For(ctx).Id == obj.ID {
+	if usersession.For(ctx).Id != obj.ID {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Getting location of other user is not permitted")
 	}
 	return loaders.GetLocation(ctx, obj.Location.ID)
