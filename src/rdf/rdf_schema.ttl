@@ -128,7 +128,9 @@ lr:requiredDegreeField a rdf:Property ;
 lr:requiredSkill a rdf:Property;
     rdfs:domain lr:Vacancy;
     rdfs:range esco:Skill .
-
+lr:requiredExperience a rdf:Property;
+    rdfs:domain lr:Vacancy;
+    rdfs:range lr:Experience .
 
 # Education Entry
 lr:EducationEntry a rdfs:Class .

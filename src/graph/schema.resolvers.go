@@ -87,35 +87,35 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 		hasSkills += fmt.Sprintf("\nlr:hasSkill esco_skill:%s ;", skill)
 	}
 
-	// build a batch of SPARQL INSERT statements
-	var queries []string
+	insertExperienceBluePrint := `
+			PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+			PREFIX lr: <http://linkrec.example.org/schema#> 
+			PREFIX esco: <http://data.europa.eu/esco/model#>
+			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+			PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
+
+			INSERT DATA {
+				%s
+			}
+	`
+	experienceInserts := ""
 	var experienceEntries []string
 	for _, exp := range input.Experience {
 		expId := uuid.New().String()
-		query := fmt.Sprintf(`
-				PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-				PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-				PREFIX lr: <http://linkrec.example.org/schema#> 
-				PREFIX esco: <http://data.europa.eu/esco/model#>
-				PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-				PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
-	
-				INSERT DATA {
-					lr:Experience%s a lr:Experience ;
-						lr:Id "%s" ;
-						lr:escoOccup esco_occupation:%s ;
-						lr:durationInMonths %d .
-				}
+		experienceInserts += fmt.Sprintf(`
+			lr:Experience%s a lr:Experience ;
+				lr:Id "%s" ;
+				lr:escoOccup esco_occupation:%s ;
+				lr:durationInMonths %d .
+
 			`, expId, expId, exp.ID, exp.DurationInMonths)
-		queries = append(queries, query)
 		experienceEntries = append(experienceEntries, fmt.Sprintf("\nlr:hasExperience lr:Experience%s ;", expId))
 	}
-	// execute queries sequentially
-	for _, query := range queries {
-		err := r.UpdateRepo.Update(query)
-		if err != nil {
-			return nil, fmt.Errorf("failed to insert experience: %v", err)
-		}
+	insertExp := fmt.Sprintf(insertExperienceBluePrint, experienceInserts)
+	err := r.UpdateRepo.Update(insertExp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert experience: %v", err)
 	}
 
 	insertEducation := `
@@ -206,7 +206,7 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 		}
 		`, locationId, locationId, input.Country, input.City, input.Streetname, input.Housenumber, coordinates.Long, coordinates.Lat)
 
-	err := r.UpdateRepo.Update(locationInsert)
+	err = r.UpdateRepo.Update(locationInsert)
 	if err != nil {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't insert location %s because: %s", locationId, err)
 	}
@@ -314,7 +314,6 @@ func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, inp
 			`, expId, expId, exp.ID, exp.DurationInMonths)
 		experienceEntries = append(experienceEntries, fmt.Sprintf("\nlr:hasExperience lr:Experience%s ;", expId))
 	}
-	// execute queries sequentially
 	insertExp := fmt.Sprintf(insertExperienceBluePrint, experienceInserts)
 	err := r.UpdateRepo.Update(insertExp)
 	if err != nil {
@@ -524,10 +523,10 @@ func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID str
 
 // CreateVacancy is the resolver for the createVacancy field.
 func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, input model.CreateVacancyInput) (*model.Vacancy, error) {
-	usersess := usersession.For(ctx)
-	if !slices.Contains(usersess.CompanyIds, companyID) {
-		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't create vacancy for other company")
-	}
+	// usersess := usersession.For(ctx)
+	// if !slices.Contains(usersess.CompanyIds, companyID) {
+	// 	return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't create vacancy for other company")
+	// }
 	coordinates := gisco.CoordinatesFromAddress(input.Location.Country, input.Location.City, &input.Location.Street, &input.Location.HouseNumber)
 	if coordinates == nil {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Invalid address")
@@ -553,14 +552,43 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 				lr:latitude "%.6f" .
 		}
 	`, locationId, locationId, input.Location.Country, input.Location.City, input.Location.Street, input.Location.HouseNumber, coordinates.Long, coordinates.Lat)
-
 	err := r.UpdateRepo.Update(locationInsert)
 	if err != nil {
 		return nil, err
 	}
 
-	vacancyID := uuid.New().String()
+	insertExperienceBluePrint := `
+			PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+			PREFIX lr: <http://linkrec.example.org/schema#> 
+			PREFIX esco: <http://data.europa.eu/esco/model#>
+			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+			PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
 
+			INSERT DATA {
+				%s
+			}
+	`
+	experienceInserts := ""
+	var experienceEntries []string
+	for _, exp := range input.RequiredExperience {
+		expId := uuid.New().String()
+		experienceInserts += fmt.Sprintf(`
+			lr:Experience%s a lr:Experience ;
+				lr:Id "%s" ;
+				lr:escoOccup esco_occupation:%s ;
+				lr:durationInMonths %d .
+			`, expId, expId, exp.ID, exp.DurationInMonths)
+		experienceEntries = append(experienceEntries, fmt.Sprintf("; \nlr:requiredExperience lr:Experience%s", expId))
+	}
+	insertExp := fmt.Sprintf(insertExperienceBluePrint, experienceInserts)
+
+	err = r.UpdateRepo.Update(insertExp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert experience: %v", err)
+	}
+
+	vacancyID := uuid.New().String()
 	var skillQueries = ""
 	for _, skill := range input.RequiredSkills {
 		skillQueries += fmt.Sprintf(" ;\nlr:requiredSkill esco_skill:%s", *skill)
@@ -586,9 +614,14 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 				lr:vacancyEndDate "%s"^^xsd:date ;
 				lr:vacancyStatus %t;
 				lr:requiredDegreeType lr:%s ;
-				lr:requiredDegreeField lr:%s ;
+				lr:requiredDegreeField lr:%s 
+				%s
+				%s
 		}
-		`, vacancyID, vacancyID, input.Title, input.Description, locationId, companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType, input.RequiredDegreeField, skillQueries)
+		`, vacancyID, vacancyID, input.Title, input.Description, locationId,
+		companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType,
+		input.RequiredDegreeField, strings.Join(experienceEntries, ""), skillQueries)
+
 	fmt.Println(q)
 	err = r.UpdateRepo.Update(q)
 	if err != nil {

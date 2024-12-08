@@ -122,6 +122,7 @@ lr:Vacancy1 a lr:Vacancy ;
     lr:requiredDegreeField lr:SoftwareEngineering ;
     lr:vacancyStartDate "2022-01-01"^^xsd:date ;
     lr:vacancyEndDate "2022-06-30"^^xsd:date ;
+    lr:requiredExperience lr:ExperienceEntry1 ;
     lr:vacancyStatus true .
 
 lr:Vacancy2 a lr:Vacancy ;
@@ -135,6 +136,7 @@ lr:Vacancy2 a lr:Vacancy ;
     lr:requiredSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
     lr:vacancyStartDate "2022-02-01"^^xsd:date ;
     lr:vacancyEndDate "2022-07-31"^^xsd:date ;
+    lr:requiredExperience lr:ExperienceEntry1 ;
     lr:vacancyStatus true .
 
 
@@ -148,6 +150,7 @@ lr:Vacancy3 a lr:Vacancy ;
     lr:requiredDegreeField lr:CorporateLaw;
     lr:vacancyStartDate "2022-03-01"^^xsd:date ;
     lr:vacancyEndDate "2022-08-31"^^xsd:date ;
+    lr:requiredExperience lr:ExperienceEntry1 ;
     lr:vacancyStatus true .
 
 lr:Company1 a lr:Company ;

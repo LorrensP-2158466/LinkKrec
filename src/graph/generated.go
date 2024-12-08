@@ -87,15 +87,6 @@ type ComplexityRoot struct {
 		Label            func(childComplexity int) int
 	}
 
-	ExperienceEntry struct {
-		Description    func(childComplexity int) int
-		EndDate        func(childComplexity int) int
-		ExperienceType func(childComplexity int) int
-		ID             func(childComplexity int) int
-		StartDate      func(childComplexity int) int
-		Title          func(childComplexity int) int
-	}
-
 	Location struct {
 		City        func(childComplexity int) int
 		Country     func(childComplexity int) int
@@ -400,48 +391,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Experience.Label(childComplexity), true
-
-	case "ExperienceEntry.description":
-		if e.complexity.ExperienceEntry.Description == nil {
-			break
-		}
-
-		return e.complexity.ExperienceEntry.Description(childComplexity), true
-
-	case "ExperienceEntry.endDate":
-		if e.complexity.ExperienceEntry.EndDate == nil {
-			break
-		}
-
-		return e.complexity.ExperienceEntry.EndDate(childComplexity), true
-
-	case "ExperienceEntry.experienceType":
-		if e.complexity.ExperienceEntry.ExperienceType == nil {
-			break
-		}
-
-		return e.complexity.ExperienceEntry.ExperienceType(childComplexity), true
-
-	case "ExperienceEntry.id":
-		if e.complexity.ExperienceEntry.ID == nil {
-			break
-		}
-
-		return e.complexity.ExperienceEntry.ID(childComplexity), true
-
-	case "ExperienceEntry.startDate":
-		if e.complexity.ExperienceEntry.StartDate == nil {
-			break
-		}
-
-		return e.complexity.ExperienceEntry.StartDate(childComplexity), true
-
-	case "ExperienceEntry.title":
-		if e.complexity.ExperienceEntry.Title == nil {
-			break
-		}
-
-		return e.complexity.ExperienceEntry.Title(childComplexity), true
 
 	case "Location.city":
 		if e.complexity.Location.City == nil {
@@ -3216,261 +3165,6 @@ func (ec *executionContext) fieldContext_Experience_durationInMonths(_ context.C
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExperienceEntry_id(ctx context.Context, field graphql.CollectedField, obj *model.ExperienceEntry) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ExperienceEntry_id(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ExperienceEntry_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExperienceEntry",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExperienceEntry_title(ctx context.Context, field graphql.CollectedField, obj *model.ExperienceEntry) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ExperienceEntry_title(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Title, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ExperienceEntry_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExperienceEntry",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExperienceEntry_description(ctx context.Context, field graphql.CollectedField, obj *model.ExperienceEntry) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ExperienceEntry_description(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Description, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ExperienceEntry_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExperienceEntry",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExperienceEntry_experienceType(ctx context.Context, field graphql.CollectedField, obj *model.ExperienceEntry) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ExperienceEntry_experienceType(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ExperienceType, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(model.ExperienceType)
-	fc.Result = res
-	return ec.marshalNExperienceType2LinkKrecᚋgraphᚋmodelᚐExperienceType(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ExperienceEntry_experienceType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExperienceEntry",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ExperienceType does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExperienceEntry_startDate(ctx context.Context, field graphql.CollectedField, obj *model.ExperienceEntry) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ExperienceEntry_startDate(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.StartDate, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ExperienceEntry_startDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExperienceEntry",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _ExperienceEntry_endDate(ctx context.Context, field graphql.CollectedField, obj *model.ExperienceEntry) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_ExperienceEntry_endDate(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.EndDate, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_ExperienceEntry_endDate(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "ExperienceEntry",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -9148,7 +8842,7 @@ func (ec *executionContext) unmarshalInputCreateVacancyInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "description", "location", "startDate", "endDate", "status", "requiredDegreeType", "requiredDegreeField", "requiredSkills"}
+	fieldsInOrder := [...]string{"title", "description", "location", "startDate", "endDate", "status", "requiredDegreeType", "requiredDegreeField", "requiredSkills", "requiredExperience"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9218,6 +8912,13 @@ func (ec *executionContext) unmarshalInputCreateVacancyInput(ctx context.Context
 				return it, err
 			}
 			it.RequiredSkills = data
+		case "requiredExperience":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredExperience"))
+			data, err := ec.unmarshalNExperienceEntryInput2ᚕᚖLinkKrecᚋgraphᚋmodelᚐExperienceEntryInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequiredExperience = data
 		}
 	}
 
@@ -9506,7 +9207,7 @@ func (ec *executionContext) unmarshalInputUpdateVacancyInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "description", "location", "startDate", "endDate", "status", "requiredDegreeType", "requiredDegreeField", "requiredSkills"}
+	fieldsInOrder := [...]string{"title", "description", "location", "startDate", "endDate", "status", "requiredDegreeType", "requiredDegreeField", "requiredSkills", "requiredExperience"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9576,6 +9277,13 @@ func (ec *executionContext) unmarshalInputUpdateVacancyInput(ctx context.Context
 				return it, err
 			}
 			it.RequiredSkills = data
+		case "requiredExperience":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredExperience"))
+			data, err := ec.unmarshalOExperienceEntryInput2ᚕᚖLinkKrecᚋgraphᚋmodelᚐExperienceEntryInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.RequiredExperience = data
 		}
 	}
 
@@ -9952,61 +9660,6 @@ func (ec *executionContext) _Experience(ctx context.Context, sel ast.SelectionSe
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.processDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var experienceEntryImplementors = []string{"ExperienceEntry"}
-
-func (ec *executionContext) _ExperienceEntry(ctx context.Context, sel ast.SelectionSet, obj *model.ExperienceEntry) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, experienceEntryImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("ExperienceEntry")
-		case "id":
-			out.Values[i] = ec._ExperienceEntry_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "title":
-			out.Values[i] = ec._ExperienceEntry_title(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "description":
-			out.Values[i] = ec._ExperienceEntry_description(ctx, field, obj)
-		case "experienceType":
-			out.Values[i] = ec._ExperienceEntry_experienceType(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "startDate":
-			out.Values[i] = ec._ExperienceEntry_startDate(ctx, field, obj)
-		case "endDate":
-			out.Values[i] = ec._ExperienceEntry_endDate(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11385,19 +11038,26 @@ func (ec *executionContext) marshalNExperience2ᚖLinkKrecᚋgraphᚋmodelᚐExp
 	return ec._Experience(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNExperienceEntryInput2ᚕᚖLinkKrecᚋgraphᚋmodelᚐExperienceEntryInput(ctx context.Context, v interface{}) ([]*model.ExperienceEntryInput, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.ExperienceEntryInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOExperienceEntryInput2ᚖLinkKrecᚋgraphᚋmodelᚐExperienceEntryInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) unmarshalNExperienceEntryInput2ᚖLinkKrecᚋgraphᚋmodelᚐExperienceEntryInput(ctx context.Context, v interface{}) (*model.ExperienceEntryInput, error) {
 	res, err := ec.unmarshalInputExperienceEntryInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNExperienceType2LinkKrecᚋgraphᚋmodelᚐExperienceType(ctx context.Context, v interface{}) (model.ExperienceType, error) {
-	var res model.ExperienceType
-	err := res.UnmarshalGQL(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNExperienceType2LinkKrecᚋgraphᚋmodelᚐExperienceType(ctx context.Context, sel ast.SelectionSet, v model.ExperienceType) graphql.Marshaler {
-	return v
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
@@ -12223,6 +11883,26 @@ func (ec *executionContext) marshalOExperience2ᚕᚖLinkKrecᚋgraphᚋmodelᚐ
 	return ret
 }
 
+func (ec *executionContext) unmarshalOExperienceEntryInput2ᚕᚖLinkKrecᚋgraphᚋmodelᚐExperienceEntryInput(ctx context.Context, v interface{}) ([]*model.ExperienceEntryInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.ExperienceEntryInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOExperienceEntryInput2ᚖLinkKrecᚋgraphᚋmodelᚐExperienceEntryInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) unmarshalOExperienceEntryInput2ᚕᚖLinkKrecᚋgraphᚋmodelᚐExperienceEntryInputᚄ(ctx context.Context, v interface{}) ([]*model.ExperienceEntryInput, error) {
 	if v == nil {
 		return nil, nil
@@ -12241,6 +11921,14 @@ func (ec *executionContext) unmarshalOExperienceEntryInput2ᚕᚖLinkKrecᚋgrap
 		}
 	}
 	return res, nil
+}
+
+func (ec *executionContext) unmarshalOExperienceEntryInput2ᚖLinkKrecᚋgraphᚋmodelᚐExperienceEntryInput(ctx context.Context, v interface{}) (*model.ExperienceEntryInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputExperienceEntryInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOID2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {

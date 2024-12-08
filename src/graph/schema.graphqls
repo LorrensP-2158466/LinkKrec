@@ -265,16 +265,6 @@ enum ExperienceType {
     # We can always add more ofcourse
 }
 
-# Same as EducationEntry, but for job experiences (not used)
-type ExperienceEntry {
-    id: ID!
-    title: String!
-    description: String
-    experienceType: ExperienceType!
-    startDate: String
-    endDate: String
-}
-
 # A Job vacancy a Company can place on LinkRec
 type Vacancy {
     id: ID!
@@ -373,6 +363,7 @@ input CreateVacancyInput {
     requiredDegreeType: DegreeType!
     requiredDegreeField: DegreeField!
     requiredSkills: [String]! # ids
+    requiredExperience: [ExperienceEntryInput]!
 }
 
 input UpdateVacancyInput {
@@ -385,6 +376,7 @@ input UpdateVacancyInput {
     requiredDegreeType: DegreeType
     requiredDegreeField: DegreeField
     requiredSkills: [String]
+    requiredExperience: [ExperienceEntryInput]
 }
 
 input CreateLocationInput {

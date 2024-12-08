@@ -42,15 +42,16 @@ type CreateLocationInput struct {
 }
 
 type CreateVacancyInput struct {
-	Title               string               `json:"title"`
-	Description         string               `json:"description"`
-	Location            *CreateLocationInput `json:"location"`
-	StartDate           string               `json:"startDate"`
-	EndDate             string               `json:"endDate"`
-	Status              bool                 `json:"status"`
-	RequiredDegreeType  DegreeType           `json:"requiredDegreeType"`
-	RequiredDegreeField DegreeField          `json:"requiredDegreeField"`
-	RequiredSkills      []*string            `json:"requiredSkills"`
+	Title               string                  `json:"title"`
+	Description         string                  `json:"description"`
+	Location            *CreateLocationInput    `json:"location"`
+	StartDate           string                  `json:"startDate"`
+	EndDate             string                  `json:"endDate"`
+	Status              bool                    `json:"status"`
+	RequiredDegreeType  DegreeType              `json:"requiredDegreeType"`
+	RequiredDegreeField DegreeField             `json:"requiredDegreeField"`
+	RequiredSkills      []*string               `json:"requiredSkills"`
+	RequiredExperience  []*ExperienceEntryInput `json:"requiredExperience"`
 }
 
 type EducationEntry struct {
@@ -76,15 +77,6 @@ type Experience struct {
 	ID               string `json:"id"`
 	Label            string `json:"label"`
 	DurationInMonths int    `json:"durationInMonths"`
-}
-
-type ExperienceEntry struct {
-	ID             string         `json:"id"`
-	Title          string         `json:"title"`
-	Description    *string        `json:"description,omitempty"`
-	ExperienceType ExperienceType `json:"experienceType"`
-	StartDate      *string        `json:"startDate,omitempty"`
-	EndDate        *string        `json:"endDate,omitempty"`
 }
 
 type ExperienceEntryInput struct {
@@ -149,15 +141,16 @@ type UpdateProfileInput struct {
 }
 
 type UpdateVacancyInput struct {
-	Title               *string              `json:"title,omitempty"`
-	Description         *string              `json:"description,omitempty"`
-	Location            *CreateLocationInput `json:"location,omitempty"`
-	StartDate           *string              `json:"startDate,omitempty"`
-	EndDate             *string              `json:"endDate,omitempty"`
-	Status              *bool                `json:"status,omitempty"`
-	RequiredDegreeType  *DegreeType          `json:"requiredDegreeType,omitempty"`
-	RequiredDegreeField *DegreeField         `json:"requiredDegreeField,omitempty"`
-	RequiredSkills      []*string            `json:"requiredSkills,omitempty"`
+	Title               *string                 `json:"title,omitempty"`
+	Description         *string                 `json:"description,omitempty"`
+	Location            *CreateLocationInput    `json:"location,omitempty"`
+	StartDate           *string                 `json:"startDate,omitempty"`
+	EndDate             *string                 `json:"endDate,omitempty"`
+	Status              *bool                   `json:"status,omitempty"`
+	RequiredDegreeType  *DegreeType             `json:"requiredDegreeType,omitempty"`
+	RequiredDegreeField *DegreeField            `json:"requiredDegreeField,omitempty"`
+	RequiredSkills      []*string               `json:"requiredSkills,omitempty"`
+	RequiredExperience  []*ExperienceEntryInput `json:"requiredExperience,omitempty"`
 }
 
 type User struct {
