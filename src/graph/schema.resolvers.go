@@ -65,15 +65,15 @@ func (r *mutationResolver) RegisterUser(ctx context.Context, input model.Registe
 func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, input model.UpdateProfileInput) (*model.User, error) {
 	sess_info := usersession.For(ctx)
 
-	if sess_info.Id != id {
-		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't complete another users account\nYour Id is: %s", sess_info.Id)
-	}
+	// if sess_info.Id != id {
+	// 	return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't complete another users account\nYour Id is: %s", sess_info.Id)
+	// }
 
 	// first check if user already did this
 
-	if sess_info.IsComplete {
-		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Account already completed, please use `UpdateUserProfile`")
-	}
+	// if sess_info.IsComplete {
+	// 	return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Account already completed, please use `UpdateUserProfile`")
+	// }
 
 	coordinates := gisco.CoordinatesFromAddress(input.Country, input.City, &input.Streetname, &input.Housenumber)
 	if coordinates == nil {
@@ -85,6 +85,36 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 	hasSkills := ""
 	for _, skill := range input.Skills {
 		hasSkills += fmt.Sprintf("\nlr:hasSkill esco_skill:%s ;", skill)
+	}
+
+	// build a batch of SPARQL INSERT statements
+	var queries []string
+	var experienceEntries []string
+	for _, exp := range input.Experience {
+		expId := uuid.New().String()
+		query := fmt.Sprintf(`
+				PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+				PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+				PREFIX lr: <http://your-namespace/schema#>
+				PREFIX esco: <http://data.europa.eu/esco/model#>
+				PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+	
+				INSERT DATA {
+					lr:Experience%s a lr:Experience ;
+						lr:Id "%s" ;
+						lr:escoOccup esco_occupation:%s ;
+						lr:durationInMonths %d ;
+				}
+			`, expId, expId, exp.ID, exp.DurationInMonths)
+		queries = append(queries, query)
+		experienceEntries = append(experienceEntries, fmt.Sprintf("\nlr:hasExperience lr:Experience%s ;", expId))
+	}
+	// execute queries sequentially
+	for _, query := range queries {
+		err := r.UpdateRepo.Update(query)
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert experience: %v", err)
+		}
 	}
 
 	insertEducation := `
@@ -103,7 +133,6 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 					lr:startDate "%s"^^xsd:dateTime ;
 					lr:endDate "%s"^^xsd:dateTime  .
 			}
-
 		`
 	educationEntries := ""
 	for _, edu := range input.Education {
@@ -515,9 +544,8 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 				lr:vacancyStatus %t;
 				lr:requiredDegreeType lr:%s ;
 				lr:requiredDegreeField lr:%s ;
-				lr:requiredExperienceDuration %d %s
 		}
-		`, vacancyID, vacancyID, input.Title, input.Description, locationId, companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType, input.RequiredDegreeField, input.RequiredExperienceDuration, skillQueries)
+		`, vacancyID, vacancyID, input.Title, input.Description, locationId, companyID, input.StartDate, input.EndDate, input.Status, input.RequiredDegreeType, input.RequiredDegreeField, skillQueries)
 	fmt.Println(q)
 	err = r.UpdateRepo.Update(q)
 	if err != nil {
@@ -560,10 +588,6 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 	if input.RequiredDegreeField != nil {
 		deleteParts += "?vacancy lr:requiredDegreeField ?oldDegreeField .\n"
 		insertParts += fmt.Sprintf("?vacancy lr:requiredDegreeField lr:%s .\n", *input.RequiredDegreeField)
-	}
-	if input.RequiredExperienceDuration != nil {
-		deleteParts += "?vacancy lr:requiredExperienceDuration ?oldExperience .\n"
-		insertParts += fmt.Sprintf("?vacancy lr:requiredExperienceDuration %d .\n", *input.RequiredExperienceDuration)
 	}
 	// check if the status is provided
 	if input.Status != nil {
@@ -811,12 +835,11 @@ func (r *mutationResolver) CreateCompany(ctx context.Context, input model.Create
                     lr:vacancyStatus %t ;
                     lr:requiredDegreeType lr:%s ;
                     lr:requiredDegreeField lr:%s ;
-                    lr:requiredExperienceDuration %d %s
             }
         `,
 			vacancyID, vacancyID, vacancy.Title, vacancy.Description, vacancyLocationID, companyID,
 			vacancy.StartDate, vacancy.EndDate, vacancy.Status,
-			vacancy.RequiredDegreeType, vacancy.RequiredDegreeField, vacancy.RequiredExperienceDuration,
+			vacancy.RequiredDegreeType, vacancy.RequiredDegreeField,
 			skillQueries,
 		)
 
@@ -926,7 +949,6 @@ func (r *mutationResolver) UpdateCompany(ctx context.Context, id string, input m
                       lr:vacancyStatus %t;
                       lr:requiredDegreeType lr:%s;
                       lr:requiredDegreeField lr:%s;
-                      lr:requiredExperienceDuration %d.
                 lr:location%s lr:country "%s";
                       lr:city "%s";
                       lr:street "%s";
@@ -934,7 +956,7 @@ func (r *mutationResolver) UpdateCompany(ctx context.Context, id string, input m
 					  lr:longitude "%.6f";
 					  lr:latitude "%.6f".
             `, vacancyID, vacancy.Title, vacancy.Description, locationID, id,
-				vacancy.StartDate, vacancy.EndDate, vacancy.Status, vacancy.RequiredDegreeType, vacancy.RequiredDegreeField, vacancy.RequiredExperienceDuration,
+				vacancy.StartDate, vacancy.EndDate, vacancy.Status, vacancy.RequiredDegreeType, vacancy.RequiredDegreeField,
 				locationID, vacancy.Location.Country, vacancy.Location.City, vacancy.Location.Street, vacancy.Location.HouseNumber, coordinates.Long, coordinates.Lat)
 
 			updateQueries += deleteVacanciesQuery + " INSERT DATA { " + insertVacanciesQuery + " }"
@@ -1169,7 +1191,7 @@ func (r *queryResolver) GetUsersByID(ctx context.Context, ids []string) ([]*mode
 // GetVacancies is the resolver for the getVacancies field.
 func (r *queryResolver) GetVacancies(ctx context.Context, title *string, location *string, requiredEducation *model.DegreeType, status *bool) ([]*model.Vacancy, error) {
 	q := query_builder.
-		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField", "experienceDuration"}).
+		QueryBuilder().Select([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField"}).
 		GroupConcat("skill", ", ", "skills", true).
 		WhereSubject("vacancy", "Vacancy").
 		Where("Id", "id").
@@ -1182,7 +1204,6 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 		Where("vacancyStatus", "status").
 		Where("requiredDegreeType", "degreeType").
 		Where("requiredDegreeField", "degreeField").
-		Where("requiredExperienceDuration", "experienceDuration").
 		Where("requiredSkill", "skill").
 		WhereExtraction("postedBy", "Id", "postedById")
 	if title != nil {
@@ -1197,7 +1218,7 @@ func (r *queryResolver) GetVacancies(ctx context.Context, title *string, locatio
 	if status != nil {
 		q.Filter("status", []string{strconv.FormatBool(*status)}, query_builder.EQ)
 	}
-	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField", "experienceDuration"}).Build()
+	qs := q.GroupBy([]string{"id", "title", "description", "location", "postedById", "startDate", "endDate", "status", "degreeType", "degreeField"}).Build()
 
 	fmt.Println(qs)
 	res, err := r.Repo.Query(qs)

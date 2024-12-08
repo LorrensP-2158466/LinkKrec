@@ -136,12 +136,6 @@ func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
 	}
 	vacancyObj.Location = &LocObj
 
-	experienceDuration, err := strconv.Atoi(vacancy["experienceDuration"].String())
-	if err != nil {
-		return nil, err
-	}
-	vacancyObj.RequiredExperienceDuration = &experienceDuration
-
 	var skills = make([]*model.Skill, 0)
 	if vacancy["skillIdsAndLabels"] != nil {
 		for _, skillIdAndLabel := range strings.Split(vacancy["skillIdsAndLabels"].String(), ", ") {

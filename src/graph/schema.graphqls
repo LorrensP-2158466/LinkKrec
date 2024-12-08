@@ -287,7 +287,6 @@ type Vacancy {
     status: Boolean!
     requiredDegreeType: DegreeType
     requiredDegreeField: DegreeField
-    requiredExperienceDuration: Int
     requiredExperience: [Experience!]
     requiredSkills: [Skill!]
 }
@@ -350,6 +349,11 @@ input UpdateProfileInput {
     housenumber: String!
 }
 
+input ExperienceEntryInput {
+    id: String!
+    durationInMonths: Int!
+}
+
 input EducationEntryInput {
     institution: String!
     extra_info: String
@@ -357,13 +361,6 @@ input EducationEntryInput {
     till: Date!
     degree: DegreeType!
     field: DegreeField!
-}
-
-input ExperienceEntryInput {
-    title: String!
-    description: String
-    startDate: String
-    endDate: String
 }
 
 input CreateVacancyInput {
@@ -375,7 +372,6 @@ input CreateVacancyInput {
     status: Boolean!
     requiredDegreeType: DegreeType!
     requiredDegreeField: DegreeField!
-    requiredExperienceDuration: Int!
     requiredSkills: [String]! # ids
 }
 
@@ -388,7 +384,6 @@ input UpdateVacancyInput {
     status: Boolean
     requiredDegreeType: DegreeType
     requiredDegreeField: DegreeField
-    requiredExperienceDuration: Int
     requiredSkills: [String]
 }
 

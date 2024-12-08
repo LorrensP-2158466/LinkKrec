@@ -169,19 +169,18 @@ type ComplexityRoot struct {
 	}
 
 	Vacancy struct {
-		Description                func(childComplexity int) int
-		EndDate                    func(childComplexity int) int
-		ID                         func(childComplexity int) int
-		Location                   func(childComplexity int) int
-		PostedBy                   func(childComplexity int) int
-		RequiredDegreeField        func(childComplexity int) int
-		RequiredDegreeType         func(childComplexity int) int
-		RequiredExperience         func(childComplexity int) int
-		RequiredExperienceDuration func(childComplexity int) int
-		RequiredSkills             func(childComplexity int) int
-		StartDate                  func(childComplexity int) int
-		Status                     func(childComplexity int) int
-		Title                      func(childComplexity int) int
+		Description         func(childComplexity int) int
+		EndDate             func(childComplexity int) int
+		ID                  func(childComplexity int) int
+		Location            func(childComplexity int) int
+		PostedBy            func(childComplexity int) int
+		RequiredDegreeField func(childComplexity int) int
+		RequiredDegreeType  func(childComplexity int) int
+		RequiredExperience  func(childComplexity int) int
+		RequiredSkills      func(childComplexity int) int
+		StartDate           func(childComplexity int) int
+		Status              func(childComplexity int) int
+		Title               func(childComplexity int) int
 	}
 }
 
@@ -996,13 +995,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Vacancy.RequiredExperience(childComplexity), true
-
-	case "Vacancy.requiredExperienceDuration":
-		if e.complexity.Vacancy.RequiredExperienceDuration == nil {
-			break
-		}
-
-		return e.complexity.Vacancy.RequiredExperienceDuration(childComplexity), true
 
 	case "Vacancy.requiredSkills":
 		if e.complexity.Vacancy.RequiredSkills == nil {
@@ -2489,8 +2481,6 @@ func (ec *executionContext) fieldContext_Company_vacancies(_ context.Context, fi
 				return ec.fieldContext_Vacancy_requiredDegreeType(ctx, field)
 			case "requiredDegreeField":
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
-			case "requiredExperienceDuration":
-				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
 			case "requiredExperience":
 				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
@@ -4178,8 +4168,6 @@ func (ec *executionContext) fieldContext_Mutation_createVacancy(ctx context.Cont
 				return ec.fieldContext_Vacancy_requiredDegreeType(ctx, field)
 			case "requiredDegreeField":
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
-			case "requiredExperienceDuration":
-				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
 			case "requiredExperience":
 				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
@@ -4258,8 +4246,6 @@ func (ec *executionContext) fieldContext_Mutation_updateVacancy(ctx context.Cont
 				return ec.fieldContext_Vacancy_requiredDegreeType(ctx, field)
 			case "requiredDegreeField":
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
-			case "requiredExperienceDuration":
-				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
 			case "requiredExperience":
 				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
@@ -5119,8 +5105,6 @@ func (ec *executionContext) fieldContext_Query_getVacancies(ctx context.Context,
 				return ec.fieldContext_Vacancy_requiredDegreeType(ctx, field)
 			case "requiredDegreeField":
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
-			case "requiredExperienceDuration":
-				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
 			case "requiredExperience":
 				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
@@ -5199,8 +5183,6 @@ func (ec *executionContext) fieldContext_Query_getVacancy(ctx context.Context, f
 				return ec.fieldContext_Vacancy_requiredDegreeType(ctx, field)
 			case "requiredDegreeField":
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
-			case "requiredExperienceDuration":
-				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
 			case "requiredExperience":
 				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
@@ -5613,8 +5595,6 @@ func (ec *executionContext) fieldContext_Query_matchUserToVacancies(ctx context.
 				return ec.fieldContext_Vacancy_requiredDegreeType(ctx, field)
 			case "requiredDegreeField":
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
-			case "requiredExperienceDuration":
-				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
 			case "requiredExperience":
 				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
@@ -6076,8 +6056,6 @@ func (ec *executionContext) fieldContext_Subscription_newMatchingVacancy(ctx con
 				return ec.fieldContext_Vacancy_requiredDegreeType(ctx, field)
 			case "requiredDegreeField":
 				return ec.fieldContext_Vacancy_requiredDegreeField(ctx, field)
-			case "requiredExperienceDuration":
-				return ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
 			case "requiredExperience":
 				return ec.fieldContext_Vacancy_requiredExperience(ctx, field)
 			case "requiredSkills":
@@ -7179,47 +7157,6 @@ func (ec *executionContext) fieldContext_Vacancy_requiredDegreeField(_ context.C
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type DegreeField does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Vacancy_requiredExperienceDuration(ctx context.Context, field graphql.CollectedField, obj *model.Vacancy) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Vacancy_requiredExperienceDuration(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.RequiredExperienceDuration, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*int)
-	fc.Result = res
-	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Vacancy_requiredExperienceDuration(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Vacancy",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -9211,7 +9148,7 @@ func (ec *executionContext) unmarshalInputCreateVacancyInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "description", "location", "startDate", "endDate", "status", "requiredDegreeType", "requiredDegreeField", "requiredExperienceDuration", "requiredSkills"}
+	fieldsInOrder := [...]string{"title", "description", "location", "startDate", "endDate", "status", "requiredDegreeType", "requiredDegreeField", "requiredSkills"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9274,13 +9211,6 @@ func (ec *executionContext) unmarshalInputCreateVacancyInput(ctx context.Context
 				return it, err
 			}
 			it.RequiredDegreeField = data
-		case "requiredExperienceDuration":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredExperienceDuration"))
-			data, err := ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RequiredExperienceDuration = data
 		case "requiredSkills":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredSkills"))
 			data, err := ec.unmarshalNString2ᚕᚖstring(ctx, v)
@@ -9363,41 +9293,27 @@ func (ec *executionContext) unmarshalInputExperienceEntryInput(ctx context.Conte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "description", "startDate", "endDate"}
+	fieldsInOrder := [...]string{"id", "durationInMonths"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "title":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Title = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			it.ID = data
+		case "durationInMonths":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("durationInMonths"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Description = data
-		case "startDate":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDate"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.StartDate = data
-		case "endDate":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("endDate"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.EndDate = data
+			it.DurationInMonths = data
 		}
 	}
 
@@ -9590,7 +9506,7 @@ func (ec *executionContext) unmarshalInputUpdateVacancyInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "description", "location", "startDate", "endDate", "status", "requiredDegreeType", "requiredDegreeField", "requiredExperienceDuration", "requiredSkills"}
+	fieldsInOrder := [...]string{"title", "description", "location", "startDate", "endDate", "status", "requiredDegreeType", "requiredDegreeField", "requiredSkills"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9653,13 +9569,6 @@ func (ec *executionContext) unmarshalInputUpdateVacancyInput(ctx context.Context
 				return it, err
 			}
 			it.RequiredDegreeField = data
-		case "requiredExperienceDuration":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredExperienceDuration"))
-			data, err := ec.unmarshalOInt2ᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.RequiredExperienceDuration = data
 		case "requiredSkills":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("requiredSkills"))
 			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
@@ -11002,8 +10911,6 @@ func (ec *executionContext) _Vacancy(ctx context.Context, sel ast.SelectionSet, 
 			out.Values[i] = ec._Vacancy_requiredDegreeType(ctx, field, obj)
 		case "requiredDegreeField":
 			out.Values[i] = ec._Vacancy_requiredDegreeField(ctx, field, obj)
-		case "requiredExperienceDuration":
-			out.Values[i] = ec._Vacancy_requiredExperienceDuration(ctx, field, obj)
 		case "requiredExperience":
 			out.Values[i] = ec._Vacancy_requiredExperience(ctx, field, obj)
 		case "requiredSkills":
@@ -12372,22 +12279,6 @@ func (ec *executionContext) marshalOID2ᚕstringᚄ(ctx context.Context, sel ast
 	}
 
 	return ret
-}
-
-func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalInt(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalInt(*v)
-	return res
 }
 
 func (ec *executionContext) marshalOLocation2ᚖLinkKrecᚋgraphᚋmodelᚐLocation(ctx context.Context, sel ast.SelectionSet, v *model.Location) graphql.Marshaler {

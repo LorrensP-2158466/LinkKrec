@@ -42,16 +42,15 @@ type CreateLocationInput struct {
 }
 
 type CreateVacancyInput struct {
-	Title                      string               `json:"title"`
-	Description                string               `json:"description"`
-	Location                   *CreateLocationInput `json:"location"`
-	StartDate                  string               `json:"startDate"`
-	EndDate                    string               `json:"endDate"`
-	Status                     bool                 `json:"status"`
-	RequiredDegreeType         DegreeType           `json:"requiredDegreeType"`
-	RequiredDegreeField        DegreeField          `json:"requiredDegreeField"`
-	RequiredExperienceDuration int                  `json:"requiredExperienceDuration"`
-	RequiredSkills             []*string            `json:"requiredSkills"`
+	Title               string               `json:"title"`
+	Description         string               `json:"description"`
+	Location            *CreateLocationInput `json:"location"`
+	StartDate           string               `json:"startDate"`
+	EndDate             string               `json:"endDate"`
+	Status              bool                 `json:"status"`
+	RequiredDegreeType  DegreeType           `json:"requiredDegreeType"`
+	RequiredDegreeField DegreeField          `json:"requiredDegreeField"`
+	RequiredSkills      []*string            `json:"requiredSkills"`
 }
 
 type EducationEntry struct {
@@ -89,10 +88,8 @@ type ExperienceEntry struct {
 }
 
 type ExperienceEntryInput struct {
-	Title       string  `json:"title"`
-	Description *string `json:"description,omitempty"`
-	StartDate   *string `json:"startDate,omitempty"`
-	EndDate     *string `json:"endDate,omitempty"`
+	ID               string `json:"id"`
+	DurationInMonths int    `json:"durationInMonths"`
 }
 
 type Location struct {
@@ -152,16 +149,15 @@ type UpdateProfileInput struct {
 }
 
 type UpdateVacancyInput struct {
-	Title                      *string              `json:"title,omitempty"`
-	Description                *string              `json:"description,omitempty"`
-	Location                   *CreateLocationInput `json:"location,omitempty"`
-	StartDate                  *string              `json:"startDate,omitempty"`
-	EndDate                    *string              `json:"endDate,omitempty"`
-	Status                     *bool                `json:"status,omitempty"`
-	RequiredDegreeType         *DegreeType          `json:"requiredDegreeType,omitempty"`
-	RequiredDegreeField        *DegreeField         `json:"requiredDegreeField,omitempty"`
-	RequiredExperienceDuration *int                 `json:"requiredExperienceDuration,omitempty"`
-	RequiredSkills             []*string            `json:"requiredSkills,omitempty"`
+	Title               *string              `json:"title,omitempty"`
+	Description         *string              `json:"description,omitempty"`
+	Location            *CreateLocationInput `json:"location,omitempty"`
+	StartDate           *string              `json:"startDate,omitempty"`
+	EndDate             *string              `json:"endDate,omitempty"`
+	Status              *bool                `json:"status,omitempty"`
+	RequiredDegreeType  *DegreeType          `json:"requiredDegreeType,omitempty"`
+	RequiredDegreeField *DegreeField         `json:"requiredDegreeField,omitempty"`
+	RequiredSkills      []*string            `json:"requiredSkills,omitempty"`
 }
 
 type User struct {
@@ -179,19 +175,18 @@ type User struct {
 }
 
 type Vacancy struct {
-	ID                         string        `json:"id"`
-	Title                      string        `json:"title"`
-	Description                string        `json:"description"`
-	Location                   *Location     `json:"location"`
-	PostedBy                   *Company      `json:"postedBy"`
-	StartDate                  string        `json:"startDate"`
-	EndDate                    string        `json:"endDate"`
-	Status                     bool          `json:"status"`
-	RequiredDegreeType         *DegreeType   `json:"requiredDegreeType,omitempty"`
-	RequiredDegreeField        *DegreeField  `json:"requiredDegreeField,omitempty"`
-	RequiredExperienceDuration *int          `json:"requiredExperienceDuration,omitempty"`
-	RequiredExperience         []*Experience `json:"requiredExperience,omitempty"`
-	RequiredSkills             []*Skill      `json:"requiredSkills,omitempty"`
+	ID                  string        `json:"id"`
+	Title               string        `json:"title"`
+	Description         string        `json:"description"`
+	Location            *Location     `json:"location"`
+	PostedBy            *Company      `json:"postedBy"`
+	StartDate           string        `json:"startDate"`
+	EndDate             string        `json:"endDate"`
+	Status              bool          `json:"status"`
+	RequiredDegreeType  *DegreeType   `json:"requiredDegreeType,omitempty"`
+	RequiredDegreeField *DegreeField  `json:"requiredDegreeField,omitempty"`
+	RequiredExperience  []*Experience `json:"requiredExperience,omitempty"`
+	RequiredSkills      []*Skill      `json:"requiredSkills,omitempty"`
 }
 
 type DegreeField string

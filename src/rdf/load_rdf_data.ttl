@@ -18,7 +18,7 @@ lr:User1 a lr:User ;
     lr:hasConnection lr:User3 ;
     lr:hasEducation lr:EducationEntry1 ;
     lr:hasSkill esco_skill:19a8293b-8e95-4de3-983f-77484079c389 ;
-    lr:hasExperience lr:Experience1 ;
+    lr:hasExperience lr:ExperienceEntry1 ;
     lr:isLookingForOpportunities true ;
     lr:isProfileComplete true .
 
@@ -29,7 +29,7 @@ lr:User2 a lr:User ;
     foaf:based_near lr:Location2 ;
     lr:hasSkill esco_skill:b633eb55-8f1f-4ae6-ab4c-2022ffe2cb7f ;
     lr:hasSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
-    lr:hasExperience lr:Experience1 ;
+    lr:hasExperience lr:ExperienceEntry1 ;
     lr:isLookingForOpportunities true ;
     lr:hasConnection lr:User3 ;
     lr:hasEducation lr:EducationEntry2 ;
@@ -43,7 +43,7 @@ lr:User3 a lr:User ;
     foaf:based_near lr:Location1 ;
     lr:hasSkill esco_skill:3cd569a2-4f88-4c1e-9995-8dce8c5e51a7 ;
     lr:hasSkill esco_skill:9b9de2a4-d8af-4a7b-933a-a8334ae60067;
-    lr:hasExperience lr:Experience1 ;
+    lr:hasExperience lr:ExperienceEntry1 ;
     lr:isLookingForOpportunities true ;
     lr:hasConnection lr:User2 ;
     lr:hasEducation lr:EducationEntry1 ;
@@ -56,7 +56,7 @@ lr:User4 a lr:User ;
     foaf:mbox "Ivan@student.uhasselt.be" ;
     foaf:based_near lr:Location1 ;
     lr:hasSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
-    lr:hasExperience lr:Experience1 ;
+    lr:hasExperience lr:ExperienceEntry1 ;
     lr:isLookingForOpportunities true ;
     lr:hasEducation lr:EducationEntry3 ;
     lr:isLookingForOpportunities true ;
@@ -90,7 +90,7 @@ lr:EducationEntry3 a lr:EducationEntry ;
     lr:startDate "2020-01-01"^^xsd:date ;
     lr:endDate "2021-12-31"^^xsd:date .
 
-lr:Experience1 a lr:Experience ;
+lr:ExperienceEntry1 a lr:Experience ;
     lr:escoOccup esco_occupation:a8d05b64-f60b-4dd9-91c2-e2e63d82f2f5 ;
     lr:durationInMonths 6 .
 
@@ -120,7 +120,6 @@ lr:Vacancy1 a lr:Vacancy ;
     foaf:based_near lr:Location2 ;
     lr:requiredDegreeType lr:ProfBachelor ;
     lr:requiredDegreeField lr:SoftwareEngineering ;
-    lr:requiredExperienceDuration 2 ;
     lr:vacancyStartDate "2022-01-01"^^xsd:date ;
     lr:vacancyEndDate "2022-06-30"^^xsd:date ;
     lr:vacancyStatus true .
@@ -134,7 +133,6 @@ lr:Vacancy2 a lr:Vacancy ;
     lr:requiredDegreeType lr:Master ;
     lr:requiredDegreeField lr:ComputerScience ;
     lr:requiredSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
-    lr:requiredExperienceDuration 3 ;
     lr:vacancyStartDate "2022-02-01"^^xsd:date ;
     lr:vacancyEndDate "2022-07-31"^^xsd:date ;
     lr:vacancyStatus true .
@@ -148,7 +146,6 @@ lr:Vacancy3 a lr:Vacancy ;
     foaf:based_near lr:Location2 ;
     lr:requiredDegreeType lr:AcBachelor ;
     lr:requiredDegreeField lr:CorporateLaw;
-    lr:requiredExperienceDuration 2 ;
     lr:vacancyStartDate "2022-03-01"^^xsd:date ;
     lr:vacancyEndDate "2022-08-31"^^xsd:date ;
     lr:vacancyStatus true .

@@ -119,7 +119,7 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 		PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
 
-		SELECT ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?experienceDuration 
+		SELECT ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status
 			(STRAFTER(STR(?degField), "#") AS ?degreeField) 
 			(STRAFTER(STR(?degType), "#") AS ?degreeType)
 			(GROUP_CONCAT(DISTINCT CONCAT(STRAFTER(STR(?escoSkill), STR(esco_skill:)), "|", ?skill); separator=", ") as ?skillIdsAndLabels)
@@ -155,12 +155,9 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 			OPTIONAL { 
 				?vacancy lr:requiredDegreeField ?degField .
 			}
-			OPTIONAL { 
-				?vacancy lr:requiredExperienceDuration ?experienceDuration .
-			}
 			FILTER(%s)
 		}
-		GROUP BY ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?degField ?degType ?experienceDuration
+		GROUP BY ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?degField ?degType
 	`, filter)
 	res, err := u.Repo.Query(q)
 
