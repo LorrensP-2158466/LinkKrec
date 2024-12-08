@@ -131,6 +131,15 @@ func MapRdfVacancyToGQL(vacancy map[string]rdf.Term) (*model.Vacancy, error) {
 	}
 	vacancyObj.RequiredExperienceDuration = &experienceDuration
 
+	var skills = make([]*model.Skill, 0)
+	if vacancy["skillIdsAndLabels"] != nil {
+		for _, skillIdAndLabel := range strings.Split(vacancy["skillIdsAndLabels"].String(), ", ") {
+			splitted := strings.SplitN(skillIdAndLabel, "|", 2)
+			skills = append(skills, &model.Skill{ID: splitted[0], Label: splitted[1]})
+		}
+	}
+	vacancyObj.RequiredSkills = skills
+
 	return &vacancyObj, nil
 }
 
