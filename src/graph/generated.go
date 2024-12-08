@@ -101,11 +101,14 @@ type ComplexityRoot struct {
 	Mutation struct {
 		AddConnectionRequest              func(childComplexity int, fromUserID string, connectedToUserID string) int
 		CompleteUserProfile               func(childComplexity int, id string, input model.UpdateProfileInput) int
+		CreateCompany                     func(childComplexity int, input model.CreateCompanyInput) int
 		CreateVacancy                     func(childComplexity int, companyID string, input model.CreateVacancyInput) int
+		DeleteCompany                     func(childComplexity int, id string) int
 		DeleteVacancy                     func(childComplexity int, id string) int
 		NotifyProfileVisit                func(childComplexity int, visitorID string, visitedUserID string) int
 		RegisterUser                      func(childComplexity int, input model.RegisterUserInput) int
 		SetConnectionRequestStatusFalse   func(childComplexity int, id string) int
+		UpdateCompany                     func(childComplexity int, id string, input model.UpdateCompanyInput) int
 		UpdateUserLookingForOpportunities func(childComplexity int, userID string, looking bool) int
 		UpdateUserProfile                 func(childComplexity int, id string, input model.UpdateProfileInput) int
 		UpdateVacancy                     func(childComplexity int, id string, input model.UpdateVacancyInput) int
@@ -188,6 +191,9 @@ type MutationResolver interface {
 	CreateVacancy(ctx context.Context, companyID string, input model.CreateVacancyInput) (*model.Vacancy, error)
 	UpdateVacancy(ctx context.Context, id string, input model.UpdateVacancyInput) (*model.Vacancy, error)
 	DeleteVacancy(ctx context.Context, id string) (*bool, error)
+	CreateCompany(ctx context.Context, input model.CreateCompanyInput) (*model.Company, error)
+	UpdateCompany(ctx context.Context, id string, input model.UpdateCompanyInput) (*model.Company, error)
+	DeleteCompany(ctx context.Context, id string) (*bool, error)
 	UpdateUserLookingForOpportunities(ctx context.Context, userID string, looking bool) (*model.User, error)
 }
 type NotificationResolver interface {
@@ -462,6 +468,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CompleteUserProfile(childComplexity, args["id"].(string), args["input"].(model.UpdateProfileInput)), true
 
+	case "Mutation.createCompany":
+		if e.complexity.Mutation.CreateCompany == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createCompany_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateCompany(childComplexity, args["input"].(model.CreateCompanyInput)), true
+
 	case "Mutation.createVacancy":
 		if e.complexity.Mutation.CreateVacancy == nil {
 			break
@@ -473,6 +491,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateVacancy(childComplexity, args["companyId"].(string), args["input"].(model.CreateVacancyInput)), true
+
+	case "Mutation.deleteCompany":
+		if e.complexity.Mutation.DeleteCompany == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteCompany_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteCompany(childComplexity, args["id"].(string)), true
 
 	case "Mutation.deleteVacancy":
 		if e.complexity.Mutation.DeleteVacancy == nil {
@@ -521,6 +551,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.SetConnectionRequestStatusFalse(childComplexity, args["id"].(string)), true
+
+	case "Mutation.updateCompany":
+		if e.complexity.Mutation.UpdateCompany == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateCompany_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateCompany(childComplexity, args["id"].(string), args["input"].(model.UpdateCompanyInput)), true
 
 	case "Mutation.updateUserLookingForOpportunities":
 		if e.complexity.Mutation.UpdateUserLookingForOpportunities == nil {
@@ -935,11 +977,13 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := executionContext{opCtx, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputCreateCompanyInput,
 		ec.unmarshalInputCreateLocationInput,
 		ec.unmarshalInputCreateVacancyInput,
 		ec.unmarshalInputEducationEntryInput,
 		ec.unmarshalInputExperienceEntryInput,
 		ec.unmarshalInputRegisterUserInput,
+		ec.unmarshalInputUpdateCompanyInput,
 		ec.unmarshalInputUpdateProfileInput,
 		ec.unmarshalInputUpdateVacancyInput,
 	)
@@ -1157,6 +1201,29 @@ func (ec *executionContext) field_Mutation_completeUserProfile_argsInput(
 	return zeroVal, nil
 }
 
+func (ec *executionContext) field_Mutation_createCompany_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	arg0, err := ec.field_Mutation_createCompany_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_createCompany_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (model.CreateCompanyInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNCreateCompanyInput2LinkKrecᚋgraphᚋmodelᚐCreateCompanyInput(ctx, tmp)
+	}
+
+	var zeroVal model.CreateCompanyInput
+	return zeroVal, nil
+}
+
 func (ec *executionContext) field_Mutation_createVacancy_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1195,6 +1262,29 @@ func (ec *executionContext) field_Mutation_createVacancy_argsInput(
 	}
 
 	var zeroVal model.CreateVacancyInput
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteCompany_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	arg0, err := ec.field_Mutation_deleteCompany_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_deleteCompany_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
 	return zeroVal, nil
 }
 
@@ -1305,6 +1395,47 @@ func (ec *executionContext) field_Mutation_setConnectionRequestStatusFalse_argsI
 	}
 
 	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateCompany_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	arg0, err := ec.field_Mutation_updateCompany_argsID(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := ec.field_Mutation_updateCompany_argsInput(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+func (ec *executionContext) field_Mutation_updateCompany_argsID(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (string, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["id"]; ok {
+		return ec.unmarshalNID2string(ctx, tmp)
+	}
+
+	var zeroVal string
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Mutation_updateCompany_argsInput(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (model.UpdateCompanyInput, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+	if tmp, ok := rawArgs["input"]; ok {
+		return ec.unmarshalNUpdateCompanyInput2LinkKrecᚋgraphᚋmodelᚐUpdateCompanyInput(ctx, tmp)
+	}
+
+	var zeroVal model.UpdateCompanyInput
 	return zeroVal, nil
 }
 
@@ -3990,6 +4121,190 @@ func (ec *executionContext) fieldContext_Mutation_deleteVacancy(ctx context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createCompany(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_createCompany(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateCompany(rctx, fc.Args["input"].(model.CreateCompanyInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Company)
+	fc.Result = res
+	return ec.marshalOCompany2ᚖLinkKrecᚋgraphᚋmodelᚐCompany(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createCompany(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Company_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Company_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Company_email(ctx, field)
+			case "location":
+				return ec.fieldContext_Company_location(ctx, field)
+			case "vacancies":
+				return ec.fieldContext_Company_vacancies(ctx, field)
+			case "employees":
+				return ec.fieldContext_Company_employees(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Company", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createCompany_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateCompany(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateCompany(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateCompany(rctx, fc.Args["id"].(string), fc.Args["input"].(model.UpdateCompanyInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Company)
+	fc.Result = res
+	return ec.marshalOCompany2ᚖLinkKrecᚋgraphᚋmodelᚐCompany(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateCompany(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Company_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Company_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Company_email(ctx, field)
+			case "location":
+				return ec.fieldContext_Company_location(ctx, field)
+			case "vacancies":
+				return ec.fieldContext_Company_vacancies(ctx, field)
+			case "employees":
+				return ec.fieldContext_Company_employees(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Company", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateCompany_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteCompany(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_deleteCompany(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteCompany(rctx, fc.Args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*bool)
+	fc.Result = res
+	return ec.marshalOBoolean2ᚖbool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteCompany(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteCompany_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_updateUserLookingForOpportunities(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_updateUserLookingForOpportunities(ctx, field)
 	if err != nil {
@@ -6189,9 +6504,9 @@ func (ec *executionContext) _Vacancy_location(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.Location)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNLocation2ᚖLinkKrecᚋgraphᚋmodelᚐLocation(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Vacancy_location(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6201,7 +6516,19 @@ func (ec *executionContext) fieldContext_Vacancy_location(_ context.Context, fie
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Location_id(ctx, field)
+			case "country":
+				return ec.fieldContext_Location_country(ctx, field)
+			case "city":
+				return ec.fieldContext_Location_city(ctx, field)
+			case "street":
+				return ec.fieldContext_Location_street(ctx, field)
+			case "houseNumber":
+				return ec.fieldContext_Location_houseNumber(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Location", field.Name)
 		},
 	}
 	return fc, nil
@@ -8334,6 +8661,68 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(_ context.Context
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCreateCompanyInput(ctx context.Context, obj interface{}) (model.CreateCompanyInput, error) {
+	var it model.CreateCompanyInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"id", "name", "email", "location", "vacancies", "employeeIds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "id":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ID = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "location":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
+			data, err := ec.unmarshalNCreateLocationInput2ᚖLinkKrecᚋgraphᚋmodelᚐCreateLocationInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Location = data
+		case "vacancies":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vacancies"))
+			data, err := ec.unmarshalNCreateVacancyInput2ᚕᚖLinkKrecᚋgraphᚋmodelᚐCreateVacancyInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Vacancies = data
+		case "employeeIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("employeeIds"))
+			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmployeeIds = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateLocationInput(ctx context.Context, obj interface{}) (model.CreateLocationInput, error) {
 	var it model.CreateLocationInput
 	asMap := map[string]interface{}{}
@@ -8412,7 +8801,7 @@ func (ec *executionContext) unmarshalInputCreateVacancyInput(ctx context.Context
 			it.Description = data
 		case "location":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalNCreateLocationInput2ᚖLinkKrecᚋgraphᚋmodelᚐCreateLocationInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8630,6 +9019,61 @@ func (ec *executionContext) unmarshalInputRegisterUserInput(ctx context.Context,
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateCompanyInput(ctx context.Context, obj interface{}) (model.UpdateCompanyInput, error) {
+	var it model.UpdateCompanyInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "email", "location", "vacancies", "employeeIds"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "location":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
+			data, err := ec.unmarshalOCreateLocationInput2ᚖLinkKrecᚋgraphᚋmodelᚐCreateLocationInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Location = data
+		case "vacancies":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("vacancies"))
+			data, err := ec.unmarshalOCreateVacancyInput2ᚕᚖLinkKrecᚋgraphᚋmodelᚐCreateVacancyInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Vacancies = data
+		case "employeeIds":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("employeeIds"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.EmployeeIds = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateProfileInput(ctx context.Context, obj interface{}) (model.UpdateProfileInput, error) {
 	var it model.UpdateProfileInput
 	asMap := map[string]interface{}{}
@@ -8736,7 +9180,7 @@ func (ec *executionContext) unmarshalInputUpdateVacancyInput(ctx context.Context
 			it.Description = data
 		case "location":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalOCreateLocationInput2ᚖLinkKrecᚋgraphᚋmodelᚐCreateLocationInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -9308,6 +9752,18 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteVacancy":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteVacancy(ctx, field)
+			})
+		case "createCompany":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createCompany(ctx, field)
+			})
+		case "updateCompany":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateCompany(ctx, field)
+			})
+		case "deleteCompany":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteCompany(ctx, field)
 			})
 		case "updateUserLookingForOpportunities":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
@@ -10369,9 +10825,41 @@ func (ec *executionContext) marshalNCompany2ᚖLinkKrecᚋgraphᚋmodelᚐCompan
 	return ec._Company(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNCreateCompanyInput2LinkKrecᚋgraphᚋmodelᚐCreateCompanyInput(ctx context.Context, v interface{}) (model.CreateCompanyInput, error) {
+	res, err := ec.unmarshalInputCreateCompanyInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateLocationInput2ᚖLinkKrecᚋgraphᚋmodelᚐCreateLocationInput(ctx context.Context, v interface{}) (*model.CreateLocationInput, error) {
+	res, err := ec.unmarshalInputCreateLocationInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCreateVacancyInput2LinkKrecᚋgraphᚋmodelᚐCreateVacancyInput(ctx context.Context, v interface{}) (model.CreateVacancyInput, error) {
 	res, err := ec.unmarshalInputCreateVacancyInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateVacancyInput2ᚕᚖLinkKrecᚋgraphᚋmodelᚐCreateVacancyInputᚄ(ctx context.Context, v interface{}) ([]*model.CreateVacancyInput, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.CreateVacancyInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNCreateVacancyInput2ᚖLinkKrecᚋgraphᚋmodelᚐCreateVacancyInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNCreateVacancyInput2ᚖLinkKrecᚋgraphᚋmodelᚐCreateVacancyInput(ctx context.Context, v interface{}) (*model.CreateVacancyInput, error) {
+	res, err := ec.unmarshalInputCreateVacancyInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNDate2LinkKrecᚋgraphᚋscalarᚐDate(ctx context.Context, v interface{}) (scalar.Date, error) {
@@ -10513,6 +11001,38 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNString2ᚕstringᚄ(ctx context.Context, v interface{}) ([]string, error) {
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]string, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNString2string(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel ast.SelectionSet, v []string) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNString2string(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNString2ᚕᚖstring(ctx context.Context, v interface{}) ([]*string, error) {
 	var vSlice []interface{}
 	if v != nil {
@@ -10537,6 +11057,11 @@ func (ec *executionContext) marshalNString2ᚕᚖstring(ctx context.Context, sel
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNUpdateCompanyInput2LinkKrecᚋgraphᚋmodelᚐUpdateCompanyInput(ctx context.Context, v interface{}) (model.UpdateCompanyInput, error) {
+	res, err := ec.unmarshalInputUpdateCompanyInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNUpdateProfileInput2LinkKrecᚋgraphᚋmodelᚐUpdateProfileInput(ctx context.Context, v interface{}) (model.UpdateProfileInput, error) {
@@ -11034,6 +11559,34 @@ func (ec *executionContext) marshalOConnectionRequest2ᚖLinkKrecᚋgraphᚋmode
 		return graphql.Null
 	}
 	return ec._ConnectionRequest(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOCreateLocationInput2ᚖLinkKrecᚋgraphᚋmodelᚐCreateLocationInput(ctx context.Context, v interface{}) (*model.CreateLocationInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputCreateLocationInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOCreateVacancyInput2ᚕᚖLinkKrecᚋgraphᚋmodelᚐCreateVacancyInputᚄ(ctx context.Context, v interface{}) ([]*model.CreateVacancyInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.CreateVacancyInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNCreateVacancyInput2ᚖLinkKrecᚋgraphᚋmodelᚐCreateVacancyInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) unmarshalODegreeField2ᚖLinkKrecᚋgraphᚋmodelᚐDegreeField(ctx context.Context, v interface{}) (*model.DegreeField, error) {

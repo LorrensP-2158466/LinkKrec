@@ -71,14 +71,23 @@ type Mutation {
     # Notify a user when someone visits their profile
     notifyProfileVisit(visitorId: ID!, visitedUserId: ID!): Notification
 
- # Create a job vacancy (companies only)
- createVacancy(companyId: ID!, input: CreateVacancyInput!): Vacancy
+    # Create a job vacancy (companies only)
+    createVacancy(companyId: ID!, input: CreateVacancyInput!): Vacancy
 
- # Update job vacancy details (companies only)
- updateVacancy(id: ID!, input: UpdateVacancyInput!): Vacancy
+    # Update job vacancy details (companies only)
+    updateVacancy(id: ID!, input: UpdateVacancyInput!): Vacancy
 
- # Delete a job vacancy (companies only)
- deleteVacancy(id: ID!): Boolean
+    # Delete a job vacancy (companies only)
+    deleteVacancy(id: ID!): Boolean
+
+    # Ceate a company
+    createCompany(input: CreateCompanyInput!): Company
+
+    # Update a company
+    updateCompany(id: ID!, input: UpdateCompanyInput!): Company
+
+    # Delete a company
+    deleteCompany(id: ID!): Boolean
 
     # Set user looking for job opportunities
     updateUserLookingForOpportunities(userId: ID!, looking: Boolean!): User
@@ -277,7 +286,7 @@ type Vacancy {
     id: ID!
     title: String!
     description: String!
-    location: String!
+    location: Location!
     postedBy: Company!
     startDate: String!
     endDate: String!
@@ -352,7 +361,7 @@ input ExperienceEntryInput {
 input CreateVacancyInput {
     title: String!
     description: String!
-    location: String!
+    location: CreateLocationInput!
     startDate: String!
     endDate: String!
     status: Boolean!
@@ -365,7 +374,7 @@ input CreateVacancyInput {
 input UpdateVacancyInput {
     title: String
     description: String
-    location: String
+    location: CreateLocationInput
     startDate: String
     endDate: String
     status: Boolean
@@ -381,3 +390,20 @@ input CreateLocationInput {
     street: String!
     houseNumber: String!
 }
+
+input CreateCompanyInput{
+ id: ID!
+ name: String!
+ email: String!
+ location: CreateLocationInput!
+ vacancies: [CreateVacancyInput!]!
+ employeeIds: [String!]!
+}
+
+input UpdateCompanyInput {
+ name: String
+ email: String
+ location: CreateLocationInput
+ vacancies: [CreateVacancyInput!]
+ employeeIds: [String!]
+} 
