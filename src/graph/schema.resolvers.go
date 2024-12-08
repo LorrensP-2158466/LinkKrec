@@ -526,7 +526,6 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 // UpdateVacancy is the resolver for the updateVacancy field.
 func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input model.UpdateVacancyInput) (*model.Vacancy, error) {
 	var deleteParts, insertParts string
-	sess_info := usersession.For(ctx)
 
 	// Conditionally add fields to the DELETE/INSERT sections
 	if input.Title != nil {
@@ -616,8 +615,8 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 				lr:longitude ?oldLong ;
 				lr:latitude ?oldLat .
 		}
-		`, input.Location.Country, input.Location.City, input.Location.Street, input.Location.HouseNumber, coordinates.Long, coordinates.Lat, sess_info.Id)
-	fmt.Println(locationInsert)
+		`, input.Location.Country, input.Location.City, input.Location.Street, input.Location.HouseNumber, coordinates.Long, coordinates.Lat, id)
+
 	err := r.UpdateRepo.Update(locationInsert)
 	if err != nil {
 		return nil, err
@@ -669,10 +668,6 @@ func (r *mutationResolver) DeleteVacancy(ctx context.Context, id string) (*bool,
           ?vacancy a lr:Vacancy ;
                    lr:Id "%s" ;
                    ?p ?o .
-          OPTIONAL {
-            ?vacancy foaf:based_near ?location .
-            ?location ?lp ?lo .
-          }
         }
 	`, id)
 
