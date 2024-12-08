@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -68,4 +69,16 @@ func Map[T, U any](ts []T, f func(T) U) []U {
 		us[i] = f(ts[i])
 	}
 	return us
+}
+
+func createSkillsQuery(skills []string) string {
+	if len(skills) == 0 {
+		return "."
+	}
+
+	var skillParts []string
+	for _, skill := range skills {
+		skillParts = append(skillParts, fmt.Sprintf("lr:requiredSkill lr:%s", skill))
+	}
+	return strings.Join(skillParts, " ; ") + " ."
 }
