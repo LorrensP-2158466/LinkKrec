@@ -132,7 +132,7 @@ type ComplexityRoot struct {
 		GetUsersByID          func(childComplexity int, ids []string) int
 		GetVacancies          func(childComplexity int, title *string, location *string, requiredEducation *model.DegreeType, status *bool) int
 		GetVacancy            func(childComplexity int, id string) int
-		MatchUserToVacancies  func(childComplexity int, userID string, maxDist float64) int
+		MatchUserToVacancies  func(childComplexity int, userID string, maxDist float64, interval *model.DateInterval) int
 		MatchVacancyToUsers   func(childComplexity int, vacancyID string, maxDist float64) int
 	}
 
@@ -218,7 +218,7 @@ type QueryResolver interface {
 	GetNotifications(ctx context.Context, userID string) ([]*model.Notification, error)
 	GetConnectionRequests(ctx context.Context, userID string, status *bool) ([]*model.ConnectionRequest, error)
 	MatchVacancyToUsers(ctx context.Context, vacancyID string, maxDist float64) ([]*model.User, error)
-	MatchUserToVacancies(ctx context.Context, userID string, maxDist float64) ([]*model.Vacancy, error)
+	MatchUserToVacancies(ctx context.Context, userID string, maxDist float64, interval *model.DateInterval) ([]*model.Vacancy, error)
 	GetSkillsByName(ctx context.Context, name string) ([]*model.Skill, error)
 }
 type SubscriptionResolver interface {
@@ -778,7 +778,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.MatchUserToVacancies(childComplexity, args["userId"].(string), args["maxDist"].(float64)), true
+		return e.complexity.Query.MatchUserToVacancies(childComplexity, args["userId"].(string), args["maxDist"].(float64), args["interval"].(*model.DateInterval)), true
 
 	case "Query.matchVacancyToUsers":
 		if e.complexity.Query.MatchVacancyToUsers == nil {
@@ -1026,6 +1026,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateCompanyInput,
 		ec.unmarshalInputCreateLocationInput,
 		ec.unmarshalInputCreateVacancyInput,
+		ec.unmarshalInputDateInterval,
 		ec.unmarshalInputEducationEntryInput,
 		ec.unmarshalInputEmployeeIds,
 		ec.unmarshalInputExperienceEntryInput,
@@ -2119,6 +2120,11 @@ func (ec *executionContext) field_Query_matchUserToVacancies_args(ctx context.Co
 		return nil, err
 	}
 	args["maxDist"] = arg1
+	arg2, err := ec.field_Query_matchUserToVacancies_argsInterval(ctx, rawArgs)
+	if err != nil {
+		return nil, err
+	}
+	args["interval"] = arg2
 	return args, nil
 }
 func (ec *executionContext) field_Query_matchUserToVacancies_argsUserID(
@@ -2144,6 +2150,19 @@ func (ec *executionContext) field_Query_matchUserToVacancies_argsMaxDist(
 	}
 
 	var zeroVal float64
+	return zeroVal, nil
+}
+
+func (ec *executionContext) field_Query_matchUserToVacancies_argsInterval(
+	ctx context.Context,
+	rawArgs map[string]interface{},
+) (*model.DateInterval, error) {
+	ctx = graphql.WithPathContext(ctx, graphql.NewPathWithField("interval"))
+	if tmp, ok := rawArgs["interval"]; ok {
+		return ec.unmarshalODateInterval2ᚖLinkKrecᚋgraphᚋmodelᚐDateInterval(ctx, tmp)
+	}
+
+	var zeroVal *model.DateInterval
 	return zeroVal, nil
 }
 
@@ -5499,7 +5518,7 @@ func (ec *executionContext) _Query_matchUserToVacancies(ctx context.Context, fie
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().MatchUserToVacancies(rctx, fc.Args["userId"].(string), fc.Args["maxDist"].(float64))
+		return ec.resolvers.Query().MatchUserToVacancies(rctx, fc.Args["userId"].(string), fc.Args["maxDist"].(float64), fc.Args["interval"].(*model.DateInterval))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9214,6 +9233,40 @@ func (ec *executionContext) unmarshalInputCreateVacancyInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputDateInterval(ctx context.Context, obj interface{}) (model.DateInterval, error) {
+	var it model.DateInterval
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"start", "end"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "start":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("start"))
+			data, err := ec.unmarshalNDate2LinkKrecᚋgraphᚋscalarᚐDate(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Start = data
+		case "end":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("end"))
+			data, err := ec.unmarshalNDate2LinkKrecᚋgraphᚋscalarᚐDate(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.End = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputEducationEntryInput(ctx context.Context, obj interface{}) (model.EducationEntryInput, error) {
 	var it model.EducationEntryInput
 	asMap := map[string]interface{}{}
@@ -12001,6 +12054,14 @@ func (ec *executionContext) unmarshalOCreateLocationInput2ᚖLinkKrecᚋgraphᚋ
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputCreateLocationInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalODateInterval2ᚖLinkKrecᚋgraphᚋmodelᚐDateInterval(ctx context.Context, v interface{}) (*model.DateInterval, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDateInterval(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

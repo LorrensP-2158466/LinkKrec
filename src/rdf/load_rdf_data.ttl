@@ -9,197 +9,96 @@ PREFIX esco: <http://data.europa.eu/esco/model#>
 PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
 
-lr:User1 a lr:User ;
-    lr:Id "1" ;
-    foaf:name "Alice" ;
-    foaf:mbox "alice.gmail.com" ;
-    foaf:based_near lr:Location2 ;
-    lr:hasConnection lr:User2 ;
-    lr:hasConnection lr:User3 ;
-    lr:hasEducation lr:EducationEntry1 ;
-    lr:hasSkill esco_skill:19a8293b-8e95-4de3-983f-77484079c389 ;
-    lr:hasExperience lr:ExperienceEntry1 ;
-    lr:isLookingForOpportunities true ;
-    lr:isProfileComplete true .
+    # Locations
+lr:Location1 a lr:Location ;
+    lr:Id "loc1" ;
+    lr:inCountry "Netherlands" ;
+    lr:inCity "Amsterdam" ;
+    lr:longitude 4.9041 ;
+    lr:latitude 52.3676 .
 
-lr:User2 a lr:User ;
-    lr:Id "2" ;
-    foaf:name "Bob" ;
-    foaf:mbox "bob@gmail.com" ;
-    foaf:based_near lr:Location2 ;
-    lr:hasSkill esco_skill:b633eb55-8f1f-4ae6-ab4c-2022ffe2cb7f ;
-    lr:hasSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
-    lr:hasExperience lr:ExperienceEntry1 ;
-    lr:isLookingForOpportunities true ;
-    lr:hasConnection lr:User3 ;
-    lr:hasEducation lr:EducationEntry2 ;
-    lr:isLookingForOpportunities true ;
-    lr:isProfileComplete true .
+lr:Location2 a lr:Location ;
+    lr:Id "loc2" ;
+    lr:inCountry "Netherlands" ;
+    lr:inCity "Rotterdam" ;
+    lr:longitude 4.4777 ;
+    lr:latitude 51.9244 .
 
-lr:User3 a lr:User ;
-    lr:Id "3" ;
-    foaf:name "Charlie" ;
-    foaf:mbox "charlie@yahoo.com" ;
-    foaf:based_near lr:Location1 ;
-    lr:hasSkill esco_skill:3cd569a2-4f88-4c1e-9995-8dce8c5e51a7 ;
-    lr:hasSkill esco_skill:9b9de2a4-d8af-4a7b-933a-a8334ae60067;
-    lr:hasExperience lr:ExperienceEntry1 ;
-    lr:isLookingForOpportunities true ;
-    lr:hasConnection lr:User2 ;
-    lr:hasEducation lr:EducationEntry1 ;
-    lr:isLookingForOpportunities true ;
-    lr:isProfileComplete true .
-
-lr:User4 a lr:User ;
-    lr:Id "4" ;
-    foaf:name "Ivan" ;
-    foaf:mbox "Ivan@student.uhasselt.be" ;
-    foaf:based_near lr:Location1 ;
-    lr:hasSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
-    lr:hasExperience lr:ExperienceEntry1 ;
-    lr:isLookingForOpportunities true ;
-    lr:hasEducation lr:EducationEntry3 ;
-    lr:isLookingForOpportunities true ;
-    lr:isProfileComplete true .
+lr:Location3 a lr:Location ;
+    lr:Id "loc3" ;
+    lr:inCountry "Netherlands" ;
+    lr:inCity "Utrecht" ;
+    lr:longitude 5.1214 ;
+    lr:latitude 52.0907 .
 
 
 lr:EducationEntry1 a lr:EducationEntry ;
-    lr:Id "1" ;
-    lr:institutionName "Stanford University";
-    lr:extraInfo "https://www.stanford.edu" ;
-    lr:degreeType lr:ProfBachelor ;
-    lr:degreeField lr:SoftwareEngineering ;
-    lr:startDate "2020-01-01"^^xsd:date ;
-    lr:endDate "2021-12-31"^^xsd:date .
-
-lr:EducationEntry2 a lr:EducationEntry ;
-    lr:Id "2" ;
-    lr:institutionName "Harvard Business School" ;
-    lr:extraInfo "https://www.hbs.edu" ;
-    lr:degreeType lr:Master ;
-    lr:degreeField lr:MechanicalEngineering ;
-    lr:startDate "2020-01-01"^^xsd:date ;
-    lr:endDate "2021-12-31"^^xsd:date .
-
-lr:EducationEntry3 a lr:EducationEntry ;
-    lr:Id "3" ;
-    lr:institutionName "UHasselt" ;
-    lr:extraInfo "https://www.uhasselt.be" ;
     lr:degreeType lr:Master ;
     lr:degreeField lr:ComputerScience ;
-    lr:startDate "2020-01-01"^^xsd:date ;
-    lr:endDate "2021-12-31"^^xsd:date .
+    lr:startDate "2018-09-01"^^xsd:dateTime ;
+    lr:endDate "2020-06-30"^^xsd:dateTime .
 
-lr:ExperienceEntry1 a lr:Experience ;
-    lr:escoOccup esco_occupation:a8d05b64-f60b-4dd9-91c2-e2e63d82f2f5 ;
-    lr:durationInMonths 6 .
+lr:EducationEntry2 a lr:EducationEntry ;
+    lr:degreeType lr:AcBachelor ;
+    lr:degreeField lr:ComputerScience ;
+    lr:startDate "2015-09-01"^^xsd:dateTime ;
+    lr:endDate "2018-06-30"^^xsd:dateTime .
 
-lr:Location1 a lr:Location ;
-    lr:Id "1" ;
-    lr:inCountry "Belgium" ;
-    lr:inCity "Riemst";
-    lr:inStreet "Tongersesteenweg" ;
-    lr:houseNumber "147" ;
-    lr:longitude "5.570508"^^xsd:double ;
-    lr:latitude "50.8028571"^^xsd:double .
+lr:EducationEntry3 a lr:EducationEntry ;
+    lr:degreeType lr:AcBachelor ;
+    lr:degreeField lr:Marketing ;
+    lr:startDate "2016-09-01"^^xsd:dateTime ;
+    lr:endDate "2019-06-30"^^xsd:dateTime .
 
-lr:Location2 a lr:Location ;
-    lr:Id "2" ;
-    lr:inCountry "Belgium" ;
-    lr:inCity "Hasselt";
-    lr:inStreet "Gouverneur Verwilghensingel" ;
-    lr:houseNumber "70" ;
-    lr:longitude "5.3615975"^^xsd:double ;
-    lr:latitude "50.932204"^^xsd:double .
+lr:Experience1 a lr:Experience ;
+    lr:escoOccup esco_occupation:f2b15a0e-e65a-438a-affb-29b9d50b77d1 ;
+    lr:durationInMonths 36 .
 
+lr:Experience2 a lr:Experience ;
+    lr:escoOccup esco:occupation:781a6350-e686-45b9-b075-e4c8d5a05ff7 ;
+    lr:durationInMonths 24 .
+
+lr:Experience3 a lr:Experience ;
+    lr:escoOccup esco_occupation:f2b15a0e-e65a-438a-affb-29b9d50b77d1 ;
+    lr:durationInMonths 24 .
+
+# Users
+lr:User1 a lr:User ;
+    lr:Id "user1" ;
+    foaf:name "John Doe" ;
+    foaf:mbox "john@example.com" ;
+    foaf:based_near lr:Location1 ;
+    lr:hasSkill esco_skill:19a8293b-8e95-4de3-983f-77484079c389, esco_skill:ccd0a1d9-afda-43d9-b901-96344886e14d ;
+    lr:hasEducation lr:EducationEntry1, lr:EducationEntry2;
+    lr:hasExperience lr:Experience1 ;
+    lr:isProfileComplete true ;
+    lr:isLookingForOpportunities true .
+
+lr:User2 a lr:User ;
+    lr:Id "user2" ;
+    foaf:name "Jane Smith" ;
+    foaf:mbox "jane@example.com" ;
+    foaf:based_near lr:Location2 ;
+    lr:hasSkill esco_skill:19a8293b-8e95-4de3-983f-77484079c389, esco_skill:2bde42ae-e776-41c1-9ded-b07b30bfe985 ;
+    lr:hasEducation lr:EducationEntry3 ;
+    lr:hasExperience lr:Experience2;
+    lr:isProfileComplete true ;
+    lr:isLookingForOpportunities true .
+
+# Vacancy
 lr:Vacancy1 a lr:Vacancy ;
-    lr:Id "1" ;
-    lr:vacancyTitle "Software Engineer" ;
-    lr:vacancyDescription "Develop software applications" ;
-    lr:postedBy lr:Company1 ;
-    foaf:based_near lr:Location2 ;
-    lr:requiredDegreeType lr:ProfBachelor ;
-    lr:requiredDegreeField lr:SoftwareEngineering ;
-    lr:vacancyStartDate "2022-01-01"^^xsd:date ;
-    lr:vacancyEndDate "2022-06-30"^^xsd:date ;
-    lr:requiredExperience lr:ExperienceEntry1 ;
-    lr:vacancyStatus true .
-
-lr:Vacancy2 a lr:Vacancy ;
-    lr:Id "2" ;
-    lr:vacancyTitle "Project Manager" ;
-    lr:vacancyDescription "Manage software development projects" ;
-    lr:postedBy lr:Company1 ;
-    foaf:based_near lr:Location2 ;
-    lr:requiredDegreeType lr:Master ;
-    lr:requiredDegreeField lr:ComputerScience ;
-    lr:requiredSkill esco_skill:7111b95d-0ce3-441a-9d92-4c75d05c4388 ;
-    lr:vacancyStartDate "2022-02-01"^^xsd:date ;
-    lr:vacancyEndDate "2022-07-31"^^xsd:date ;
-    lr:requiredExperience lr:ExperienceEntry1 ;
-    lr:vacancyStatus true .
-
-
-lr:Vacancy3 a lr:Vacancy ;
-    lr:Id "3" ;
-    lr:vacancyTitle "BIG CORP lawyer" ;
-    lr:vacancyDescription "You will defend devils" ;
-    lr:postedBy lr:Company2 ;
-    foaf:based_near lr:Location2 ;
+    lr:Id "vacancy1" ;
+    lr:vacancyTitle "Senior Software Developer" ;
+    foaf:based_near lr:Location3 ;
+    lr:requiredSkill esco_skill:19a8293b-8e95-4de3-983f-77484079c389, esco_skill:ccd0a1d9-afda-43d9-b901-96344886e14d, esco_skill:2bde42ae-e776-41c1-9ded-b07b30bfe985 ;
     lr:requiredDegreeType lr:AcBachelor ;
-    lr:requiredDegreeField lr:CorporateLaw;
-    lr:vacancyStartDate "2022-03-01"^^xsd:date ;
-    lr:vacancyEndDate "2022-08-31"^^xsd:date ;
-    lr:requiredExperience lr:ExperienceEntry1 ;
-    lr:vacancyStatus true .
+    lr:requiredDegreeField lr:ComputerScience ;
+    lr:requiredExperience lr:Experience3;
+    lr:vacancyStatus true ;
+	lr:vacancyDescription "descr" ;
+	lr:postedBy lr:Company1 ;
+	lr:vacancyStartDate "2020-1-1"^^xsd:date ;
+	lr:vacancyEndDate "2020-1-2"^^xsd:date .
 
-lr:Company1 a lr:Company ;
-    lr:Id "1" ;
-    lr:companyName "InnovateTech" ;
-    lr:companyEmail "InnovateTech@gmail.com" ;
-    lr:companyLocation "San Francisco" ;
-    lr:hasVacancy lr:Vacancy1 ;
-    lr:hasVacancy lr:Vacancy2 ;
-    lr:hasEmployee lr:User1 .
-
-lr:Company2 a lr:Company ;
-    lr:Id "2" ;
-    lr:companyName "TechCorp" ;
-    lr:companyEmail "TechCorp@gmail.com" ;
-    lr:companyLocation "New York" ;
-    lr:hasVacancy lr:Vacancy3 ;
-    lr:hasEmployee lr:User2 ;
-    lr:hasEmployee lr:User3 .
-
-lr:Notification1 a lr:Notification ;
-    lr:Id "1" ;
-    lr:notificationTitle "New job opportunity" ;
-    lr:notificationMessage "InnovateTech is hiring a Software Engineer" ;
-    lr:forUser lr:User1 ;
-    lr:notificationCreatedAt "2022-01-01"^^xsd:date .
-
-lr:Notification2 a lr:Notification ;
-    lr:Id "2" ;
-    lr:notificationTitle "New job opportunity" ;
-    lr:notificationMessage "TechCorp is hiring a Project Manager" ;
-    lr:forUser lr:User2 ;
-    lr:notificationCreatedAt "2022-02-01"^^xsd:date .
-
-
-lr:ConnectionRequest1 a lr:ConnectionRequest ;
-    lr:Id "1" ;
-    lr:fromUser lr:User1 ;
-    lr:connectedToUser lr:User2 ;
-    lr:requestStatus true .
-
-lr:ConnectionRequest2 a lr:ConnectionRequest ;
-    lr:Id "2" ;
-    lr:fromUser lr:User3 ;
-    lr:connectedToUser lr:User1 ;
-    lr:requestStatus false .
-
-lr:ConnectionRequest3 a lr:ConnectionRequest ;
-    lr:Id "3" ;
-    lr:fromUser lr:User1 ;
-    lr:connectedToUser lr:User3 ;
-    lr:requestStatus true .
+lr:Company1 a lr:Company;
+    lr:Id "1" .

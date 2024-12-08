@@ -41,7 +41,7 @@ type Query {
 
     matchVacancyToUsers(vacancyId: ID!, maxDist: Float!): [User]
 
-    matchUserToVacancies(userId: ID!, maxDist: Float!): [Vacancy]
+    matchUserToVacancies(userId: ID!, maxDist: Float!, interval: DateInterval): [Vacancy]
 
   # searching skills by name for convenience
   getSkillsByName(name: String!): [Skill!]
@@ -412,4 +412,9 @@ input UpdateCompanyInput {
 
 input EmployeeIds{
     Ids: [ID!]
+}
+
+input DateInterval{
+    start: Date!
+    end: Date!
 }

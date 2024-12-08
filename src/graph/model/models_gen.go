@@ -51,6 +51,11 @@ type CreateVacancyInput struct {
 	RequiredExperience  []*ExperienceEntryInput `json:"requiredExperience"`
 }
 
+type DateInterval struct {
+	Start scalar.Date `json:"start"`
+	End   scalar.Date `json:"end"`
+}
+
 type EducationEntry struct {
 	ID          string      `json:"id"`
 	Institution string      `json:"institution"`
