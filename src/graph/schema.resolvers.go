@@ -16,6 +16,7 @@ import (
 	"log"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -65,15 +66,14 @@ func (r *mutationResolver) RegisterUser(ctx context.Context, input model.Registe
 func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, input model.UpdateProfileInput) (*model.User, error) {
 	sess_info := usersession.For(ctx)
 
-	// if sess_info.Id != id {
-	// 	return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't complete another users account\nYour Id is: %s", sess_info.Id)
-	// }
+	if sess_info.Id != id {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't complete another users account\nYour Id is: %s", sess_info.Id)
+	}
 
 	// first check if user already did this
-
-	// if sess_info.IsComplete {
-	// 	return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Account already completed, please use `UpdateUserProfile`")
-	// }
+	if sess_info.IsComplete {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Account already completed, please use `UpdateUserProfile`")
+	}
 
 	coordinates := gisco.CoordinatesFromAddress(input.Country, input.City, &input.Streetname, &input.Housenumber)
 	if coordinates == nil {
@@ -95,15 +95,16 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 		query := fmt.Sprintf(`
 				PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 				PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-				PREFIX lr: <http://your-namespace/schema#>
+				PREFIX lr: <http://linkrec.example.org/schema#> 
 				PREFIX esco: <http://data.europa.eu/esco/model#>
 				PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+				PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
 	
 				INSERT DATA {
 					lr:Experience%s a lr:Experience ;
 						lr:Id "%s" ;
 						lr:escoOccup esco_occupation:%s ;
-						lr:durationInMonths %d ;
+						lr:durationInMonths %d .
 				}
 			`, expId, expId, exp.ID, exp.DurationInMonths)
 		queries = append(queries, query)
@@ -164,6 +165,7 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
 			PREFIX esco: <http://data.europa.eu/esco/model#>
 			PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+			PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
 
 			DELETE {
 				?user a lr:User ;
@@ -171,6 +173,7 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 			}
 			INSERT{
 				?user a lr:User ;
+					%s
 					%s
 					%s
 					foaf:based_near lr:Location%s ;
@@ -182,7 +185,7 @@ func (r *mutationResolver) CompleteUserProfile(ctx context.Context, id string, i
 		          lr:Id "%s" .
 			}
 
-		`, hasSkills, educationEntries, locationId, input.IsLookingForOpportunities, sess_info.Id)
+		`, hasSkills, educationEntries, strings.Join(experienceEntries, ""), locationId, input.IsLookingForOpportunities, sess_info.Id)
 
 	// update user is more likely to crash, and because transactions are a fucking pain
 	// im doing this insert later, sparql only needs the id so fuck that
@@ -286,6 +289,38 @@ func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, inp
 
 	}
 
+	insertExperienceBluePrint := `
+			PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+			PREFIX lr: <http://linkrec.example.org/schema#> 
+			PREFIX esco: <http://data.europa.eu/esco/model#>
+			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+			PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
+
+			INSERT DATA {
+				%s
+			}
+	`
+	experienceInserts := ""
+	var experienceEntries []string
+	for _, exp := range input.Experience {
+		expId := uuid.New().String()
+		experienceInserts += fmt.Sprintf(`
+			lr:Experience%s a lr:Experience ;
+				lr:Id "%s" ;
+				lr:escoOccup esco_occupation:%s ;
+				lr:durationInMonths %d .
+
+			`, expId, expId, exp.ID, exp.DurationInMonths)
+		experienceEntries = append(experienceEntries, fmt.Sprintf("\nlr:hasExperience lr:Experience%s ;", expId))
+	}
+	// execute queries sequentially
+	insertExp := fmt.Sprintf(insertExperienceBluePrint, experienceInserts)
+	err := r.UpdateRepo.Update(insertExp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to insert experience: %v", err)
+	}
+
 	updateUser := fmt.Sprintf(`
 			PREFIX lr: <http://linkrec.example.org/schema#> 
 			PREFIX schema: <http://schema.org/> 
@@ -300,12 +335,15 @@ func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, inp
 				?user a lr:User ;
 					lr:hasSkill ?oldSkill;
 					lr:isLookingForOpportunities ?oldOpts ;
-					lr:hasEducation ?oldEdu .
+					lr:hasEducation ?oldEdu ;
+					lr:hasExperience ?oldExpr .
 
 				?oldEdu ?eduP ?eduO .
+				?oldExpr ?exprP ?exprO .
 			}
 			INSERT{
 				?user a lr:User ;
+					%s
 					%s
 					%s
 					lr:isLookingForOpportunities %v ;
@@ -324,9 +362,14 @@ func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, inp
 			      ?user lr:hasEducation ?oldEdu .
 			      ?oldEdu ?eduP ?eduO .
 			  }
+
+			  OPTIONAL {
+			  	?user lr:hasExperience ?oldExpr .
+			  	?oldExpr ?exprP ?exprO .
+			  }
 			}
 
-		`, hasSkills, educationEntries, input.IsLookingForOpportunities, sess_info.Id)
+		`, hasSkills, educationEntries, strings.Join(experienceEntries, ""), input.IsLookingForOpportunities, sess_info.Id)
 
 	// delete the old values and insert the new
 	locationInsert := fmt.Sprintf(`
@@ -369,7 +412,7 @@ func (r *mutationResolver) UpdateUserProfile(ctx context.Context, id string, inp
 		}
 		`, input.Country, input.City, input.Streetname, input.Housenumber, coordinates.Long, coordinates.Lat, sess_info.Id)
 
-	err := r.UpdateRepo.Update(locationInsert)
+	err = r.UpdateRepo.Update(locationInsert)
 	if err != nil {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't insert location %s because: %s", locationId, err)
 	}
