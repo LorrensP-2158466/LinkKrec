@@ -1,6 +1,5 @@
 scalar Date
 
-
 type Query {
     # Fetch a specific user by ID
     getUser(id: ID!): User
@@ -15,9 +14,7 @@ type Query {
     ): [User]
 
     # multiple users by ID
-    getUsersById(
-        Ids: [ID!]
-    ): [User]
+    getUsersById(Ids: [ID!]): [User]
 
     # Fetch all job vacancies with optional filtering
     getVacancies(
@@ -30,14 +27,11 @@ type Query {
     # Fetch a specific job vacancy by ID
     getVacancy(id: ID!): Vacancy
 
-# Fetch companies with optional filtering
- getCompanies(
-   name: String,
-   location: String,
- ): [Company]
+    # Fetch companies with optional filtering
+    getCompanies(name: String, location: String): [Company]
 
- # Fetch specific company by ID, with details about their vacancies and employees
- getCompany(id: ID!): Company
+    # Fetch specific company by ID, with details about their vacancies and employees
+    getCompany(id: ID!): Company
 
     # Fetch all notifications for a user, with optional filtering by read status or timeframe
     getNotifications(userId: ID!): [Notification]
@@ -57,10 +51,9 @@ type Mutation {
     # User registration
     registerUser(input: RegisterUserInput!): User
 
-    # when creating an account, we must set a flag that the profile is complete 
+    # when creating an account, we must set a flag that the profile is complete
     # before the user can do anything on the service
     completeUserProfile(id: ID!, input: UpdateProfileInput!): User
-
 
     # Update user profile
     updateUserProfile(id: ID!, input: UpdateProfileInput!): User
@@ -130,13 +123,13 @@ type User {
 }
 
 # A company/person who wants to recruit Users
-type Company{
- id: ID!,
- name: String!,
- email: String!,
- location: Location,
- vacancies: [Vacancy!]!,
- employees: [User!]!,
+type Company {
+    id: ID!
+    name: String!
+    email: String!
+    location: Location
+    vacancies: [Vacancy!]!
+    employees: [User!]!
 }
 
 # A Degree obtained from an institution, used for matching candidates
@@ -257,13 +250,13 @@ enum DegreeField {
 
 # An education that a user can put on their profile
 type EducationEntry {
- id: ID!,
- institution: String!,
- extra_info: String,
- from: Date!,
- till: Date!,
- degree: DegreeType!,
- field: DegreeField!
+    id: ID!
+    institution: String!
+    extra_info: String
+    from: Date!
+    till: Date!
+    degree: DegreeType!
+    field: DegreeField!
 }
 
 enum ExperienceType {
@@ -303,7 +296,7 @@ type Vacancy {
     status: Boolean!
     requiredDegreeType: DegreeType
     requiredDegreeField: DegreeField
-    requiredExperienceDuration: Int 
+    requiredExperienceDuration: Int
     requiredSkills: [Skill!]
 }
 
@@ -335,38 +328,37 @@ type Location {
 
 # so we have access to the label and the id of the skill (esco...)
 # TODO: for future, add different label languages supported by esco
-type Skill{
-    id: String!,
+type Skill {
+    id: String!
     label: String!
 }
 
 input RegisterUserInput {
- name: String!
- email: String!
- isEmployer: Boolean!
- profileUpdate: UpdateProfileInput
+    name: String!
+    email: String!
+    isEmployer: Boolean!
+    profileUpdate: UpdateProfileInput
 }
 
-
 input UpdateProfileInput {
- education: [EducationEntryInput!]
- experience: [ExperienceEntryInput!]
- # ids of skills, not labels
- skills: [String!]
- isLookingForOpportunities: Boolean!
- country: String!
- city: String!
- streetname: String!
- housenumber: String!
+    education: [EducationEntryInput!]
+    experience: [ExperienceEntryInput!]
+    # ids of skills, not labels
+    skills: [String!]
+    isLookingForOpportunities: Boolean!
+    country: String!
+    city: String!
+    streetname: String!
+    housenumber: String!
 }
 
 input EducationEntryInput {
- institution: String!,
- extra_info: String,
- from: Date!,
- till: Date!,
- degree: DegreeType!,
- field: DegreeField!
+    institution: String!
+    extra_info: String
+    from: Date!
+    till: Date!
+    degree: DegreeType!
+    field: DegreeField!
 }
 
 input ExperienceEntryInput {

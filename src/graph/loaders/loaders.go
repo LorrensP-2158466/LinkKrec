@@ -11,6 +11,7 @@ import (
 // getUsers implements a batch function that can retrieve many users by ID,
 // for use in a dataloader
 func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.User, []error) {
+	fmt.Println("qmslghmlqsdhgmqsnhjg")
 	var ids []string
 	for _, id := range userIDs {
 		s := fmt.Sprintf("?id = \"%s\"", id)
@@ -27,18 +28,19 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		PREFIX esco: <http://data.europa.eu/esco/model#>
 		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 
-		SELECT ?id ?name ?email ?locationId ?lookingForOpportunities
+		SELECT ?id ?name ?email ?locationId ?lookingForOpportunities ?isProfileComplete
 			(GROUP_CONCAT(DISTINCT ?connectionName; separator=", ") AS ?connections)
 			(GROUP_CONCAT(DISTINCT ?educationEntry; separator=", ") AS ?educations)
 			(GROUP_CONCAT(DISTINCT ?companyId; separator=", ") AS ?companies)
-			(GROUP_CONCAT(CONCAT(STRAFTER(STR(?escoSkill), STR(esco_skill:)), "|", ?skill); separator=",") as ?skillIdsAndLabels)
+			(GROUP_CONCAT(CONCAT(STRAFTER(STR(?escoSkill), STR(esco_skill:)), "|", ?skill); separator=", ") as ?skillIdsAndLabels)
 		WHERE {
-		?user a lr:User ;
+			?user a lr:User ;
 				lr:Id ?id ;
 				foaf:name ?name ;
 				foaf:mbox ?email ;
 				lr:isLookingForOpportunities ?isLookingForOpportunities ;
-		BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
+				lr:isProfileComplete ?isProfileComplete ;
+			BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
 
 		OPTIONAL {
 			?user lr:hasSkill ?escoSkill .
@@ -64,14 +66,16 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 
 		FILTER(%s)
 		}
-		GROUP BY ?id ?name ?email ?locationId ?lookingForOpportunities
+		GROUP BY ?id ?name ?email ?locationId ?lookingForOpportunities ?isProfileComplete
 	`, filter)
 	res, err := u.Repo.Query(q)
+	fmt.Println(res, err)
 	if err != nil {
 		return nil, []error{err}
 	}
 	users := make([]*model.User, len(userIDs))
 	errs := make([]error, len(userIDs))
+	fmt.Println(res.Bindings())
 
 	var foundUsers = make(map[string]*model.User)
 	for _, m := range res.Solutions() {
@@ -81,6 +85,7 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 		}
 		foundUsers[user.ID] = user
 	}
+	fmt.Println(foundUsers)
 	// fill return array with empty objects so the lengths match
 	for i, id := range userIDs {
 		if user, found := foundUsers[id]; found {
@@ -105,40 +110,44 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 		PREFIX lr: <http://linkrec.example.org/schema#>
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-		PREFIX esco_skill: <http://data.europa.eu/esco/Skill>
+		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
-		SELECT ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration (GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
+		SELECT ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?experienceDuration 
+			(STRAFTER(STR(?degField), "#") AS ?degreeField) 
+			(STRAFTER(STR(?degType), "#") AS ?degreeType)
+			(GROUP_CONCAT(CONCAT(STRAFTER(STR(?escoSkill), STR(esco_skill:)), "|", ?skill); separator=", ") as ?skillIdsAndLabels)
 		WHERE {
 			?vacancy a lr:Vacancy ;
 				lr:Id ?id ;
 				lr:vacancyTitle ?title ;
 				lr:vacancyDescription ?description ;
-				lr:vacancyLocation ?location ;
+				foaf:based_near ?location ;
 				lr:postedBy ?postedBy ;
 				lr:vacancyStartDate ?startDate ;
 				lr:vacancyEndDate ?endDate ;
 				lr:vacancyStatus ?status .
 				?postedBy lr:Id ?postedById .
+				?location lr:Id ?locationId
 
 			OPTIONAL { 
-				?vacancy lr:requiredSkill ?skill .
-				?skill skos:prefLabel ?skillLabel .
-				FILTER(LANG(?skillLabel) = "en")
+				?vacancy lr:requiredSkill ?escoSkill .
+				?escoSkill skos:prefLabel ?skill .
+				FILTER(LANG(?skill) = "en")
 			}
 			OPTIONAL { 
-				?vacancy lr:requiredDegreeType ?degreeType .
+				?vacancy lr:requiredDegreeType ?degType .
 			}
 			OPTIONAL { 
-				?vacancy lr:requiredDegreeField ?degreeField .
+				?vacancy lr:requiredDegreeField ?degField .
 			}
 			OPTIONAL { 
 				?vacancy lr:requiredExperienceDuration ?experienceDuration .
 			}
 			FILTER(%s)
 		}
-		GROUP BY ?id ?title ?description ?location ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration
-
+		GROUP BY ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?degField ?degType ?experienceDuration
 	`, filter)
 	res, err := u.Repo.Query(q)
 
@@ -248,18 +257,18 @@ func (u *DataBase) getEducationEntries(ctx context.Context, educationEntryIDs []
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-		SELECT ?id ?institution ?info 
+		SELECT ?id ?institution ?info ?startDate ?endDate
 			(STRAFTER(STR(?degField), "#") AS ?field) 
 			(STRAFTER(STR(?degType), "#") AS ?degree)
 		WHERE {
 			?education a lr:EducationEntry ;
 				lr:Id ?id ;
 				lr:institutionName ?institution ;
-				lr:extraInfo ?info ;
-				lr:degreeType ?degType ;
+    			lr:startDate ?startDate ;
+    			lr:endDate ?endDate ;
+                lr:degreeType ?degType ;
 				lr:degreeField ?degField .
-
-		FILTER(%s)
+			FILTER(%s)
 		}
 	`, filter)
 	res, err := u.Repo.Query(q)

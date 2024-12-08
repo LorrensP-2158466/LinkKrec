@@ -100,7 +100,7 @@ lr:vacancyTitle a rdf:Property ;
 lr:vacancyDescription a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range schema:Text .
-lr:vacancyLocation a rdf:Property ;
+foaf:based_near a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range  lr:Location.
 lr:postedBy a rdf:Property ;

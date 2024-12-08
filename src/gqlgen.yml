@@ -120,6 +120,8 @@ models:
         resolver: true
   Vacancy:
     fields:
+      location:
+        resolver: true
       postedBy:
         resolver: true
   Notification:
