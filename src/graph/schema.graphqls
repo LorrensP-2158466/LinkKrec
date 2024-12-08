@@ -48,6 +48,9 @@ type Query {
     matchVacancyToUsers(vacancyId: ID!, maxDist: Float!): [User]
 
     matchUserToVacancies(userId: ID!, maxDist: Float!): [Vacancy]
+
+  # searching skills by name for convenience
+  getSkillsByName(name: String!): [Skill!]
 }
 
 type Mutation {

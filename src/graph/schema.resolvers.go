@@ -922,7 +922,6 @@ func (r *mutationResolver) AddEmployeesToCompany(ctx context.Context, companyID 
 	// returns only one so we index 0
 	ids := strings.Split(res.Solutions()[0]["employees"].String(), ", ")
 	return ids, nil
-
 }
 
 // RemoveEmployeesFromCompany is the resolver for the removeEmployeesFromCompany field.
@@ -980,7 +979,6 @@ func (r *mutationResolver) RemoveEmployeesFromCompany(ctx context.Context, compa
 	// returns only one so we index 0
 	ids := strings.Split(res.Bindings()["employees"][0].String(), ", ")
 	return ids, nil
-
 }
 
 // ForUser is the resolver for the forUser field.
@@ -1385,6 +1383,43 @@ func (r *queryResolver) MatchUserToVacancies(ctx context.Context, userID string,
 		vacancies, _ = loaders.GetVacancies(ctx, ids)
 	}
 	return vacancies, nil
+}
+
+// GetSkillsByName is the resolver for the getSkillsByName field.
+func (r *queryResolver) GetSkillsByName(ctx context.Context, name string) ([]*model.Skill, error) {
+	if len(name) < 3 {
+		return []*model.Skill{}, nil
+	}
+	q := fmt.Sprintf(`
+		PREFIX esco: <http://data.europa.eu/esco/model#>
+		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+		SELECT			
+			?label ?id
+		WHERE{
+		  ?escoSkill a esco:Skill .
+		  ?escoSkill skos:prefLabel ?label .
+		  FILTER(LANG(?label) = "en" && regex(?label, ".*%s.*", "i"))
+		  BIND(STRAFTER(STR(?escoSkill), STR(esco_skill:)) as ?id)
+		}
+		LIMIT 30
+		
+		`, name)
+	res, err := r.Repo.Query(q)
+	if err != nil {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Error fetching skills")
+	}
+	var foundSkills = make([]*model.Skill, 0, 30)
+	for _, skill := range res.Solutions() {
+		mapped, err := util.MapPrimitiveBindingsToStruct[model.Skill](skill)
+		if err != nil {
+			return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Error fetching skills")
+		}
+		foundSkills = append(foundSkills, &mapped)
+	}
+
+	return foundSkills, nil
 }
 
 // NewConnectionRequest is the resolver for the newConnectionRequest field.
