@@ -1409,6 +1409,9 @@ func (r *subscriptionResolver) NewNotification(ctx context.Context, forUserID st
 
 // Location is the resolver for the location field.
 func (r *userResolver) Location(ctx context.Context, obj *model.User) (*model.Location, error) {
+	if usersession.For(ctx).Id == obj.ID {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Getting location of other user is not permitted")
+	}
 	return loaders.GetLocation(ctx, obj.Location.ID)
 }
 
