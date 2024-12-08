@@ -10,14 +10,25 @@ import (
 )
 
 func MapPrimitiveBindingsToStruct[T any](bindings map[string]rdf.Term) (T, error) {
-	structType := reflect.TypeOf(*new(T))
+	// Check if T is a pointer type
+	var zeroValue T
+	isPtr := reflect.TypeOf(zeroValue).Kind() == reflect.Ptr
+
+	// Get the underlying type (dereference if it's a pointer)
+	var structType reflect.Type
+	if isPtr {
+		structType = reflect.TypeOf(zeroValue).Elem()
+	} else {
+		structType = reflect.TypeOf(zeroValue)
+	}
+
+	// Create a new value of the struct type
 	structValue := reflect.New(structType).Elem()
 
 	for i := 0; i < structType.NumField(); i++ {
 		field := structType.Field(i)
 		bindingKey := strings.Split(field.Tag.Get("json"), ",")[0]
 		bindingVal := bindings[bindingKey]
-
 		if bindingVal != nil {
 			if isEnumType(field.Type) {
 				continue
@@ -50,14 +61,31 @@ func MapPrimitiveBindingsToStruct[T any](bindings map[string]rdf.Term) (T, error
 					sliceValues = append(sliceValues, v)
 				}
 				structValue.Field(i).Set(reflect.ValueOf(sliceValues))
-
 			}
 		}
+	}
+
+	// Convert the result to the requested type
+	if isPtr {
+		result := structValue.Addr().Interface().(T)
+		return result, nil
 	}
 	result := structValue.Interface().(T)
 	return result, nil
 }
 
+func MapPrimitiveBindingsToStructArray[T any](solutions []map[string]rdf.Term) ([]T, error) {
+	var arr = make([]T, 0)
+	for _, skill := range solutions {
+		mapped, err := MapPrimitiveBindingsToStruct[T](skill)
+		if err != nil {
+			return nil, err
+		}
+		arr = append(arr, mapped)
+	}
+
+	return arr, nil
+}
 func isEnumType(fieldType reflect.Type) bool {
 	return fieldType.PkgPath() != "" && (fieldType.Kind() == reflect.Int || fieldType.Kind() == reflect.String)
 }

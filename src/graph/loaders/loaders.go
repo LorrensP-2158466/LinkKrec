@@ -42,24 +42,29 @@ func (u *DataBase) getUsers(ctx context.Context, userIDs []string) ([]*model.Use
 				lr:isProfileComplete ?isProfileComplete ;
 			BIND(?isLookingForOpportunities AS ?lookingForOpportunities)
 
-			OPTIONAL {
-				?user lr:hasSkill ?escoSkill .
-				?escoSkill skos:prefLabel ?skill .
-				FILTER(LANG(?skill) = "en")
-			}
-			OPTIONAL {
-				?user lr:hasConnection ?connection .
-				?connection lr:Id ?connectionName .
-			}
-			OPTIONAL {
-				?user lr:hasEducation ?education .
-				?education lr:Id ?educationEntry .
-			}
-			OPTIONAL {
-				?user foaf:based_near ?location .
-				?location lr:Id ?locationId .
-			}
-			FILTER(%s)
+		OPTIONAL {
+			?user lr:hasSkill ?escoSkill .
+			?escoSkill skos:prefLabel ?skill .
+			FILTER(LANG(?skill) = "en")
+		}
+		OPTIONAL {
+			?user lr:hasConnection ?connection .
+			?connection lr:Id ?connectionName .
+		}
+		OPTIONAL {
+			?user lr:hasEducation ?education .
+			?education lr:Id ?educationEntry .
+		}
+		OPTIONAL {
+			?user foaf:based_near ?location .
+			?location lr:Id ?locationId .
+		}
+		OPTIONAL {
+			?user lr:hasCompany ?company.
+			?company lr:Id ?companyId .
+		}
+
+		FILTER(%s)
 		}
 		GROUP BY ?id ?name ?email ?locationId ?lookingForOpportunities ?isProfileComplete
 	`, filter)
@@ -186,21 +191,30 @@ func (u *DataBase) getCompanies(ctx context.Context, companyIDs []string) ([]*mo
 		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 		PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
 
-		SELECT ?id ?name ?email ?location (GROUP_CONCAT(DISTINCT ?vacancyId; separator=", ") AS ?vacancies) (GROUP_CONCAT(DISTINCT ?employeeId; separator=", ") AS ?employees)   
+		SELECT ?id ?name ?email ?locationId 
+			(GROUP_CONCAT(DISTINCT ?vacancyId; separator=", ") AS ?vacancies) 
+			(GROUP_CONCAT(DISTINCT ?employeeId; separator=", ") AS ?employees)   
 		WHERE {
-		?company a lr:Company ;
-			lr:Id ?id ;
-			lr:companyName ?name ;
-			lr:companyEmail ?email ;
-			lr:companyLocation ?location ;
-			lr:hasVacancy ?vacancy ;
-			lr:hasEmployee ?employee .
-			?vacancy lr:Id ?vacancyId .
-			?employee lr:Id ?employeeId .
+			?company a lr:Company ;
+				lr:Id ?id ;
+				lr:companyName ?name ;
+				lr:companyEmail ?email ;
+				lr:companyLocation ?location .
 
-		FILTER(%s)
+			?location lr:Id ?locationId
+
+			OPTIONAL{
+				?company lr:hasEmployee ?employee .
+				?employee lr:Id ?employeeId .
+			}
+			OPTIONAL{
+				?company lr:hasVacancy ?vacancy .
+				?vacancy lr:Id ?vacancyId .
+			}
+
+			FILTER(%s)
 		}
-		GROUP BY ?id ?name ?email ?location
+		GROUP BY ?id ?name ?email ?location ?locationId
 	`, filter)
 	res, err := u.Repo.Query(q)
 	if err != nil {

@@ -64,6 +64,7 @@ func init_store() {
 
 func signInWithProvider(c *gin.Context) {
 	provider := c.Param("provider")
+	// todo add redirect parameter
 	q := c.Request.URL.Query()
 	q.Add("provider", provider)
 	c.Request.URL.RawQuery = q.Encode()
@@ -178,7 +179,7 @@ func callbackHandler(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusTemporaryRedirect, "/is_authorized")
+	c.Redirect(http.StatusTemporaryRedirect, "/playground")
 }
 
 func AuthMiddleware() gin.HandlerFunc {
