@@ -8,7 +8,6 @@ type Query {
     getUsers(
         name: String
         location: String
-        isEmployer: Boolean
         skills: [String!]
         lookingForOpportunities: Boolean
     ): [User]
