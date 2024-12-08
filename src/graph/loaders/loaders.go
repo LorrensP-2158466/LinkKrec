@@ -105,11 +105,14 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 		PREFIX lr: <http://linkrec.example.org/schema#>
 		PREFIX schema: <http://schema.org/>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-		PREFIX esco_skill: <http://data.europa.eu/esco/Skill>
+		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 		PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 		PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
-		SELECT ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration (GROUP_CONCAT(DISTINCT ?skill; separator=", ") AS ?skills)
+		SELECT ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?experienceDuration 
+			(GROUP_CONCAT(DISTINCT ?skillLabel; separator=", ") AS ?requiredSkills)
+			(STRAFTER(STR(?degField), "#") AS ?degreeField) 
+			(STRAFTER(STR(?degType), "#") AS ?degreeType)
 		WHERE {
 			?vacancy a lr:Vacancy ;
 				lr:Id ?id ;
@@ -129,18 +132,17 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 				FILTER(LANG(?skillLabel) = "en")
 			}
 			OPTIONAL { 
-				?vacancy lr:requiredDegreeType ?degreeType .
+				?vacancy lr:requiredDegreeType ?degType .
 			}
 			OPTIONAL { 
-				?vacancy lr:requiredDegreeField ?degreeField .
+				?vacancy lr:requiredDegreeField ?degField .
 			}
 			OPTIONAL { 
 				?vacancy lr:requiredExperienceDuration ?experienceDuration .
 			}
 			FILTER(%s)
 		}
-		GROUP BY ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?degreeType ?degreeField ?experienceDuration
-
+		GROUP BY ?id ?title ?description ?locationId ?postedById ?startDate ?endDate ?status ?degField ?degType ?experienceDuration
 	`, filter)
 	res, err := u.Repo.Query(q)
 
