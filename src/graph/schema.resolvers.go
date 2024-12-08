@@ -523,10 +523,10 @@ func (r *mutationResolver) NotifyProfileVisit(ctx context.Context, visitorID str
 
 // CreateVacancy is the resolver for the createVacancy field.
 func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, input model.CreateVacancyInput) (*model.Vacancy, error) {
-	// usersess := usersession.For(ctx)
-	// if !slices.Contains(usersess.CompanyIds, companyID) {
-	// 	return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't create vacancy for other company")
-	// }
+	usersess := usersession.For(ctx)
+	if !slices.Contains(usersess.CompanyIds, companyID) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't create vacancy for other company")
+	}
 	coordinates := gisco.CoordinatesFromAddress(input.Location.Country, input.Location.City, &input.Location.Street, &input.Location.HouseNumber)
 	if coordinates == nil {
 		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Invalid address")
@@ -680,16 +680,17 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 	}
 
 	// If no fields are provided, return an error
-	if deleteParts == "" && insertParts == "" {
+	if deleteParts == "" && insertParts == "" && input.Location == nil && len(input.RequiredExperience) == 0 {
 		return nil, fmt.Errorf("no fields provided for update")
 	}
 
-	coordinates := gisco.CoordinatesFromAddress(input.Location.Country, input.Location.City, &input.Location.Street, &input.Location.HouseNumber)
-	if coordinates == nil {
-		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Invalid address")
-	}
-	// delete the old values and insert the new
-	locationInsert := fmt.Sprintf(`
+	if input.Location != nil {
+		coordinates := gisco.CoordinatesFromAddress(input.Location.Country, input.Location.City, &input.Location.Street, &input.Location.HouseNumber)
+		if coordinates == nil {
+			return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Invalid address")
+		}
+		// delete the old values and insert the new ones
+		locationInsert := fmt.Sprintf(`
 		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 		PREFIX lr: <http://linkrec.example.org/schema#>
@@ -717,7 +718,7 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 			?vac a lr:Vacancy ;
 				lr:Id "%s" ;
 				foaf:based_near ?loc .
-
+	
 			?loc a lr:Location ;
 				lr:inCountry ?oldCountry ;
 				lr:inCity ?oldCity ;
@@ -728,9 +729,51 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
 		}
 		`, input.Location.Country, input.Location.City, input.Location.Street, input.Location.HouseNumber, coordinates.Long, coordinates.Lat, id)
 
-	err := r.UpdateRepo.Update(locationInsert)
-	if err != nil {
-		return nil, err
+		err := r.UpdateRepo.Update(locationInsert)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if len(input.RequiredExperience) != 0 {
+		queryBluePrint := `
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX lr: <http://linkrec.example.org/schema#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
+		PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+		PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
+		DELETE { ?vacancy lr:requiredExperience ?oldExperience . }
+		INSERT { 
+			%s 
+			%s 
+		} WHERE { 
+			?vacancy a lr:Vacancy ; 
+					 lr:Id "%s" . 
+			OPTIONAL { ?vacancy lr:requiredExperience ?oldExperience . }
+		}`
+
+		experienceInserts := ""
+		experienceTypeInserts := ""
+		var experienceEntries []string
+		for _, exp := range input.RequiredExperience {
+			expId := uuid.New().String()
+			experienceTypeInserts += fmt.Sprintf(`
+				lr:Experience%s a lr:Experience ;
+				   rdfs:subClassOf lr:Experience ;
+				   lr:Id "%s" ;
+				   lr:escoOccup esco_occupation:%s ;
+				   lr:durationInMonths %d .
+			`, expId, expId, exp.ID, exp.DurationInMonths)
+			experienceInserts += fmt.Sprintf("?vacancy lr:requiredExperience lr:Experience%s .", expId)
+			experienceEntries = append(experienceEntries, "lr:Experience"+expId)
+		}
+		q := fmt.Sprintf(queryBluePrint, experienceTypeInserts, experienceInserts, id)
+		err := r.UpdateRepo.Update(q)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Construct the full SPARQL query
@@ -741,6 +784,7 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 		PREFIX esco_skill: <http://data.europa.eu/esco/skill/>
 		PREFIX foaf: <http://xmlns.com/foaf/0.1/> 
+		PREFIX esco_occupation: <http://data.europa.eu/esco/occupation/>
 
         DELETE {
             %s
@@ -754,9 +798,8 @@ func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input m
             %s
         }
     `, deleteParts, insertParts, id, deleteParts)
-	fmt.Println(q)
 
-	err = r.UpdateRepo.Update(q)
+	err := r.UpdateRepo.Update(q)
 	if err != nil {
 		return nil, err
 	}
@@ -776,13 +819,13 @@ func (r *mutationResolver) DeleteVacancy(ctx context.Context, id string) (*bool,
 		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 		
 		DELETE {
-          ?vacancy ?p ?o .
-          ?location ?lp ?lo .
+			?vacancy ?p ?o .
+			?location ?lp ?lo .
         }
         WHERE {
-          ?vacancy a lr:Vacancy ;
-                   lr:Id "%s" ;
-                   ?p ?o .
+			?vacancy a lr:Vacancy ;
+				lr:Id "%s" ;
+				?p ?o .
         }
 	`, id)
 
