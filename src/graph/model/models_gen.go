@@ -26,12 +26,9 @@ type ConnectionRequest struct {
 }
 
 type CreateCompanyInput struct {
-	ID          string                `json:"id"`
-	Name        string                `json:"name"`
-	Email       string                `json:"email"`
-	Location    *CreateLocationInput  `json:"location"`
-	Vacancies   []*CreateVacancyInput `json:"vacancies"`
-	EmployeeIds []string              `json:"employeeIds"`
+	Name     string               `json:"name"`
+	Email    string               `json:"email"`
+	Location *CreateLocationInput `json:"location"`
 }
 
 type CreateLocationInput struct {
@@ -71,6 +68,10 @@ type EducationEntryInput struct {
 	Till        scalar.Date `json:"till"`
 	Degree      DegreeType  `json:"degree"`
 	Field       DegreeField `json:"field"`
+}
+
+type EmployeeIds struct {
+	Ids []string `json:"Ids,omitempty"`
 }
 
 type ExperienceEntry struct {
@@ -127,11 +128,10 @@ type Subscription struct {
 }
 
 type UpdateCompanyInput struct {
-	Name        *string               `json:"name,omitempty"`
-	Email       *string               `json:"email,omitempty"`
-	Location    *CreateLocationInput  `json:"location,omitempty"`
-	Vacancies   []*CreateVacancyInput `json:"vacancies,omitempty"`
-	EmployeeIds []string              `json:"employeeIds,omitempty"`
+	ID       string               `json:"id"`
+	Name     *string              `json:"name,omitempty"`
+	Email    *string              `json:"email,omitempty"`
+	Location *CreateLocationInput `json:"location,omitempty"`
 }
 
 type UpdateProfileInput struct {

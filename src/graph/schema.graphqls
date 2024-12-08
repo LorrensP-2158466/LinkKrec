@@ -91,6 +91,13 @@ type Mutation {
 
     # Set user looking for job opportunities
     updateUserLookingForOpportunities(userId: ID!, looking: Boolean!): User
+
+    # add batch of employees to company and return every employee id
+    addEmployeesToCompany(companyId: ID!, input: EmployeeIds! ): [ID!]
+
+    # remove batch of employees from company and returns every employee Id
+    removeEmployeesFromCompany(companyId: ID!, input: EmployeeIds! ): [ID!]
+    
 }
 
 # We just thought about these, so we don't know if these will be used or are correct
@@ -400,18 +407,19 @@ input CreateLocationInput {
 }
 
 input CreateCompanyInput{
- id: ID!
  name: String!
  email: String!
  location: CreateLocationInput!
- vacancies: [CreateVacancyInput!]!
- employeeIds: [String!]!
 }
 
 input UpdateCompanyInput {
+ id: ID!
  name: String
  email: String
  location: CreateLocationInput
- vacancies: [CreateVacancyInput!]
- employeeIds: [String!]
 } 
+
+
+input EmployeeIds{
+    Ids: [ID!]
+}

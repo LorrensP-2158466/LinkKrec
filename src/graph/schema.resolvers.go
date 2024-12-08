@@ -16,6 +16,7 @@ import (
 	"log"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/99designs/gqlgen/graphql"
@@ -508,7 +509,7 @@ func (r *mutationResolver) CreateVacancy(ctx context.Context, companyID string, 
 func (r *mutationResolver) UpdateVacancy(ctx context.Context, id string, input model.UpdateVacancyInput) (*model.Vacancy, error) {
 	usersess := usersession.For(ctx)
 	if !slices.Contains(usersess.CompanyIds, id) {
-		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't create vacancy for other company")
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update vacancy of not owned company")
 	}
 	var deleteParts, insertParts string
 
@@ -630,7 +631,8 @@ func (r *mutationResolver) DeleteVacancy(ctx context.Context, id string) (*bool,
 
 // CreateCompany is the resolver for the createCompany field.
 func (r *mutationResolver) CreateCompany(ctx context.Context, input model.CreateCompanyInput) (*model.Company, error) {
-	companyID := input.ID
+	usersess := usersession.For(ctx)
+	companyID := uuid.New().String()
 	locationID := uuid.New().String() // Unique ID for the company location
 
 	coordinates := gisco.CoordinatesFromAddress(input.Location.Country, input.Location.City, &input.Location.Street, &input.Location.HouseNumber)
@@ -650,7 +652,7 @@ func (r *mutationResolver) CreateCompany(ctx context.Context, input model.Create
                 lr:inCountry "%s" ;
                 lr:inCity "%s" ;
                 lr:inStreet "%s" ;
-                lr:houseNumber "%s" .
+                lr:houseNumber "%s" ;
 				lr:longitude "%.6f" ;
 				lr:latitude "%.6f" .
         }
@@ -668,112 +670,30 @@ func (r *mutationResolver) CreateCompany(ctx context.Context, input model.Create
 		PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
         INSERT DATA {
-            lr:company%s a lr:Company ;
+            lr:Company%s a lr:Company ;
                 lr:Id "%s" ;
                 lr:companyName "%s" ;
                 lr:companyEmail "%s" ;
                 lr:companyLocation lr:location%s .
+
+            lr:User%s lr:hasCompany lr:Company%s .
         }
     `,
-		companyID, companyID, input.Name, input.Email, locationID,
+		companyID, companyID, input.Name, input.Email, locationID, usersess.Id, companyID,
 	)
 
 	if err := r.UpdateRepo.Update(companyQuery); err != nil {
 		return nil, fmt.Errorf("failed to create company: %w", err)
 	}
 
-	for _, vacancy := range input.Vacancies {
-		vacancyID := uuid.New().String()
-		vacancyLocationID := uuid.New().String()
-
-		coordinates := gisco.CoordinatesFromAddress(vacancy.Location.Country, vacancy.Location.City, &vacancy.Location.Street, &vacancy.Location.HouseNumber)
-		if coordinates == nil {
-			return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Invalid address")
-		}
-
-		// Create location for the vacancy
-		vacancyLocationQuery := fmt.Sprintf(`
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-			PREFIX lr: <http://linkrec.example.org/schema#>
-			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-
-            INSERT DATA {
-                lr:location%s a lr:Location ;
-                    lr:Id "%s" ;
-                    lr:country "%s" ;
-                    lr:city "%s" ;
-                    lr:street "%s" ;
-                    lr:houseNumber "%s" ;
-					lr:longitude "%.6f" ;
-					lr:latitude "%.6f" .
-            }
-        `,
-			vacancyLocationID, vacancyLocationID, vacancy.Location.Country, vacancy.Location.City, vacancy.Location.Street, vacancy.Location.HouseNumber, coordinates.Long, coordinates.Lat,
-		)
-
-		if err := r.UpdateRepo.Update(vacancyLocationQuery); err != nil {
-			return nil, fmt.Errorf("failed to create vacancy location: %w", err)
-		}
-
-		var skillQueries string
-		if vacancy.RequiredSkills != nil {
-			skillQueries = ""
-			for _, skill := range vacancy.RequiredSkills {
-				skillQueries += fmt.Sprintf(" ;\nlr:requiredSkill esco_skill:%s", *skill)
-			}
-			skillQueries += " .\n"
-		} else {
-			skillQueries = ".\n"
-		}
-
-		vacancyQuery := fmt.Sprintf(`
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-			PREFIX lr: <http://linkrec.example.org/schema#>
-			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-
-            INSERT DATA {
-                lr:vacancy%s a lr:Vacancy ;
-                    lr:Id "%s" ;
-                    lr:vacancyTitle "%s" ;
-                    lr:vacancyDescription "%s" ;
-                    lr:vacancyLocation lr:location%s ;
-                    lr:postedBy lr:company%s ;
-                    lr:vacancyStartDate "%s"^^xsd:date ;
-                    lr:vacancyEndDate "%s"^^xsd:date ;
-                    lr:vacancyStatus %t ;
-                    lr:requiredDegreeType lr:%s ;
-                    lr:requiredDegreeField lr:%s ;
-                    lr:requiredExperienceDuration %d %s
-            }
-        `,
-			vacancyID, vacancyID, vacancy.Title, vacancy.Description, vacancyLocationID, companyID,
-			vacancy.StartDate, vacancy.EndDate, vacancy.Status,
-			vacancy.RequiredDegreeType, vacancy.RequiredDegreeField, vacancy.RequiredExperienceDuration,
-			skillQueries,
-		)
-
-		if err := r.UpdateRepo.Update(vacancyQuery); err != nil {
-			return nil, fmt.Errorf("failed to create vacancy: %w", err)
-		}
-	}
-
-	for _, employeeID := range input.EmployeeIds {
-		employeeLinkQuery := fmt.Sprintf(`
-            PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-			PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-			PREFIX lr: <http://linkrec.example.org/schema#>
-			PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-
-            INSERT DATA {
-                lr:company%s lr:hasEmployee lr:employee%s .
-            }
-        `, companyID, employeeID)
-
-		if err := r.UpdateRepo.Update(employeeLinkQuery); err != nil {
-			return nil, fmt.Errorf("failed to link employee %s to company: %w", employeeID, err)
-		}
+	// remember
+	g := ctx.Value("ginCtx").(*gin.Context)
+	session, _ := r.Store.Get(g.Request, "user-session")
+	sessInfo := session.Values[usersession.SessionInfoKey].(*usersession.UserSessionInfo)
+	sessInfo.CompanyIds = append(sessInfo.CompanyIds, companyID)
+	if err := session.Save(g.Request, g.Writer); err != nil {
+		// Log or handle session save error if needed
+		log.Printf("Error saving session: %v", err)
 	}
 
 	return loaders.GetCompany(ctx, companyID)
@@ -781,9 +701,8 @@ func (r *mutationResolver) CreateCompany(ctx context.Context, input model.Create
 
 // UpdateCompany is the resolver for the updateCompany field.
 func (r *mutationResolver) UpdateCompany(ctx context.Context, id string, input model.UpdateCompanyInput) (*model.Company, error) {
-	err := r.UpdateRepo.Update(id) // Assuming a `Company` query exists.
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch existing company: %w", err)
+	if !slices.Contains(usersession.For(ctx).CompanyIds, id) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't Update non owned company")
 	}
 
 	updateQueries := ""
@@ -826,71 +745,6 @@ func (r *mutationResolver) UpdateCompany(ctx context.Context, id string, input m
 			input.Location.Country, input.Location.City, input.Location.Street, input.Location.HouseNumber, id)
 	}
 
-	if input.Vacancies != nil {
-		// Clear and replace vacancies
-		deleteVacanciesQuery := fmt.Sprintf(`
-            DELETE {
-                ?vacancy ?p ?o.
-                lr:company%s lr:vacancy ?vacancy.
-            }
-            WHERE {
-                lr:company%s lr:vacancy ?vacancy.
-                ?vacancy ?p ?o.
-            }
-        `, id, id)
-
-		insertVacanciesQuery := ""
-		for _, vacancy := range input.Vacancies {
-			vacancyID := uuid.New().String()
-			locationID := uuid.New().String() // Generate a new location ID for the vacancy location.
-
-			coordinates := gisco.CoordinatesFromAddress(vacancy.Location.Country, vacancy.Location.City, &vacancy.Location.Street, &vacancy.Location.HouseNumber)
-			if coordinates == nil {
-				return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Invalid address")
-			}
-
-			insertVacanciesQuery += fmt.Sprintf(`
-                lr:vacancy%s a lr:Vacancy;
-                      lr:vacancyTitle "%s";
-                      lr:vacancyDescription "%s";
-                      lr:vacancyLocation lr:location%s;
-                      lr:postedBy lr:company%s;
-                      lr:vacancyStartDate "%s"^^xsd:date;
-                      lr:vacancyEndDate "%s"^^xsd:date;
-                      lr:vacancyStatus %t;
-                      lr:requiredDegreeType lr:%s;
-                      lr:requiredDegreeField lr:%s;
-                      lr:requiredExperienceDuration %d.
-                lr:location%s lr:country "%s";
-                      lr:city "%s";
-                      lr:street "%s";
-                      lr:houseNumber "%s";
-					  lr:longitude "%.6f";
-					  lr:latitude "%.6f".
-            `, vacancyID, vacancy.Title, vacancy.Description, locationID, id,
-				vacancy.StartDate, vacancy.EndDate, vacancy.Status, vacancy.RequiredDegreeType, vacancy.RequiredDegreeField, vacancy.RequiredExperienceDuration,
-				locationID, vacancy.Location.Country, vacancy.Location.City, vacancy.Location.Street, vacancy.Location.HouseNumber, coordinates.Long, coordinates.Lat)
-
-			updateQueries += deleteVacanciesQuery + " INSERT DATA { " + insertVacanciesQuery + " }"
-		}
-	}
-
-	if input.EmployeeIds != nil {
-		deleteEmployeesQuery := fmt.Sprintf(`
-            DELETE { lr:company%s lr:employee ?employee. }
-            WHERE { lr:company%s lr:employee ?employee. }
-        `, id, id)
-
-		insertEmployeesQuery := ""
-		for _, employeeID := range input.EmployeeIds {
-			insertEmployeesQuery += fmt.Sprintf(`
-                lr:company%s lr:employee lr:user%s .
-            `, id, employeeID)
-		}
-
-		updateQueries += deleteEmployeesQuery + " INSERT DATA { " + insertEmployeesQuery + " }"
-	}
-
 	if err := r.UpdateRepo.Update(updateQueries); err != nil {
 		return nil, fmt.Errorf("failed to update company: %w", err)
 	}
@@ -900,6 +754,10 @@ func (r *mutationResolver) UpdateCompany(ctx context.Context, id string, input m
 
 // DeleteCompany is the resolver for the deleteCompany field.
 func (r *mutationResolver) DeleteCompany(ctx context.Context, id string) (*bool, error) {
+	if !slices.Contains(usersession.For(ctx).CompanyIds, id) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't Delete non owned company")
+	}
+
 	deleteVacanciesQuery := fmt.Sprintf(`
         PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -962,7 +820,17 @@ func (r *mutationResolver) DeleteCompany(ctx context.Context, id string) (*bool,
 		return nil, fmt.Errorf("failed to delete company %s: %w", id, err)
 	}
 
+	// remember ...
+	g := ctx.Value("ginCtx").(*gin.Context)
+	session, _ := r.Store.Get(g.Request, "user-session")
+	sessInfo := session.Values[usersession.SessionInfoKey].(*usersession.UserSessionInfo)
+	sessInfo.CompanyIds = slices.DeleteFunc(sessInfo.CompanyIds, func(toRemoveId string) bool { return toRemoveId == id })
+	if err := session.Save(g.Request, g.Writer); err != nil {
+		// Log or handle session save error if needed
+		log.Printf("Error saving session: %v", err)
+	}
 	// If everything succeeds, return true
+
 	success := true
 	return &success, nil
 }
@@ -1000,6 +868,119 @@ func (r *mutationResolver) UpdateUserLookingForOpportunities(ctx context.Context
 
 	// If the query was successful, return the updated user
 	return loaders.GetUser(ctx, userID)
+}
+
+// AddEmployeesToCompany is the resolver for the addEmployeesToCompany field.
+func (r *mutationResolver) AddEmployeesToCompany(ctx context.Context, companyID string, input model.EmployeeIds) ([]string, error) {
+	if !slices.Contains(usersession.For(ctx).CompanyIds, companyID) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update non owned company")
+	}
+	employeeTriples := ""
+	for _, empID := range input.Ids {
+		employeeTriples += fmt.Sprintf("lr:hasEmployee lr:User%s ; ", empID)
+	}
+	// Remove the last semicolon and space
+	employeeTriples = strings.TrimSuffix(employeeTriples, "; ")
+
+	update := fmt.Sprintf(`
+	    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+	    PREFIX lr: <http://linkrec.example.org/schema#>
+	    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+	    INSERT DATA {
+	        lr:Company%s %s .
+	    }`, companyID, employeeTriples)
+
+	err := r.UpdateRepo.Update(update)
+	if err != nil {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Could not add employees to company")
+	}
+
+	q := fmt.Sprintf(`
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+		SELECT 
+			(GROUP_CONCAT(DISTINCT ?employeeId; separator=", ") AS ?employees)   
+		WHERE {
+			?company a lr:Company ;
+				lr:Id "%s" .
+		    OPTIONAL {
+		        ?company lr:hasEmployee ?employee .
+		        ?employee lr:Id ?employeeId .
+		    }
+
+		}
+		GROUP BY ?company
+	`, companyID)
+
+	res, err := r.Repo.Query(q)
+
+	if err != nil || len(res.Solutions()) == 0 {
+		return nil, err
+	}
+	// returns only one so we index 0
+	ids := strings.Split(res.Solutions()[0]["employees"].String(), ", ")
+	return ids, nil
+
+}
+
+// RemoveEmployeesFromCompany is the resolver for the removeEmployeesFromCompany field.
+func (r *mutationResolver) RemoveEmployeesFromCompany(ctx context.Context, companyID string, input model.EmployeeIds) ([]string, error) {
+	if !slices.Contains(usersession.For(ctx).CompanyIds, companyID) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update non owned company")
+	}
+	if !slices.Contains(usersession.For(ctx).CompanyIds, companyID) {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Can't update non owned company")
+	}
+	employeeTriples := ""
+	for _, empID := range input.Ids {
+		employeeTriples += fmt.Sprintf("lr:hasEmployee lr:User%s ; ", empID)
+	}
+	// Remove the last semicolon and space
+	employeeTriples = strings.TrimSuffix(employeeTriples, "; ")
+
+	update := fmt.Sprintf(`
+	    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+	    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+	    PREFIX lr: <http://linkrec.example.org/schema#>
+	    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+	    DELETE DATA {
+	        lr:Company%s %s .
+	    }`, companyID, employeeTriples)
+
+	err := r.UpdateRepo.Update(update)
+	if err != nil {
+		return nil, gqlerror.ErrorPathf(graphql.GetPath(ctx), "Could not add employees to company")
+	}
+
+	q := fmt.Sprintf(`
+		PREFIX lr: <http://linkrec.example.org/schema#>
+		PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+		PREFIX list: <http://jena.hpl.hp.com/ARQ/list#>
+		SELECT 
+			(GROUP_CONCAT(DISTINCT ?employeeId; separator=", ") AS ?employees)   
+		WHERE {
+			?company a lr:Company ;
+				lr:Id "%s" .
+		    OPTIONAL {
+		        ?company lr:hasEmployee ?employee .
+				?employee lr:Id ?employeeId .
+		    }
+
+		}
+		GROUP BY ?company
+	`, companyID)
+
+	res, err := r.Repo.Query(q)
+
+	if err != nil || len(res.Bindings()["employees"]) != 1 {
+		return nil, err
+	}
+	// returns only one so we index 0
+	ids := strings.Split(res.Bindings()["employees"][0].String(), ", ")
+	return ids, nil
+
 }
 
 // ForUser is the resolver for the forUser field.
