@@ -143,7 +143,7 @@ func (u *DataBase) getVacancies(ctx context.Context, vacancyIDs []string) ([]*mo
 				FILTER(LANG(?skill) = "en")
 			}
 			OPTIONAL {
-				?user lr:hasExperience ?expr .
+				?vacancy lr:requiredExperience ?expr .
 				?expr lr:escoOccup ?escoOccup .
 				?escoOccup skos:prefLabel ?occup .
 				?expr lr:durationInMonths ?dur .
