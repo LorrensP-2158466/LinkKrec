@@ -112,10 +112,10 @@ lr:postedBy a rdf:Property ;
     rdfs:range lr:Company .
 lr:vacancyStartDate a rdf:Property ;
     rdfs:domain lr:Vacancy ;
-    rdfs:range schema:Date .
+    rdfs:range xsd:date .
 lr:vacancyEndDate a rdf:Property ;
     rdfs:domain lr:Vacancy ;
-    rdfs:range schema:Date .
+    rdfs:range xsd:date .
 lr:vacancyStatus a rdf:Property ;
     rdfs:domain lr:Vacancy ;
     rdfs:range schema:Text .
